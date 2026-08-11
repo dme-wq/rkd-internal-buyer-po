@@ -109,9 +109,9 @@ export default function POForm() {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6 space-y-8 bg-zinc-50 dark:bg-zinc-950 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800">
+    <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
-      <div className="flex justify-between items-center pb-4 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="flex justify-between items-center pb-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Create Purchase Order</h1>
           <p className="text-zinc-500 dark:text-zinc-400 mt-1">Enter PO details to generate PDF and save to database.</p>
@@ -120,7 +120,7 @@ export default function POForm() {
           <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 transition-all font-medium text-sm">
             <Download size={16} /> Preview PDF
           </button>
-          <button onClick={handleSave} disabled={loading} className="flex items-center gap-2 px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-all font-medium text-sm shadow-lg shadow-blue-500/20 disabled:opacity-50">
+          <button onClick={handleSave} disabled={loading} className="flex items-center gap-2 px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-all font-medium text-sm shadow-lg shadow-emerald-500/20 disabled:opacity-50">
             <Save size={16} /> {loading ? 'Saving...' : 'Save PO'}
           </button>
         </div>
@@ -133,9 +133,9 @@ export default function POForm() {
       )}
 
       {/* Header Section */}
-      <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-sm border border-zinc-200/50 dark:border-zinc-800/50">
+      <div className="bg-white dark:bg-zinc-950 rounded-xl p-8 shadow-sm border border-zinc-200 dark:border-zinc-800">
         <h2 className="text-lg font-semibold mb-4 text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-          <FileText size={18} className="text-blue-500"/> General Information
+          <FileText size={18} className="text-emerald-500"/> General Information
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <Input label="File Number" value={header.fileNumber} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('fileNumber', e.target.value)} />
@@ -158,7 +158,7 @@ export default function POForm() {
       </div>
 
       {/* Payment Terms Section */}
-      <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-sm border border-zinc-200/50 dark:border-zinc-800/50">
+      <div className="bg-white dark:bg-zinc-950 rounded-xl p-8 shadow-sm border border-zinc-200 dark:border-zinc-800">
         <h2 className="text-lg font-semibold mb-4 text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
           <DollarSign size={18} className="text-emerald-500"/> Payment Terms
         </h2>
@@ -277,7 +277,7 @@ function Input({ label, value, onChange, type = "text", placeholder, compact, di
         onChange={onChange} 
         placeholder={placeholder}
         disabled={disabled}
-        className={`w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-md outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all ${compact ? 'px-2 py-1 text-sm' : 'px-3 py-2 text-base'} text-zinc-900 dark:text-zinc-100 disabled:opacity-50`}
+        className={`w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-md outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all ${compact ? 'px-2 py-1 text-sm' : 'px-3 py-2 text-base'} text-zinc-900 dark:text-zinc-100 disabled:opacity-50`}
       />
     </div>
   );
@@ -299,7 +299,7 @@ function TextArea({ label, value, onChange, placeholder }: TextAreaProps) {
         onChange={onChange} 
         placeholder={placeholder}
         rows={3}
-        className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-md outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all px-3 py-2 text-base text-zinc-900 dark:text-zinc-100 resize-none"
+        className="w-full bg-transparent border-b border-zinc-300 dark:border-zinc-700 outline-none focus:border-emerald-500 transition-colors px-1 py-2 text-base text-zinc-900 dark:text-zinc-100 resize-none"
       />
     </div>
   );

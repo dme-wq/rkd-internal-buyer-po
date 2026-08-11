@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import DashboardLayout from '@/components/DashboardLayout';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -31,7 +32,9 @@ export default function RootLayout({
       </head>
       <body>
         <div className="page-wrapper">
-          {children}
+          <DashboardLayout>
+            {children}
+          </DashboardLayout>
         </div>
       </body>
     </html>
