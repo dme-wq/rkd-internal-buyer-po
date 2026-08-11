@@ -14,7 +14,7 @@ interface RecentPO {
 }
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState({ totalCount: 0, thisMonth: 0, totalValue: 0 });
+  const [stats, setStats] = useState({ totalPOs: 0, thisMonth: 0, totalValue: 0, buyers: 0 });
   const [recentPOs, setRecentPOs] = useState<RecentPO[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,9 +27,9 @@ export default function DashboardPage() {
         }
 
         const poList = await getAllPOs();
-        if (poList.status === 'success' && poList.data) {
+        if (poList.status === 'success' && poList.data && poList.data.pos) {
           // Show only top 5 recent POs
-          setRecentPOs(poList.data.slice(0, 5));
+          setRecentPOs(poList.data.pos.slice(0, 5));
         }
       } catch (e) {
         console.error("Failed to load dashboard data");
@@ -65,7 +65,7 @@ export default function DashboardPage() {
         <div className="bg-white dark:bg-zinc-900 border border-emerald-100 dark:border-zinc-800 rounded-xl p-6 shadow-sm flex flex-col justify-between">
           <h3 className="text-zinc-500 font-medium text-sm">Created Declarations</h3>
           <div className="flex items-end justify-between mt-4">
-            <div className="text-4xl font-bold text-emerald-600 dark:text-emerald-500">{loading ? '...' : stats.totalCount}</div>
+            <div className="text-4xl font-bold text-emerald-600 dark:text-emerald-500">{loading ? '...' : stats.totalPOs}</div>
             <div className="flex items-center gap-1 text-xs font-medium bg-emerald-100 text-emerald-700 px-2 py-1 rounded">
               <TrendingUp size={14} /> +20%
             </div>

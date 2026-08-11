@@ -173,7 +173,6 @@ export async function generatePOPDF(
   });
 
   // ─── Payment Summary Footer ──────────────────────────────
-  // @ts-expect-error: jsPDF autotable injects lastAutoTable dynamically
   const finalY = (doc as any).lastAutoTable.finalY + 5;
 
   if (finalY < 180) {
