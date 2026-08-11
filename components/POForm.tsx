@@ -145,11 +145,11 @@ export default function POForm() {
           </div>
         )}
 
-        {/* Top Sections */}
-        <div className="flex flex-col gap-6">
+        {/* Top Grid: Header Data (Left) & Payment Terms (Right) */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           
           {/* Header Data Section */}
-          <div className="bg-white border-t-4 border-emerald-500 border-x border-b border-zinc-200 rounded-2xl shadow-md shadow-emerald-500/5 overflow-hidden flex flex-col transition-all hover:shadow-lg hover:shadow-emerald-500/10">
+          <div className="xl:col-span-2 bg-white border-t-4 border-emerald-500 border-x border-b border-zinc-200 rounded-2xl shadow-md shadow-emerald-500/5 overflow-hidden flex flex-col transition-all hover:shadow-lg hover:shadow-emerald-500/10">
             <div className="px-6 py-4 border-b border-zinc-100 bg-emerald-50/50 flex items-center gap-2">
               <FileText size={16} className="text-emerald-600" />
               <h2 className="text-[15px] font-extrabold text-emerald-900 tracking-wide">General Information</h2>
@@ -171,74 +171,74 @@ export default function POForm() {
             </div>
           </div>
 
-          {/* Payment Terms Section - Full Width */}
-          <div className="bg-white border-t-4 border-blue-500 border-x border-b border-zinc-200 rounded-2xl shadow-md shadow-blue-500/5 overflow-hidden flex flex-col h-max transition-all hover:shadow-lg hover:shadow-blue-500/10">
-            <div className="px-6 py-4 border-b border-zinc-100 bg-blue-50/50 flex items-center gap-2">
-              <CreditCard size={16} className="text-blue-600" />
-              <h2 className="text-[15px] font-extrabold text-blue-900 tracking-wide">Payment Terms</h2>
+          {/* Payment Terms Section - Right Sidebar */}
+          <div className="xl:col-span-1 bg-white border-t-4 border-blue-500 border-x border-b border-zinc-200 rounded-2xl shadow-md shadow-blue-500/5 overflow-hidden flex flex-col h-max transition-all hover:shadow-lg hover:shadow-blue-500/10">
+            <div className="px-4 py-3 border-b border-zinc-100 bg-blue-50/50 flex items-center gap-2">
+              <CreditCard size={14} className="text-blue-600" />
+              <h2 className="text-[14px] font-extrabold text-blue-900 tracking-wide">Payment Terms</h2>
             </div>
             
-            <div className="p-6 flex flex-col gap-6">
+            <div className="p-4 flex flex-col gap-4">
               
               {/* Payment Term 1 */}
               <div className="w-full border border-blue-200 rounded-lg overflow-hidden shadow-sm">
-                <div className="bg-blue-100 text-blue-900 text-center font-bold py-2 text-[13px] tracking-wide">Payment Term 1</div>
-                <div className="grid grid-cols-5 bg-blue-50/30">
-                  <div className="p-3 flex flex-col gap-1.5 border-r border-blue-200">
-                    <label className="text-[11px] font-bold text-blue-800 text-center">%</label>
-                    <input type="number" placeholder="0" value={header.pay1Pct || ''} onChange={(e) => updateHeader('pay1Pct', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded-md px-2 py-1.5 text-[12px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                <div className="bg-blue-100 text-blue-900 text-center font-bold py-1.5 text-[11px] tracking-wide">Payment Term 1</div>
+                <div className="grid grid-cols-5 bg-blue-50/30 divide-x divide-blue-200">
+                  <div className="p-1.5 flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-blue-800 text-center">%</label>
+                    <input type="number" placeholder="0" value={header.pay1Pct || ''} onChange={(e) => updateHeader('pay1Pct', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
                   </div>
-                  <div className="p-3 flex flex-col gap-1.5 border-r border-blue-200">
-                    <label className="text-[11px] font-bold text-blue-800 text-center">Days</label>
-                    <input type="number" placeholder="0" value={header.pay1Days || ''} onChange={(e) => updateHeader('pay1Days', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded-md px-2 py-1.5 text-[12px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                  <div className="p-1.5 flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-blue-800 text-center">Days</label>
+                    <input type="number" placeholder="0" value={header.pay1Days || ''} onChange={(e) => updateHeader('pay1Days', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
                   </div>
-                  <div className="p-3 flex flex-col gap-1.5 border-r border-blue-200">
-                    <label className="text-[11px] font-bold text-blue-800 text-center">Activity</label>
-                    <input type="text" placeholder="Activity..." value={header.pay1Activity || ''} onChange={(e) => updateHeader('pay1Activity', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded-md px-2 py-1.5 text-[12px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                  <div className="p-1.5 flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-blue-800 text-center">Activity</label>
+                    <input type="text" placeholder="Activity" value={header.pay1Activity || ''} onChange={(e) => updateHeader('pay1Activity', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
                   </div>
-                  <div className="p-3 flex flex-col gap-1.5 border-r border-blue-200">
-                    <label className="text-[11px] font-bold text-blue-800 text-center">Amount</label>
-                    <input type="number" placeholder="$0.00" value={header.pay1Amount || ''} onChange={(e) => updateHeader('pay1Amount', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded-md px-2 py-1.5 text-[12px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                  <div className="p-1.5 flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-blue-800 text-center">Amount</label>
+                    <input type="number" placeholder="$0.00" value={header.pay1Amount || ''} onChange={(e) => updateHeader('pay1Amount', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
                   </div>
-                  <div className="p-3 flex flex-col gap-1.5">
-                    <label className="text-[11px] font-bold text-blue-800 text-center">Due Date</label>
-                    <input type="date" value={header.pay1DueDate || ''} onChange={(e) => updateHeader('pay1DueDate', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded-md px-2 py-1.5 text-[12px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                  <div className="p-1.5 flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-blue-800 text-center">Due Date</label>
+                    <input type="date" value={header.pay1DueDate || ''} onChange={(e) => updateHeader('pay1DueDate', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
                   </div>
                 </div>
               </div>
 
               {/* Payment Term 2 */}
               <div className="w-full border border-blue-200 rounded-lg overflow-hidden shadow-sm">
-                <div className="bg-blue-100 text-blue-900 text-center font-bold py-2 text-[13px] tracking-wide">Payment Term 2</div>
-                <div className="grid grid-cols-5 bg-blue-50/30">
-                  <div className="p-3 flex flex-col gap-1.5 border-r border-blue-200">
-                    <label className="text-[11px] font-bold text-blue-800 text-center">%</label>
-                    <input type="number" placeholder="0" value={header.pay2Pct || ''} onChange={(e) => updateHeader('pay2Pct', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded-md px-2 py-1.5 text-[12px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                <div className="bg-blue-100 text-blue-900 text-center font-bold py-1.5 text-[11px] tracking-wide">Payment Term 2</div>
+                <div className="grid grid-cols-5 bg-blue-50/30 divide-x divide-blue-200">
+                  <div className="p-1.5 flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-blue-800 text-center">%</label>
+                    <input type="number" placeholder="0" value={header.pay2Pct || ''} onChange={(e) => updateHeader('pay2Pct', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
                   </div>
-                  <div className="p-3 flex flex-col gap-1.5 border-r border-blue-200">
-                    <label className="text-[11px] font-bold text-blue-800 text-center">Days</label>
-                    <input type="number" placeholder="0" value={header.pay2Days || ''} onChange={(e) => updateHeader('pay2Days', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded-md px-2 py-1.5 text-[12px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                  <div className="p-1.5 flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-blue-800 text-center">Days</label>
+                    <input type="number" placeholder="0" value={header.pay2Days || ''} onChange={(e) => updateHeader('pay2Days', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
                   </div>
-                  <div className="p-3 flex flex-col gap-1.5 border-r border-blue-200">
-                    <label className="text-[11px] font-bold text-blue-800 text-center">Activity</label>
-                    <input type="text" placeholder="Activity..." value={header.pay2Activity || ''} onChange={(e) => updateHeader('pay2Activity', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded-md px-2 py-1.5 text-[12px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                  <div className="p-1.5 flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-blue-800 text-center">Activity</label>
+                    <input type="text" placeholder="Activity" value={header.pay2Activity || ''} onChange={(e) => updateHeader('pay2Activity', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
                   </div>
-                  <div className="p-3 flex flex-col gap-1.5 border-r border-blue-200">
-                    <label className="text-[11px] font-bold text-blue-800 text-center">Amount</label>
-                    <input type="number" placeholder="$0.00" value={header.pay2Amount || ''} onChange={(e) => updateHeader('pay2Amount', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded-md px-2 py-1.5 text-[12px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                  <div className="p-1.5 flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-blue-800 text-center">Amount</label>
+                    <input type="number" placeholder="$0.00" value={header.pay2Amount || ''} onChange={(e) => updateHeader('pay2Amount', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
                   </div>
-                  <div className="p-3 flex flex-col gap-1.5">
-                    <label className="text-[11px] font-bold text-blue-800 text-center">Due Date</label>
-                    <input type="date" value={header.pay2DueDate || ''} onChange={(e) => updateHeader('pay2DueDate', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded-md px-2 py-1.5 text-[12px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                  <div className="p-1.5 flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-blue-800 text-center">Due Date</label>
+                    <input type="date" value={header.pay2DueDate || ''} onChange={(e) => updateHeader('pay2DueDate', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
                   </div>
                 </div>
               </div>
 
               {/* Total Block */}
-              <div className="flex justify-end pr-[20%]">
+              <div className="flex justify-end pt-2">
                 <div className="flex border border-zinc-300 rounded overflow-hidden shadow-sm">
-                  <div className="bg-zinc-600 text-white font-bold text-[12px] px-6 py-2 text-center uppercase tracking-wide">Total</div>
-                  <div className="bg-white text-zinc-900 font-black text-[13px] px-6 py-2 text-center border-l border-zinc-300 min-w-[120px]">
+                  <div className="bg-zinc-600 text-white font-bold text-[10px] px-3 py-1.5 text-center uppercase tracking-wide flex items-center">Total</div>
+                  <div className="bg-white text-zinc-900 font-black text-[11px] px-3 py-1.5 text-center border-l border-zinc-300 min-w-[80px]">
                     ${(header.totalAmount || 0).toFixed(2)}
                   </div>
                 </div>
