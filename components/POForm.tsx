@@ -69,7 +69,8 @@ export default function POForm() {
     'Genoa': 30, 'Charleston': 30, 'Baltimore': 30, 'Umm Qasr': 7, 'Savannah': 30, 'New Jersy': 30
   };
 
-  const calculateDueDate = (activity: string, daysStr: string | number | undefined, poDate: string, exFactory: string, onboardDate: string, portName: string) => {
+  const calculateDueDate = (pctStr: string | number | undefined, activity: string, daysStr: string | number | undefined, poDate: string, exFactory: string, onboardDate: string, portName: string) => {
+    if (!pctStr || pctStr === '-') return '';
     if (!activity || activity === '-') return '';
     const days = daysStr === '-' ? 0 : parseInt(String(daysStr || '0').replace(' Days', ''));
     if (isNaN(days)) return '';
@@ -136,8 +137,8 @@ export default function POForm() {
       totalAmount: grandTotal,
       pay1Amount: grandTotal * p1Pct / 100,
       pay2Amount: grandTotal * p2Pct / 100,
-      pay1DueDate: calculateDueDate(prev.pay1Activity || '', prev.pay1Days, prev.poDate || '', prev.exFactory || '', prev.onboardDate || '', prev.portName || ''),
-      pay2DueDate: calculateDueDate(prev.pay2Activity || '', prev.pay2Days, prev.poDate || '', prev.exFactory || '', prev.onboardDate || '', prev.portName || '')
+      pay1DueDate: calculateDueDate(prev.pay1Pct, prev.pay1Activity || '', prev.pay1Days, prev.poDate || '', prev.exFactory || '', prev.onboardDate || '', prev.portName || ''),
+      pay2DueDate: calculateDueDate(prev.pay2Pct, prev.pay2Activity || '', prev.pay2Days, prev.poDate || '', prev.exFactory || '', prev.onboardDate || '', prev.portName || '')
     }));
     return computedSkus;
   };
@@ -273,7 +274,7 @@ export default function POForm() {
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Due Date</label>
-                    <input type="text" readOnly placeholder="Auto Calculated" value={calculateDueDate(header.pay1Activity || '', header.pay1Days, header.poDate || '', header.exFactory || '', header.onboardDate || '', header.portName || '')} className="w-full text-center bg-blue-50/50 border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none shadow-sm cursor-default" />
+                    <input type="text" readOnly placeholder="Auto Calculated" value={calculateDueDate(header.pay1Pct, header.pay1Activity || '', header.pay1Days, header.poDate || '', header.exFactory || '', header.onboardDate || '', header.portName || '')} className="w-full text-center bg-blue-50/50 border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none shadow-sm cursor-default" />
                   </div>
                 </div>
               </div>
@@ -306,7 +307,7 @@ export default function POForm() {
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Due Date</label>
-                    <input type="text" readOnly placeholder="Auto Calculated" value={calculateDueDate(header.pay2Activity || '', header.pay2Days, header.poDate || '', header.exFactory || '', header.onboardDate || '', header.portName || '')} className="w-full text-center bg-blue-50/50 border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none shadow-sm cursor-default" />
+                    <input type="text" readOnly placeholder="Auto Calculated" value={calculateDueDate(header.pay2Pct, header.pay2Activity || '', header.pay2Days, header.poDate || '', header.exFactory || '', header.onboardDate || '', header.portName || '')} className="w-full text-center bg-blue-50/50 border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none shadow-sm cursor-default" />
                   </div>
                 </div>
               </div>
