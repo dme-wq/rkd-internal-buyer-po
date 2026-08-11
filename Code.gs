@@ -1,6 +1,57 @@
 const SHEET_ID = '1GFGnd4jfIhbq_lD3vDT4YUyzu1Okhc3dkrAHlnw4cHQ';
 const FOLDER_ID = '1AFkGysktaXFmX9h8w-AJadgzCJPxZ8r0';
 
+function doGet(e) {
+  try {
+    const action = e.parameter.action;
+    if (action === 'getDropdowns') {
+      return handleGetDropdowns();
+    }
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Unknown action' }))
+        .setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ 
+      status: 'error', 
+      message: error.toString() 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function handleGetDropdowns() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  
+  const extractUnique = (sheetName, colIndex) => {
+    const sheet = ss.getSheetByName(sheetName);
+    if (!sheet) return [];
+    const data = sheet.getDataRange().getValues();
+    const unique = new Set();
+    for (let i = 1; i < data.length; i++) {
+      const val = data[i][colIndex];
+      if (val !== undefined && val !== null && val.toString().trim() !== '') {
+        unique.add(val.toString().trim());
+      }
+    }
+    return [...unique];
+  };
+
+  const shapes = extractUnique('Drop Downs', 27); // AB
+  const designers = extractUnique('Drop Downs', 16); // Q
+  const brands = extractUnique('Drop Downs', 32); // AG
+  const sizes = extractUnique('Drop Downs', 22); // W
+  const qualities = extractUnique('Drop Downs', 33); // AH
+  const colors = extractUnique('Drop Downs', 17); // R
+  const ppTopSamples = extractUnique('Drop Downs', 35); // AJ
+
+  const unitsQty = extractUnique('list', 4); // E
+  const unitsPrice = extractUnique('list', 3); // D
+  const packs = extractUnique('list', 5); // F
+
+  return ContentService.createTextOutput(JSON.stringify({
+    status: 'success',
+    data: { shapes, designers, brands, sizes, qualities, colors, unitsQty, unitsPrice, packs, ppTopSamples }
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
 function doPost(e) {
   try {
     // Enable CORS

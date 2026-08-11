@@ -7,25 +7,26 @@ export interface SKUItem {
   skuCode: string;
   product: string;
   articleNum: string;
-  designImage: string; // Google Drive URL
+  designImage: string; // Google Drive URL or Base64
   shape: string;
   designer: string;
   brand: string;
   description: string;
+  sizes: string[]; // For multi-select UI
   size1: string;
   size2: string;
   quality: string;
   color: string;
   colorRef: string;
-  orderQty: number;
+  orderQty: number | string;
   unitQty: string;
-  price: number;
+  price: number | string;
   unitPrice: string;
   currency: string;
-  innerPack: number;
-  outerPack: number;
-  addSample: number;
-  addProd: number;
+  innerPack: string;
+  outerPack: string;
+  addSample: string; // PP/TOP
+  addProd: string; // 0% to 10%
   totalQtyMfg: number;
   lineTotal: number; // computed: orderQty * price
 }
@@ -97,9 +98,13 @@ export interface DropdownData {
   shapes: string[];
   designers: string[];
   brands: string[];
-  unitQty: string[];
-  unitPrice: string[];
-  currencies: string[];
+  sizes: string[];
+  qualities: string[];
+  colors: string[];
+  unitsQty: string[];
+  unitsPrice: string[];
+  packs: string[];
+  ppTopSamples: string[];
   payActivities: string[];
 }
 

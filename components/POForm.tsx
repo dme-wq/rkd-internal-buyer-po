@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Save, FileText, CheckCircle, CreditCard, Package, Clock } from 'lucide-react';
-import { POHeader, SKUItem } from '../lib/types';
-import { createPO, savePDFtoDrive, getPendingInternalPOs } from '../lib/api';
+import { POHeader, SKUItem, DropdownData } from '../lib/types';
+import { createPO, savePDFtoDrive, getPendingInternalPOs, getDropdowns } from '../lib/api';
 import { generatePOPDF } from '../lib/pdf';
+import { DragDropImage } from './DragDropImage';
+import { MultiSelectDropdown } from './MultiSelectDropdown';
 
 export default function POForm() {
   const [header, setHeader] = useState<Partial<POHeader>>({
@@ -18,9 +20,10 @@ export default function POForm() {
 
   const [skus, setSkus] = useState<Partial<SKUItem>[]>(() => [{
     id: Date.now().toString(), product: '', shape: '', designer: '', brand: '',
-    description: '', size1: '', size2: '', quality: '', color: '', colorRef: '',
+    description: '', sizes: [], size1: '', size2: '', quality: '', color: '', colorRef: '',
     orderQty: 0, unitQty: 'pieces', price: 0, unitPrice: 'piece', currency: 'USD',
-    innerPack: 0, outerPack: 0, addSample: 0, addProd: 0
+    innerPack: '', outerPack: '', addSample: '', addProd: '', skuCode: '', designImage: '',
+    totalQtyMfg: 0, lineTotal: 0
   }]);
 
   const [time, setTime] = useState<string>('');
@@ -42,6 +45,11 @@ export default function POForm() {
     
     // Fetch pending Internal POs
     getPendingInternalPOs().then(setPendingPOs);
+    getDropdowns().then(res => {
+      if (res.status === 'success' && res.data) {
+        setDropdowns(res.data);
+      }
+    });
     
     return () => clearInterval(interval);
   }, []);
@@ -49,13 +57,15 @@ export default function POForm() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [pendingPOs, setPendingPOs] = useState<string[]>([]);
+  const [dropdowns, setDropdowns] = useState<DropdownData | null>(null);
 
   const addSku = () => {
     setSkus([...skus, { 
       id: Date.now().toString(), product: '', shape: '', designer: '', brand: '',
-      description: '', size1: '', size2: '', quality: '', color: '', colorRef: '',
+      description: '', sizes: [], size1: '', size2: '', quality: '', color: '', colorRef: '',
       orderQty: 0, unitQty: 'pieces', price: 0, unitPrice: 'piece', currency: 'USD',
-      innerPack: 0, outerPack: 0, addSample: 0, addProd: 0 
+      innerPack: '', outerPack: '', addSample: '', addProd: '', skuCode: '', designImage: '',
+      totalQtyMfg: 0, lineTotal: 0
     }]);
   };
 
@@ -125,7 +135,9 @@ export default function POForm() {
     let grandTotal = 0;
     const computedSkus = skus.map(sku => {
       const lineTotal = (Number(sku.orderQty) || 0) * (Number(sku.price) || 0);
-      const totalQtyMfg = (Number(sku.orderQty) || 0) + (Number(sku.addSample) || 0) + (Number(sku.addProd) || 0);
+      const addProdPct = parseFloat(String(sku.addProd || '0').replace('%', '')) / 100;
+      const ppTopNum = parseInt(String(sku.addSample || '0').replace(/[^0-9]/g, '')) || 0;
+      const totalQtyMfg = Math.ceil((Number(sku.orderQty) || 0) + ((Number(sku.orderQty) || 0) * addProdPct) + ppTopNum);
       grandTotal += lineTotal;
       return { ...sku, lineTotal, totalQtyMfg };
     });
@@ -332,65 +344,76 @@ export default function POForm() {
             </button>
           </div>
           
-          <div className="overflow-x-auto">
-            <table className="w-full text-left whitespace-nowrap">
-              <thead className="bg-white border-b border-zinc-200">
+          <div className="overflow-x-auto pb-6">
+            <table className="w-full text-left whitespace-nowrap min-w-max border-separate border-spacing-0">
+              <thead className="bg-white">
                 <tr>
-                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[48px] text-center">#</th>
-                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[200px]">Product Info</th>
-                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[240px]">Description</th>
-                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[160px]">Attributes</th>
-                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[120px]">Order Qty</th>
-                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[120px]">Unit Price</th>
-                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[160px]">Packing</th>
-                  <th className="px-6 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[120px] text-center">Line Total</th>
-                  <th className="px-4 py-3 min-w-[48px]"></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 text-center sticky left-0 bg-white z-10 border-b border-r border-zinc-200">#</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[180px] sticky left-[41px] bg-white z-10 border-b border-r border-zinc-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Product Name</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] border-b border-zinc-200">SKU Code</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[80px] text-center border-b border-zinc-200">Designer Picture</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[130px] border-b border-zinc-200">Shape</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[140px] border-b border-zinc-200">Designer Name</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[140px] border-b border-zinc-200">Brand Name</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[220px] border-b border-zinc-200">Description</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[160px] border-b border-zinc-200">Sizes</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] border-b border-zinc-200">Quality</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] border-b border-zinc-200">Color</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[100px] border-b border-zinc-200">Buyer PO Qty</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Unit of Qty</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[100px] border-b border-zinc-200">Price</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Unit of Price</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[90px] border-b border-zinc-200">Currency</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Inner Pack</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Outer Pack</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[130px] border-b border-zinc-200">PP/TOP Samples</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Addl Prod Pcs</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-rose-700 min-w-[100px] text-center bg-rose-50/30 border-b border-zinc-200">Total Qty Mfg</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-rose-700 min-w-[120px] text-center bg-rose-50/30 border-b border-zinc-200">Total Amount</th>
+                  <th className="px-3 py-3 min-w-[48px] border-b border-zinc-200"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100 bg-zinc-50/20">
-                {skus.map((sku, index) => (
+              <tbody className="bg-zinc-50/20">
+                {skus.map((sku, index) => {
+                  const handleSizesChange = (selected: string[]) => {
+                    setSkus(skus.map(s => s.id === sku.id ? { ...s, sizes: selected, size1: selected[0] || '', size2: selected[1] || '' } : s));
+                  };
+                  return (
                   <tr key={sku.id} className="group hover:bg-emerald-50/20 transition-colors">
-                    <td className="px-4 py-3 text-center text-zinc-400 text-[11px] font-bold">
-                      {(index + 1) * 10}
-                    </td>
-                    <td className="px-3 py-2 space-y-1.5 align-top">
-                      <GridInput value={sku.skuCode} onChange={(e) => updateSku(sku.id!, 'skuCode', e.target.value)} placeholder="SKU Code" bold />
-                      <GridInput value={sku.product} onChange={(e) => updateSku(sku.id!, 'product', e.target.value)} placeholder="Product Name" />
-                    </td>
-                    <td className="px-3 py-2 align-top">
+                    <td className="px-3 py-3 text-center text-zinc-400 text-[11px] font-bold sticky left-0 bg-white group-hover:bg-emerald-50/90 border-b border-r border-zinc-100 z-10">{index + 1}</td>
+                    <td className="px-3 py-3 align-top sticky left-[41px] bg-white group-hover:bg-emerald-50/90 border-b border-r border-zinc-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] z-10"><GridInput value={sku.product} onChange={(e) => updateSku(sku.id!, 'product', e.target.value)} placeholder="Product Name" bold /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridInput value={sku.skuCode} onChange={(e) => updateSku(sku.id!, 'skuCode', e.target.value)} placeholder="SKU Code" /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><DragDropImage value={sku.designImage || ''} onChange={(val) => updateSku(sku.id!, 'designImage', val)} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.shape} onChange={(e: any) => updateSku(sku.id!, 'shape', e.target.value)} options={dropdowns?.shapes} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.designer} onChange={(e: any) => updateSku(sku.id!, 'designer', e.target.value)} options={dropdowns?.designers} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.brand} onChange={(e: any) => updateSku(sku.id!, 'brand', e.target.value)} options={dropdowns?.brands} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100">
                       <textarea 
-                        value={sku.description || ''} 
-                        onChange={(e) => updateSku(sku.id!, 'description', e.target.value)}
-                        placeholder="Detailed description..."
-                        className="block w-full h-16 text-center bg-yellow-50 border border-yellow-200 hover:border-yellow-300 focus:bg-white focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400/30 rounded-lg px-3 py-2 text-[12px] font-bold text-zinc-800 resize-none outline-none transition-all shadow-sm"
+                        value={sku.description || ''} onChange={(e) => updateSku(sku.id!, 'description', e.target.value)} placeholder="Desc..."
+                        className="block w-full h-[34px] leading-[22px] text-center bg-yellow-50 border border-yellow-200 focus:bg-white focus:border-yellow-400 rounded-md px-2 text-[11px] font-bold text-zinc-800 resize-none outline-none transition-all shadow-sm"
                       />
                     </td>
-                    <td className="px-3 py-2 space-y-1.5 align-top">
-                      <GridInput value={sku.size1} onChange={(e) => updateSku(sku.id!, 'size1', e.target.value)} placeholder="Dimensions" />
-                      <GridInput value={sku.color} onChange={(e) => updateSku(sku.id!, 'color', e.target.value)} placeholder="Color" />
-                    </td>
-                    <td className="px-3 py-2 space-y-1.5 align-top">
-                      <GridInput type="number" value={sku.orderQty} onChange={(e) => updateSku(sku.id!, 'orderQty', parseFloat(e.target.value))} placeholder="Quantity" />
-                    </td>
-                    <td className="px-3 py-2 align-top">
-                      <GridInput type="number" value={sku.price} onChange={(e) => updateSku(sku.id!, 'price', parseFloat(e.target.value))} placeholder="$ 0.00" />
-                    </td>
-                    <td className="px-3 py-2 space-y-1.5 align-top">
-                       <GridInput type="number" value={sku.innerPack} onChange={(e) => updateSku(sku.id!, 'innerPack', parseInt(e.target.value))} placeholder="Inner (pcs)" />
-                       <GridInput type="number" value={sku.outerPack} onChange={(e) => updateSku(sku.id!, 'outerPack', parseInt(e.target.value))} placeholder="Outer (pcs)" />
-                    </td>
-                    <td className="px-6 py-4 text-center align-top">
-                      <div className="text-[13px] font-black text-rose-700 bg-rose-50 border border-rose-200 rounded-md py-1.5 px-3 shadow-sm inline-block min-w-[80px]">
-                        ${((Number(sku.orderQty) || 0) * (Number(sku.price) || 0)).toFixed(2)}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-center align-top">
-                      <button onClick={() => removeSku(sku.id!)} className="text-zinc-400 hover:text-rose-500 bg-white hover:bg-rose-50 border border-zinc-200 hover:border-rose-200 rounded p-1.5 transition-all shadow-sm">
-                        <Trash2 size={14} />
-                      </button>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><MultiSelectDropdown options={dropdowns?.sizes || []} selected={sku.sizes || []} onChange={handleSizesChange} maxSelect={2} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.quality} onChange={(e: any) => updateSku(sku.id!, 'quality', e.target.value)} options={dropdowns?.qualities} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.color} onChange={(e: any) => updateSku(sku.id!, 'color', e.target.value)} options={dropdowns?.colors} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridInput type="number" value={sku.orderQty} onChange={(e) => updateSku(sku.id!, 'orderQty', e.target.value)} placeholder="0" /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.unitQty} onChange={(e: any) => updateSku(sku.id!, 'unitQty', e.target.value)} options={dropdowns?.unitsQty} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridInput type="number" value={sku.price} onChange={(e) => updateSku(sku.id!, 'price', e.target.value)} placeholder="0.00" /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.unitPrice} onChange={(e: any) => updateSku(sku.id!, 'unitPrice', e.target.value)} options={dropdowns?.unitsPrice} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.currency} onChange={(e: any) => updateSku(sku.id!, 'currency', e.target.value)} options={['USD', 'INR', 'EUR', 'CAD', 'AUD', 'CNY']} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.innerPack} onChange={(e: any) => updateSku(sku.id!, 'innerPack', e.target.value)} options={dropdowns?.packs} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.outerPack} onChange={(e: any) => updateSku(sku.id!, 'outerPack', e.target.value)} options={dropdowns?.packs} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.addSample} onChange={(e: any) => updateSku(sku.id!, 'addSample', e.target.value)} options={dropdowns?.ppTopSamples} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.addProd} onChange={(e: any) => updateSku(sku.id!, 'addProd', e.target.value)} options={['0%', '1%', '2%', '3%', '4%', '5%', '6%', '7%', '8%', '9%', '10%']} /></td>
+                    
+                    <td className="px-3 py-3 align-middle text-center bg-rose-50/20 border-b border-zinc-100"><div className="text-[12px] font-black text-rose-700 bg-white border border-rose-200 rounded py-1 px-2 shadow-sm inline-block">{sku.totalQtyMfg || 0}</div></td>
+                    <td className="px-3 py-3 align-middle text-center bg-rose-50/20 border-b border-zinc-100"><div className="text-[12px] font-black text-rose-700 bg-white border border-rose-200 rounded py-1 px-2 shadow-sm inline-block">${(sku.lineTotal || 0).toFixed(2)}</div></td>
+                    
+                    <td className="px-3 py-3 align-middle text-center border-b border-zinc-100">
+                      <button onClick={() => removeSku(sku.id!)} className="text-zinc-400 hover:text-rose-500 bg-white hover:bg-rose-50 border border-zinc-200 hover:border-rose-200 rounded p-1.5 transition-all shadow-sm"><Trash2 size={14} /></button>
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>
@@ -501,7 +524,21 @@ function GridInput({ value, onChange, placeholder, type = "text", bold }: GridIn
       value={value || ''}
       onChange={onChange}
       placeholder={placeholder}
-      className={`block w-full text-center bg-yellow-50 border border-yellow-200 hover:border-yellow-300 focus:bg-white focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400/30 rounded-md px-2.5 py-1.5 text-[12px] ${bold ? 'font-extrabold text-zinc-900' : 'font-bold text-zinc-800'} outline-none transition-all shadow-sm`}
+      className={`block w-full text-center bg-yellow-50 border border-yellow-200 hover:border-yellow-300 focus:bg-white focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400/30 rounded-md px-2 py-1.5 text-[11px] ${bold ? 'font-extrabold text-zinc-900' : 'font-bold text-zinc-800'} outline-none transition-all shadow-sm`}
     />
+  );
+}
+
+function GridSelect({ value, onChange, options = [] }: { value: any, onChange: any, options?: string[] }) {
+  return (
+    <div className="relative">
+      <select value={value || ''} onChange={onChange} className="w-full h-[34px] text-center bg-yellow-50 border border-yellow-200 hover:border-yellow-300 focus:bg-white focus:border-yellow-400 rounded-md px-2 text-[11px] font-bold text-zinc-800 outline-none transition-all shadow-sm appearance-none cursor-pointer">
+        <option value="">-</option>
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
+      <div className="absolute right-1 top-2.5 pointer-events-none text-zinc-400">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>
+    </div>
   );
 }
