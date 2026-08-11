@@ -157,7 +157,7 @@ export default function POForm() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
-                  <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Term 1</h3>
+                  <h3 className="text-[12px] font-bold text-zinc-600 tracking-wide">Term 1</h3>
                 </div>
                 <div className="space-y-3">
                   <ModernInput label="Description" value={header.payTerm1} onChange={(e) => updateHeader('payTerm1', e.target.value)} />
@@ -173,7 +173,7 @@ export default function POForm() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-                  <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Term 2</h3>
+                  <h3 className="text-[12px] font-bold text-zinc-600 tracking-wide">Term 2</h3>
                 </div>
                 <div className="space-y-3">
                   <ModernInput label="Description" value={header.payTerm2} onChange={(e) => updateHeader('payTerm2', e.target.value)} />
@@ -204,14 +204,14 @@ export default function POForm() {
             <table className="w-full text-left whitespace-nowrap">
               <thead className="bg-white border-b border-zinc-200">
                 <tr>
-                  <th className="px-4 py-3 text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider w-12 text-center">#</th>
-                  <th className="px-4 py-3 text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider w-48">Product Info</th>
-                  <th className="px-4 py-3 text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider min-w-[200px]">Description</th>
-                  <th className="px-4 py-3 text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider w-32">Attributes</th>
-                  <th className="px-4 py-3 text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider w-24">Order Qty</th>
-                  <th className="px-4 py-3 text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider w-24">Unit Price</th>
-                  <th className="px-4 py-3 text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider w-32">Packing</th>
-                  <th className="px-6 py-3 text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider w-32 text-right">Line Total</th>
+                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide w-12 text-center">#</th>
+                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide w-48">Product Info</th>
+                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[200px]">Description</th>
+                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide w-32">Attributes</th>
+                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide w-24">Order Qty</th>
+                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide w-24">Unit Price</th>
+                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide w-32">Packing</th>
+                  <th className="px-6 py-3 text-[12px] font-bold text-zinc-600 tracking-wide w-32 text-right">Line Total</th>
                   <th className="px-4 py-3 w-12"></th>
                 </tr>
               </thead>
@@ -266,12 +266,12 @@ export default function POForm() {
           <div className="bg-white border-t border-zinc-200 px-6 py-5 flex justify-end">
             <div className="flex items-center gap-6">
               <div className="text-right">
-                <span className="block text-[11px] text-zinc-400 font-bold uppercase tracking-wider mb-1">Total Items</span>
+                <span className="block text-[12px] text-zinc-500 font-bold tracking-wide mb-1">Total Items</span>
                 <span className="text-sm font-bold text-zinc-700">{skus.length} SKU(s)</span>
               </div>
               <div className="h-8 w-px bg-zinc-200"></div>
               <div className="text-right">
-                <span className="block text-[11px] text-zinc-400 font-bold uppercase tracking-wider mb-1">Total Net Value</span>
+                <span className="block text-[12px] text-zinc-500 font-bold tracking-wide mb-1">Total Net Value</span>
                 <span className="text-2xl font-black text-[#00a669] tracking-tight">
                   ${skus.reduce((acc, sku) => acc + ((Number(sku.orderQty) || 0) * (Number(sku.price) || 0)), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
@@ -297,7 +297,7 @@ interface ModernInputProps {
 function ModernInput({ label, value, onChange, type = "text" }: ModernInputProps) {
   return (
     <div className="flex flex-col gap-1.5 w-full">
-      <label className="text-[11px] font-extrabold text-zinc-500 uppercase tracking-wider">{label}</label>
+      <label className="text-[12px] font-bold text-zinc-600 tracking-wide capitalize">{label}</label>
       <input 
         type={type} 
         value={value || ''} 
@@ -317,7 +317,7 @@ interface ModernTextAreaProps {
 function ModernTextArea({ label, value, onChange }: ModernTextAreaProps) {
   return (
     <div className="flex flex-col gap-1.5 w-full">
-      <label className="text-[11px] font-extrabold text-zinc-500 uppercase tracking-wider">{label}</label>
+      <label className="text-[12px] font-bold text-zinc-600 tracking-wide capitalize">{label}</label>
       <textarea 
         value={value || ''} 
         onChange={onChange} 
