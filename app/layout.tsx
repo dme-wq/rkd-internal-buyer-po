@@ -6,7 +6,7 @@ import { Josefin_Sans } from 'next/font/google';
 const josefin = Josefin_Sans({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'RKD Export PO Manager — Buyer Purchase Order System',
+  title: 'RKD Internal Purchase Order System',
   description: 'Professional Export-grade Buyer Purchase Order management system for RKD Exports. Create, manage, and generate PDF purchase orders with Google Sheets integration.',
   keywords: ['Purchase Order', 'Export', 'RKD', 'Buyer PO', 'Handicrafts', 'Home Textiles'],
   authors: [{ name: 'RKD Exports' }],
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     icon: '/favicon.ico',
   },
   openGraph: {
-    title: 'RKD Export PO Manager',
+    title: 'RKD Internal Purchase Order System',
     description: 'Professional Buyer Purchase Order Management System',
     type: 'website',
   },
