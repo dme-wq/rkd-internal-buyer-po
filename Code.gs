@@ -52,66 +52,66 @@ function handleCreatePO(data) {
       const row = new Array(64).fill(''); // 64 columns
       
       // Map Metadata
-      row[0] = timestamp; // Col1 Timestamp
-      row[1] = uniqueId; // Col2 Unique ID
-      row[2] = header.fileNumber || ''; // Col3 File Number
-      row[3] = header.buyerName || ''; // Col4 Buyer Name
-      row[4] = internalPO; // Col5 Internal PO Number
-      row[5] = header.buyerPO || ''; // Col6 Buyer PO Number
-      row[6] = header.poDate || ''; // Col7 PO Date
-      row[7] = header.exFactory || ''; // Col8 Ex-Factory Date
-      row[8] = header.deliveryTerms || ''; // Col9 Delivery Terms
-      row[9] = header.portName || ''; // Col10 Port Name
-      row[10] = header.payTerm1 || ''; // Col11 Payment Terms 1
-      row[11] = header.payTerm2 || ''; // Col12 Payment Terms 2
-      row[12] = header.buyerSource || ''; // Col13 Buyer Source Name
-      row[13] = header.buyerSubSrc || ''; // Col14 Buyer Sub Source Name
-      row[14] = header.buyerSrcPct || ''; // Col15
-      row[15] = header.buyerSubPct || ''; // Col16
-      row[16] = header.billingAddr || ''; // Col17 Billing Address
-      row[17] = header.deliveryAddr || ''; // Col18 Delivery Address
-      row[18] = header.onboardDate || ''; // Col19 Onboard Vessel Date
+      row[0] = timestamp; // ColA Timestamp
+      row[1] = uniqueId; // ColB Unique ID
+      row[2] = header.fileNumber || ''; // ColC File Number
+      row[3] = header.buyerName || ''; // ColD Buyer Name
+      row[4] = internalPO; // ColE Internal PO Number
+      row[5] = header.buyerPO || ''; // ColF Buyer PO Number
+      row[6] = header.poDate || ''; // ColG PO Date
+      row[7] = header.exFactory || ''; // ColH Ex-Factory Date
+      row[8] = header.deliveryTerms || ''; // ColI Delivery Terms
+      row[9] = header.portName || ''; // ColJ Port Name
+      row[10] = header.payTerm1 || ''; // ColK Payment Terms 1
+      row[11] = header.payTerm2 || ''; // ColL Payment Terms 2
+      row[12] = header.buyerSource || ''; // ColM Buyer Source Name
+      row[13] = header.buyerSubSrc || ''; // ColN Buyer Sub Source Name
+      row[14] = header.buyerSrcPct || ''; // ColO Buyer Source Name %
+      row[15] = header.buyerSubPct || ''; // ColP Buyer Sub Source Name %
+      row[16] = header.billingAddr || ''; // ColQ Billing Address
+      row[17] = header.deliveryAddr || ''; // ColR Delivery Address
+      row[18] = header.onboardDate || ''; // ColS Onboard Vessel Date
       
       // Map Line Items
-      row[22] = item.skuCode || ''; // Col23 SKU Code
-      row[23] = item.product || ''; // Col24 Product
-      row[24] = item.articleNum || ''; // Col25 Item/Product/Article #
-      row[25] = item.designImage || ''; // Col26 Design Image
-      row[26] = item.shape || ''; // Col27 Shape
-      row[27] = item.designer || ''; // Col28 Designer Name
-      row[28] = item.brand || ''; // Col29 Brand Name
-      row[29] = item.description || ''; // Col30 Description
-      row[30] = item.size1 || ''; // Col31 Size 1
-      row[31] = item.size2 || ''; // Col32 Size 2
-      row[32] = item.quality || ''; // Col33 Quality
-      row[33] = item.color || ''; // Col34 Color
-      row[34] = item.colorRef || ''; // Col35 Color Ref
-      row[35] = item.orderQty || ''; // Col36 Order Quantity
-      row[36] = item.unitQty || ''; // Col37 Unit of Quantity
-      row[37] = item.price || ''; // Col38 Price
-      row[38] = item.unitPrice || ''; // Col39 Unit of Price
-      row[39] = item.currency || 'USD'; // Col40 Currency
-      row[40] = item.innerPack || ''; // Col41 Inner Pack
-      row[41] = item.outerPack || ''; // Col42 Outer Pack
-      row[42] = item.addSample || ''; // Col43 Additional Sample
-      row[43] = item.addProd || ''; // Col44 Additional Production
-      row[44] = item.totalQtyMfg || ''; // Col45 Total Quantity to Manufacture
+      row[22] = item.skuCode || ''; // ColW SKU Code
+      row[23] = item.product || ''; // ColX Product
+      row[24] = item.articleNum || ''; // ColY Item/Product/Article #
+      row[25] = item.designImage || ''; // ColZ Design Image
+      row[26] = item.shape || ''; // ColAA Shape
+      row[27] = item.designer || ''; // ColAB Designer Name
+      row[28] = item.brand || ''; // ColAC Brand Name
+      row[29] = item.description || ''; // ColAD Description
+      row[30] = item.size1 || ''; // ColAE Size 1
+      row[31] = item.size2 || ''; // ColAF Size 2
+      row[32] = item.quality || ''; // ColAG Quality
+      row[33] = item.color || ''; // ColAH Color
+      row[34] = item.colorRef || ''; // ColAI Color Ref
+      row[35] = item.orderQty || ''; // ColAJ Order Quantity
+      row[36] = item.unitQty || ''; // ColAK Unit of Quantity
+      row[37] = item.price || ''; // ColAL Price
+      row[38] = item.unitPrice || ''; // ColAM Unit of Price
+      row[39] = item.currency || 'USD'; // ColAN Currency
+      row[40] = item.innerPack || ''; // ColAO Inner Pack
+      row[41] = item.outerPack || ''; // ColAP Outer Pack
+      row[42] = item.addSample || ''; // ColAQ Additional Sample
+      row[43] = item.addProd || ''; // ColAR Additional Production
+      row[44] = item.totalQtyMfg || ''; // ColAS Total Quantity to Manufacture
       
-      row[50] = item.lineTotal || ''; // Col51 Total Amount
+      row[50] = item.lineTotal || ''; // ColAY Total Amount
       
       // Payment Terms 1
-      row[52] = header.pay1Pct || ''; // Col53
-      row[53] = header.pay1Days || ''; // Col54
-      row[54] = header.pay1Activity || ''; // Col55
-      row[55] = header.pay1Amount || ''; // Col56
-      row[56] = header.pay1DueDate || ''; // Col57
+      row[52] = header.pay1Pct || ''; // ColBA Payment Term 1 %
+      row[53] = header.pay1Days || ''; // ColBB Payment Term 1 Days
+      row[54] = header.pay1Activity || ''; // ColBC Payment Term 1 Activity
+      row[55] = header.pay1Amount || ''; // ColBD Payment Term 1 Amount
+      row[56] = header.pay1DueDate || ''; // ColBE Payment Term 1 Due Date
       
       // Payment Terms 2
-      row[58] = header.pay2Pct || ''; // Col59
-      row[59] = header.pay2Days || ''; // Col60
-      row[60] = header.pay2Activity || ''; // Col61
-      row[61] = header.pay2Amount || ''; // Col62
-      row[62] = header.pay2DueDate || ''; // Col63
+      row[58] = header.pay2Pct || ''; // ColBG Payment Term 2 %
+      row[59] = header.pay2Days || ''; // ColBH Payment Term 2 Days
+      row[60] = header.pay2Activity || ''; // ColBI Payment Term 2 Activity
+      row[61] = header.pay2Amount || ''; // ColBJ Payment Term 2 Amount
+      row[62] = header.pay2DueDate || ''; // ColBK Payment Term 2 Due Date
       
       rowsToInsert.push(row);
     }
