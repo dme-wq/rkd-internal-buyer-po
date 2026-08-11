@@ -1,5 +1,6 @@
 import React from 'react';
 import Sidebar from './Sidebar';
+import { Clock } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -32,11 +33,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
               
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-zinc-50 border border-zinc-100 hover:bg-zinc-100 cursor-pointer transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 font-bold text-xs overflow-hidden">
-                    <img src="https://ui-avatars.com/api/?name=Adam+Pierce&background=ffe4e6&color=e11d48" alt="User" className="w-full h-full object-cover" />
-                  </div>
-                  <span className="text-sm font-medium text-zinc-700 pr-2">Adam Pierce</span>
+                <div className="flex items-center justify-center w-11 h-11 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 shadow-sm shadow-emerald-500/10 cursor-pointer hover:bg-emerald-100 hover:scale-105 transition-all">
+                  <Clock size={20} className="stroke-[2.5px]" />
                 </div>
               </div>
             </header>
