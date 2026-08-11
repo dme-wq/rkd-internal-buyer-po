@@ -23,6 +23,8 @@ function doPost(e) {
       return handleCreatePO(data);
     } else if (action === 'savePDF') {
       return handleSavePDF(data);
+    } else if (action === 'getPendingInternalPOs') {
+      return handleGetPendingInternalPOs();
     } else {
        return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Unknown action' }))
         .setMimeType(ContentService.MimeType.JSON);
@@ -36,13 +38,52 @@ function doPost(e) {
   }
 }
 
+function handleGetPendingInternalPOs() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  
+  // 1. Get all Internal POs from 'PO Entry' sheet (Column N = index 13)
+  const poEntrySheet = ss.getSheetByName('PO Entry');
+  if (!poEntrySheet) throw new Error("PO Entry sheet not found");
+  const poEntryData = poEntrySheet.getDataRange().getValues();
+  const allInternalPOs = [];
+  for (let i = 1; i < poEntryData.length; i++) { // Skip header row
+    const val = poEntryData[i][13];
+    if (val && val.toString().trim() !== '') {
+      allInternalPOs.push(val.toString().trim());
+    }
+  }
+  
+  // 2. Get all used Internal POs from 'DATABASE' sheet (Column E = index 4)
+  const dbSheet = ss.getSheetByName('DATABASE');
+  if (!dbSheet) throw new Error("DATABASE sheet not found");
+  const dbData = dbSheet.getDataRange().getValues();
+  const usedPOs = new Set();
+  for (let i = 1; i < dbData.length; i++) {
+    const val = dbData[i][4];
+    if (val && val.toString().trim() !== '') {
+      usedPOs.add(val.toString().trim());
+    }
+  }
+  
+  // 3. Filter pending POs
+  const pendingPOs = allInternalPOs.filter(po => !usedPOs.has(po));
+  
+  // Remove duplicates
+  const uniquePendingPOs = [...new Set(pendingPOs)];
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    status: 'success',
+    data: uniquePendingPOs
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
 function handleCreatePO(data) {
     const { header, skus } = data;
     
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('DATABASE');
     const timestamp = new Date().toLocaleString();
     const uniqueId = "PO-" + Date.now();
-    const internalPO = `RKD/2026/${Math.floor(Math.random() * 1000)}`; // Basic generation
+    const internalPO = header.internalPO || ''; 
     
     // Create an array of rows to insert
     const rowsToInsert = [];

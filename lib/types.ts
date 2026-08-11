@@ -32,9 +32,9 @@ export interface SKUItem {
 
 export interface POHeader {
   uid?: string;
+  internalPO?: string;
   fileNumber: string;
   buyerName: string;
-  internalPO?: string;
   buyerPO: string;
   poDate: string;
   exFactory: string;

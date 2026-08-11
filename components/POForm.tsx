@@ -3,12 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Save, FileText, CheckCircle, CreditCard, Package, Clock } from 'lucide-react';
 import { POHeader, SKUItem } from '../lib/types';
-import { createPO, savePDFtoDrive } from '../lib/api';
+import { createPO, savePDFtoDrive, getPendingInternalPOs } from '../lib/api';
 import { generatePOPDF } from '../lib/pdf';
 
 export default function POForm() {
   const [header, setHeader] = useState<Partial<POHeader>>({
-    fileNumber: '', buyerName: '', buyerPO: '', poDate: '', exFactory: '',
+    internalPO: '', fileNumber: '', buyerName: '', buyerPO: '', poDate: '', exFactory: '',
     deliveryTerms: '', portName: '', payTerm1: '', payTerm2: '', buyerSource: '',
     buyerSubSrc: '', buyerSrcPct: 100, buyerSubPct: 0, billingAddr: '', deliveryAddr: '',
     onboardDate: '', totalAmount: 0, pay1Pct: 100, pay1Days: 0, pay1Activity: '',
@@ -39,11 +39,16 @@ export default function POForm() {
     
     updateTime(); // initial call
     const interval = setInterval(updateTime, 1000);
+    
+    // Fetch pending Internal POs
+    getPendingInternalPOs().then(setPendingPOs);
+    
     return () => clearInterval(interval);
   }, []);
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [pendingPOs, setPendingPOs] = useState<string[]>([]);
 
   const addSku = () => {
     setSkus([...skus, { 
@@ -151,6 +156,7 @@ export default function POForm() {
             </div>
             
             <div className="p-6 grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-x-6 gap-y-5 transition-all duration-300">
+              <ModernSelect label="Internal PO Number" value={header.internalPO || ''} onChange={(e) => updateHeader('internalPO', e.target.value)} options={pendingPOs} />
               <ModernInput label="Buyer Name" value={header.buyerName} onChange={(e) => updateHeader('buyerName', e.target.value)} />
               <ModernInput label="Buyer PO" value={header.buyerPO} onChange={(e) => updateHeader('buyerPO', e.target.value)} />
               <ModernInput label="File Number" value={header.fileNumber} onChange={(e) => updateHeader('fileNumber', e.target.value)} />
@@ -323,6 +329,32 @@ function ModernInput({ label, value, onChange, type = "text" }: ModernInputProps
         onChange={onChange} 
         className="w-full text-center bg-gradient-to-r from-indigo-50/40 to-blue-50/40 border border-indigo-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 px-3.5 py-2 text-[13px] font-bold text-indigo-900 transition-all shadow-sm"
       />
+    </div>
+  );
+}
+
+interface ModernSelectProps {
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  options: string[];
+}
+
+function ModernSelect({ label, value, onChange, options }: ModernSelectProps) {
+  return (
+    <div className="flex flex-col gap-1.5 w-full items-center relative">
+      <label className="text-[12px] font-bold text-zinc-600 tracking-wide capitalize text-center">{label}</label>
+      <select 
+        value={value || ''} 
+        onChange={onChange} 
+        className="w-full text-center bg-gradient-to-r from-indigo-50/40 to-blue-50/40 border border-indigo-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 px-3.5 py-2 text-[13px] font-bold text-indigo-900 transition-all shadow-sm appearance-none cursor-pointer"
+      >
+        <option value="" disabled>Select {label}</option>
+        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+      </select>
+      <div className="absolute right-3 top-[30px] pointer-events-none text-indigo-500">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>
     </div>
   );
 }
