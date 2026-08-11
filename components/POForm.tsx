@@ -216,7 +216,7 @@ export default function POForm() {
               <ModernInput label="Onboard Vessel" type="date" value={header.onboardDate} onChange={(e) => updateHeader('onboardDate', e.target.value)} />
               <ModernInput label="Delivery Terms" value={header.deliveryTerms} onChange={(e) => updateHeader('deliveryTerms', e.target.value)} />
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-semibold text-zinc-700 ml-1">Port Name</label>
+                <label className="text-sm font-semibold text-zinc-700 ml-1">Port of Discharge</label>
                 <select value={header.portName || ''} onChange={(e) => updateHeader('portName', e.target.value)} className="w-full h-11 px-4 rounded-xl border border-zinc-200 bg-zinc-50/50 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-zinc-800 shadow-sm">
                   <option value="">Select Port</option>
                   <option value="N/A">N/A</option>
