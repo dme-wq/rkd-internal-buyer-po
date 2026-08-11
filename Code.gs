@@ -41,13 +41,30 @@ function doPost(e) {
 function handleGetPendingInternalPOs() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   
-  // 1. Get all Internal POs from 'PO Entry' sheet (Column N = index 13)
+  // Helper to normalize PO strings by removing year suffix like '/26'
+  const normalizePO = (po) => po.replace(/\/\d{2}$/, '').trim().toLowerCase();
+
+  // 1. Get all Internal POs from 'PO Entry' sheet (Column N)
   const poEntrySheet = ss.getSheetByName('PO Entry');
   if (!poEntrySheet) throw new Error("PO Entry sheet not found");
   const poEntryData = poEntrySheet.getDataRange().getValues();
   const allInternalPOs = [];
-  for (let i = 1; i < poEntryData.length; i++) { // Skip header row
-    const val = poEntryData[i][13];
+  
+  // Find column index for "Internal PO Number" to be robust
+  let internalPOColIndex = 13; // default to N
+  let dataStartRow = 1;
+  for (let i = 0; i < Math.min(poEntryData.length, 20); i++) {
+    for (let j = 0; j < poEntryData[i].length; j++) {
+      if (poEntryData[i][j] && poEntryData[i][j].toString().trim().toLowerCase() === 'internal po number') {
+        internalPOColIndex = j;
+        dataStartRow = i + 1;
+        break;
+      }
+    }
+  }
+
+  for (let i = dataStartRow; i < poEntryData.length; i++) {
+    const val = poEntryData[i][internalPOColIndex];
     if (val && val.toString().trim() !== '') {
       allInternalPOs.push(val.toString().trim());
     }
@@ -61,12 +78,15 @@ function handleGetPendingInternalPOs() {
   for (let i = 1; i < dbData.length; i++) {
     const val = dbData[i][4];
     if (val && val.toString().trim() !== '') {
-      usedPOs.add(val.toString().trim());
+      usedPOs.add(normalizePO(val.toString()));
     }
   }
   
   // 3. Filter pending POs
-  const pendingPOs = allInternalPOs.filter(po => !usedPOs.has(po));
+  const pendingPOs = allInternalPOs.filter(po => {
+    // If the exact PO is in the DB, or the normalized PO is in the DB, skip it.
+    return !usedPOs.has(normalizePO(po));
+  });
   
   // Remove duplicates
   const uniquePendingPOs = [...new Set(pendingPOs)];
