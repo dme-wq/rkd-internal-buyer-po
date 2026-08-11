@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Save, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Save, FileText, ChevronDown, ChevronUp, CheckCircle, CreditCard, Package } from 'lucide-react';
 import { POHeader, SKUItem } from '../lib/types';
 import { createPO, savePDFtoDrive } from '../lib/api';
 import { generatePOPDF } from '../lib/pdf';
@@ -25,10 +25,6 @@ export default function POForm() {
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  
-  // Accordion state
-  const [headerOpen, setHeaderOpen] = useState(true);
-  const [paymentOpen, setPaymentOpen] = useState(true);
 
   const addSku = () => {
     setSkus([...skus, { 
@@ -78,11 +74,11 @@ export default function POForm() {
       const finalSkus = calculateTotals();
       const res = await createPO(header as Omit<POHeader, 'uid' | 'internalPO'>, finalSkus as SKUItem[]);
       if (res.status === 'success' && res.data) {
-        setMessage(`PO Saved Successfully! Internal PO: ${res.data.internalPO}`);
+        setMessage(`Success! Internal PO: ${res.data.internalPO} saved.`);
         const fullHeader = { ...header, internalPO: res.data.internalPO, uid: res.data.uid } as POHeader;
         const pdfData = await generatePOPDF({ header: fullHeader, skus: finalSkus as SKUItem[] });
         await savePDFtoDrive(res.data.uid, pdfData.filename, pdfData.base64);
-        setMessage(prev => prev + ' | PDF Saved to Drive.');
+        setMessage(prev => prev + ' PDF generated and saved to Drive.');
       } else {
         setMessage('Error: ' + res.message);
       }
@@ -93,158 +89,171 @@ export default function POForm() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white">
+    <div className="w-full h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 bg-zinc-50 font-sans">
       
-      {/* Sticky Action Bar - ERP Style */}
-      <div className="sticky top-0 z-20 bg-zinc-100 border-b border-zinc-300 px-6 py-3 flex justify-between items-center shadow-sm">
+      {/* Sticky Action Bar */}
+      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-zinc-200 px-8 py-4 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold tracking-tight text-zinc-800">Create Purchase Order</h1>
-          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded">DRAFT</span>
+          <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+            <FileText size={20} />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-zinc-900">Purchase Order Entry</h1>
+            <p className="text-xs text-zinc-500 font-medium tracking-wide uppercase mt-0.5">Draft Mode</p>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button className="px-4 py-1.5 border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 rounded text-sm font-medium transition-colors">
-            Check
+        <div className="flex items-center gap-3">
+          <button className="px-5 py-2.5 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 rounded-lg text-sm font-semibold transition-all shadow-sm">
+            Validate Data
           </button>
-          <button onClick={handleSave} disabled={loading} className="px-5 py-1.5 bg-[#00a669] hover:bg-[#009059] text-white rounded text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-50 shadow-sm">
-            <Save size={16} /> {loading ? 'Saving...' : 'Save & Post'}
+          <button onClick={handleSave} disabled={loading} className="px-6 py-2.5 bg-[#00a669] hover:bg-[#009059] text-white rounded-lg text-sm font-semibold flex items-center gap-2 transition-all shadow-md shadow-emerald-500/20 disabled:opacity-50 disabled:shadow-none">
+            <Save size={18} /> {loading ? 'Saving...' : 'Save & Post PO'}
           </button>
         </div>
       </div>
 
-      <div className="p-6 overflow-y-auto flex-1 space-y-6 bg-zinc-50/50">
+      <div className="p-8 overflow-y-auto flex-1 space-y-6">
         
         {message && (
-          <div className={`p-4 rounded border text-sm font-medium ${message.includes('Error') || message.includes('Exception') ? 'bg-red-50 text-red-700 border-red-200' : 'bg-[#d1fae5] text-[#00a669] border-[#00a669]/20'}`}>
+          <div className={`p-4 rounded-xl border flex items-center gap-3 text-sm font-medium shadow-sm ${message.includes('Error') || message.includes('Exception') ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+            <CheckCircle size={18} className={message.includes('Error') ? 'text-rose-500' : 'text-emerald-500'} />
             {message}
           </div>
         )}
 
-        {/* Header Data Accordion */}
-        <div className="bg-white border border-zinc-200 rounded shadow-sm">
-          <div className="px-4 py-3 bg-zinc-100/80 border-b border-zinc-200 flex justify-between items-center cursor-pointer hover:bg-zinc-200/50 transition-colors" onClick={() => setHeaderOpen(!headerOpen)}>
-            <h2 className="text-sm font-bold text-zinc-700 uppercase tracking-wide flex items-center gap-2">
-              <FileText size={16} className="text-zinc-500"/> Header Data
-            </h2>
-            {headerOpen ? <ChevronUp size={18} className="text-zinc-500" /> : <ChevronDown size={18} className="text-zinc-500" />}
-          </div>
+        {/* Top Grid: Header Data (Left) & Payment Terms (Right) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {headerOpen && (
-            <div className="p-5">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-x-8 gap-y-4">
-                <ERPInput label="Buyer Name" value={header.buyerName} onChange={(e) => updateHeader('buyerName', e.target.value)} />
-                <ERPInput label="Buyer PO" value={header.buyerPO} onChange={(e) => updateHeader('buyerPO', e.target.value)} />
-                <ERPInput label="File Number" value={header.fileNumber} onChange={(e) => updateHeader('fileNumber', e.target.value)} />
-                <ERPInput label="PO Date" type="date" value={header.poDate} onChange={(e) => updateHeader('poDate', e.target.value)} />
-                
-                <ERPInput label="Ex-Factory" type="date" value={header.exFactory} onChange={(e) => updateHeader('exFactory', e.target.value)} />
-                <ERPInput label="Onboard Vessel" type="date" value={header.onboardDate} onChange={(e) => updateHeader('onboardDate', e.target.value)} />
-                <ERPInput label="Delivery Terms" value={header.deliveryTerms} onChange={(e) => updateHeader('deliveryTerms', e.target.value)} />
-                <ERPInput label="Port Name" value={header.portName} onChange={(e) => updateHeader('portName', e.target.value)} />
+          {/* Header Data Section */}
+          <div className="lg:col-span-2 bg-white border border-zinc-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center gap-2">
+              <FileText size={16} className="text-emerald-500" />
+              <h2 className="text-sm font-bold text-zinc-800 tracking-wide">General Information</h2>
+            </div>
+            
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+              <ModernInput label="Buyer Name" value={header.buyerName} onChange={(e) => updateHeader('buyerName', e.target.value)} />
+              <ModernInput label="Buyer PO" value={header.buyerPO} onChange={(e) => updateHeader('buyerPO', e.target.value)} />
+              <ModernInput label="File Number" value={header.fileNumber} onChange={(e) => updateHeader('fileNumber', e.target.value)} />
+              <ModernInput label="PO Date" type="date" value={header.poDate} onChange={(e) => updateHeader('poDate', e.target.value)} />
+              <ModernInput label="Ex-Factory" type="date" value={header.exFactory} onChange={(e) => updateHeader('exFactory', e.target.value)} />
+              <ModernInput label="Onboard Vessel" type="date" value={header.onboardDate} onChange={(e) => updateHeader('onboardDate', e.target.value)} />
+              
+              <div className="md:col-span-2 grid grid-cols-2 gap-6">
+                <ModernTextArea label="Billing Address" value={header.billingAddr} onChange={(e) => updateHeader('billingAddr', e.target.value)} />
+                <ModernTextArea label="Delivery Address" value={header.deliveryAddr} onChange={(e) => updateHeader('deliveryAddr', e.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Terms Section - Right Side */}
+          <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-max">
+            <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center gap-2">
+              <CreditCard size={16} className="text-emerald-500" />
+              <h2 className="text-sm font-bold text-zinc-800 tracking-wide">Payment Terms</h2>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                  <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Term 1</h3>
+                </div>
+                <div className="space-y-3">
+                  <ModernInput label="Description" value={header.payTerm1} onChange={(e) => updateHeader('payTerm1', e.target.value)} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <ModernInput label="Percent (%)" type="number" value={header.pay1Pct} onChange={(e) => updateHeader('pay1Pct', parseFloat(e.target.value))} />
+                    <ModernInput label="Days" type="number" value={header.pay1Days} onChange={(e) => updateHeader('pay1Days', parseInt(e.target.value))} />
+                  </div>
+                </div>
               </div>
               
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-8">
-                <ERPTextArea label="Billing Address" value={header.billingAddr} onChange={(e) => updateHeader('billingAddr', e.target.value)} />
-                <ERPTextArea label="Delivery Address" value={header.deliveryAddr} onChange={(e) => updateHeader('deliveryAddr', e.target.value)} />
+              <div className="w-full h-px bg-zinc-100"></div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                  <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Term 2</h3>
+                </div>
+                <div className="space-y-3">
+                  <ModernInput label="Description" value={header.payTerm2} onChange={(e) => updateHeader('payTerm2', e.target.value)} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <ModernInput label="Percent (%)" type="number" value={header.pay2Pct} onChange={(e) => updateHeader('pay2Pct', parseFloat(e.target.value))} />
+                    <ModernInput label="Days" type="number" value={header.pay2Days} onChange={(e) => updateHeader('pay2Days', parseInt(e.target.value))} />
+                  </div>
+                </div>
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Payment Terms Accordion */}
-        <div className="bg-white border border-zinc-200 rounded shadow-sm">
-          <div className="px-4 py-3 bg-zinc-100/80 border-b border-zinc-200 flex justify-between items-center cursor-pointer hover:bg-zinc-200/50 transition-colors" onClick={() => setPaymentOpen(!paymentOpen)}>
-            <h2 className="text-sm font-bold text-zinc-700 uppercase tracking-wide flex items-center gap-2">
-              <FileText size={16} className="text-zinc-500"/> Payment Terms
-            </h2>
-            {paymentOpen ? <ChevronUp size={18} className="text-zinc-500" /> : <ChevronDown size={18} className="text-zinc-500" />}
           </div>
           
-          {paymentOpen && (
-            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-10">
-              <div className="space-y-4">
-                <h3 className="text-xs font-bold text-zinc-500 uppercase border-b border-zinc-100 pb-2">Term 1</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <ERPInput label="Description" value={header.payTerm1} onChange={(e) => updateHeader('payTerm1', e.target.value)} />
-                  <ERPInput label="Percentage (%)" type="number" value={header.pay1Pct} onChange={(e) => updateHeader('pay1Pct', parseFloat(e.target.value))} />
-                  <ERPInput label="Days" type="number" value={header.pay1Days} onChange={(e) => updateHeader('pay1Days', parseInt(e.target.value))} />
-                  <ERPInput label="Activity" value={header.pay1Activity} onChange={(e) => updateHeader('pay1Activity', e.target.value)} />
-                </div>
-              </div>
-              <div className="space-y-4">
-                <h3 className="text-xs font-bold text-zinc-500 uppercase border-b border-zinc-100 pb-2">Term 2</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <ERPInput label="Description" value={header.payTerm2} onChange={(e) => updateHeader('payTerm2', e.target.value)} />
-                  <ERPInput label="Percentage (%)" type="number" value={header.pay2Pct} onChange={(e) => updateHeader('pay2Pct', parseFloat(e.target.value))} />
-                  <ERPInput label="Days" type="number" value={header.pay2Days} onChange={(e) => updateHeader('pay2Days', parseInt(e.target.value))} />
-                  <ERPInput label="Activity" value={header.pay2Activity} onChange={(e) => updateHeader('pay2Activity', e.target.value)} />
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Item Overview Grid (Excel/SAP Style) */}
-        <div className="bg-white border border-zinc-200 rounded shadow-sm flex flex-col">
-          <div className="px-4 py-3 bg-zinc-100/80 border-b border-zinc-200 flex justify-between items-center">
-            <h2 className="text-sm font-bold text-zinc-700 uppercase tracking-wide">Item Overview</h2>
-            <button onClick={addSku} className="px-3 py-1 bg-white border border-zinc-300 text-zinc-700 text-xs font-semibold rounded hover:bg-zinc-50 flex items-center gap-1 shadow-sm">
-              <Plus size={14} /> Add Row
+        {/* Item Overview Grid */}
+        <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm flex flex-col overflow-hidden">
+          <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Package size={16} className="text-emerald-500" />
+              <h2 className="text-sm font-bold text-zinc-800 tracking-wide">Item Overview</h2>
+            </div>
+            <button onClick={addSku} className="px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 text-[13px] font-bold rounded-lg flex items-center gap-1.5 transition-all">
+              <Plus size={16} /> Add Line Item
             </button>
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full text-left whitespace-nowrap text-xs">
-              <thead className="bg-zinc-50 border-b border-zinc-300 text-zinc-600">
+            <table className="w-full text-left whitespace-nowrap">
+              <thead className="bg-white border-b border-zinc-200">
                 <tr>
-                  <th className="px-3 py-2 font-semibold border-r border-zinc-200 w-10 text-center">#</th>
-                  <th className="px-3 py-2 font-semibold border-r border-zinc-200 min-w-[120px]">SKU / Product</th>
-                  <th className="px-3 py-2 font-semibold border-r border-zinc-200 min-w-[150px]">Description</th>
-                  <th className="px-3 py-2 font-semibold border-r border-zinc-200 w-[100px]">Size/Color</th>
-                  <th className="px-3 py-2 font-semibold border-r border-zinc-200 w-[80px]">Order Qty</th>
-                  <th className="px-3 py-2 font-semibold border-r border-zinc-200 w-[80px]">Price</th>
-                  <th className="px-3 py-2 font-semibold border-r border-zinc-200 w-[80px]">Packs</th>
-                  <th className="px-3 py-2 font-semibold border-r border-zinc-200 w-[100px] text-right">Line Total</th>
-                  <th className="px-3 py-2 font-semibold w-10 text-center">Act</th>
+                  <th className="px-4 py-3 text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider w-12 text-center">#</th>
+                  <th className="px-4 py-3 text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider w-48">Product Info</th>
+                  <th className="px-4 py-3 text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider min-w-[200px]">Description</th>
+                  <th className="px-4 py-3 text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider w-32">Attributes</th>
+                  <th className="px-4 py-3 text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider w-24">Order Qty</th>
+                  <th className="px-4 py-3 text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider w-24">Unit Price</th>
+                  <th className="px-4 py-3 text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider w-32">Packing</th>
+                  <th className="px-6 py-3 text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider w-32 text-right">Line Total</th>
+                  <th className="px-4 py-3 w-12"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200">
+              <tbody className="divide-y divide-zinc-100 bg-zinc-50/20">
                 {skus.map((sku, index) => (
-                  <tr key={sku.id} className="hover:bg-blue-50/30">
-                    <td className="px-3 py-2 border-r border-zinc-100 text-center text-zinc-400 font-medium">
+                  <tr key={sku.id} className="group hover:bg-emerald-50/20 transition-colors">
+                    <td className="px-4 py-3 text-center text-zinc-400 text-[11px] font-bold">
                       {(index + 1) * 10}
                     </td>
-                    <td className="p-1 border-r border-zinc-100 space-y-1">
-                      <GridInput value={sku.skuCode} onChange={(e) => updateSku(sku.id!, 'skuCode', e.target.value)} placeholder="SKU Code" />
+                    <td className="px-3 py-2 space-y-1.5 align-top">
+                      <GridInput value={sku.skuCode} onChange={(e) => updateSku(sku.id!, 'skuCode', e.target.value)} placeholder="SKU Code" bold />
                       <GridInput value={sku.product} onChange={(e) => updateSku(sku.id!, 'product', e.target.value)} placeholder="Product Name" />
                     </td>
-                    <td className="p-1 border-r border-zinc-100">
+                    <td className="px-3 py-2 align-top">
                       <textarea 
                         value={sku.description || ''} 
                         onChange={(e) => updateSku(sku.id!, 'description', e.target.value)}
-                        placeholder="Description..."
-                        className="w-full h-[52px] bg-transparent border-none outline-none focus:ring-1 focus:ring-[#00a669] rounded px-2 py-1 text-xs resize-none"
+                        placeholder="Detailed description..."
+                        className="w-full h-16 bg-white border border-zinc-200 hover:border-zinc-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg px-3 py-2 text-[13px] text-zinc-700 resize-none outline-none transition-all shadow-sm"
                       />
                     </td>
-                    <td className="p-1 border-r border-zinc-100 space-y-1">
-                      <GridInput value={sku.size1} onChange={(e) => updateSku(sku.id!, 'size1', e.target.value)} placeholder="Size" />
+                    <td className="px-3 py-2 space-y-1.5 align-top">
+                      <GridInput value={sku.size1} onChange={(e) => updateSku(sku.id!, 'size1', e.target.value)} placeholder="Dimensions" />
                       <GridInput value={sku.color} onChange={(e) => updateSku(sku.id!, 'color', e.target.value)} placeholder="Color" />
                     </td>
-                    <td className="p-1 border-r border-zinc-100 space-y-1">
-                      <GridInput type="number" value={sku.orderQty} onChange={(e) => updateSku(sku.id!, 'orderQty', parseFloat(e.target.value))} placeholder="Qty" />
-                      <div className="px-2 py-1 text-[10px] text-zinc-400 text-right">+ {sku.addSample || 0} SMP</div>
+                    <td className="px-3 py-2 space-y-1.5 align-top">
+                      <GridInput type="number" value={sku.orderQty} onChange={(e) => updateSku(sku.id!, 'orderQty', parseFloat(e.target.value))} placeholder="Quantity" />
                     </td>
-                    <td className="p-1 border-r border-zinc-100">
-                      <GridInput type="number" value={sku.price} onChange={(e) => updateSku(sku.id!, 'price', parseFloat(e.target.value))} placeholder="$0.00" />
+                    <td className="px-3 py-2 align-top">
+                      <GridInput type="number" value={sku.price} onChange={(e) => updateSku(sku.id!, 'price', parseFloat(e.target.value))} placeholder="$ 0.00" />
                     </td>
-                    <td className="p-1 border-r border-zinc-100 space-y-1">
-                       <GridInput type="number" value={sku.innerPack} onChange={(e) => updateSku(sku.id!, 'innerPack', parseInt(e.target.value))} placeholder="In: 0" />
-                       <GridInput type="number" value={sku.outerPack} onChange={(e) => updateSku(sku.id!, 'outerPack', parseInt(e.target.value))} placeholder="Out: 0" />
+                    <td className="px-3 py-2 space-y-1.5 align-top">
+                       <GridInput type="number" value={sku.innerPack} onChange={(e) => updateSku(sku.id!, 'innerPack', parseInt(e.target.value))} placeholder="Inner (pcs)" />
+                       <GridInput type="number" value={sku.outerPack} onChange={(e) => updateSku(sku.id!, 'outerPack', parseInt(e.target.value))} placeholder="Outer (pcs)" />
                     </td>
-                    <td className="px-3 py-2 border-r border-zinc-100 text-right font-medium text-zinc-800 bg-zinc-50/50">
-                      ${((Number(sku.orderQty) || 0) * (Number(sku.price) || 0)).toFixed(2)}
+                    <td className="px-6 py-4 text-right align-top">
+                      <div className="text-[13px] font-bold text-zinc-800 bg-white border border-zinc-200 rounded-md py-1.5 px-3 shadow-sm inline-block min-w-[80px]">
+                        ${((Number(sku.orderQty) || 0) * (Number(sku.price) || 0)).toFixed(2)}
+                      </div>
                     </td>
-                    <td className="px-2 py-2 text-center">
-                      <button onClick={() => removeSku(sku.id!)} className="text-zinc-400 hover:text-red-500 transition-colors">
+                    <td className="px-4 py-4 text-center align-top">
+                      <button onClick={() => removeSku(sku.id!)} className="text-zinc-400 hover:text-rose-500 bg-white hover:bg-rose-50 border border-zinc-200 hover:border-rose-200 rounded p-1.5 transition-all shadow-sm">
                         <Trash2 size={14} />
                       </button>
                     </td>
@@ -254,12 +263,19 @@ export default function POForm() {
             </table>
           </div>
           
-          <div className="bg-zinc-50 border-t border-zinc-200 p-4 flex justify-end">
-            <div className="flex items-center gap-4 text-sm">
-              <span className="text-zinc-500 font-medium">Net Value:</span>
-              <span className="text-lg font-bold text-[#00a669] tracking-tight">
-                ${skus.reduce((acc, sku) => acc + ((Number(sku.orderQty) || 0) * (Number(sku.price) || 0)), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
+          <div className="bg-white border-t border-zinc-200 px-6 py-5 flex justify-end">
+            <div className="flex items-center gap-6">
+              <div className="text-right">
+                <span className="block text-[11px] text-zinc-400 font-bold uppercase tracking-wider mb-1">Total Items</span>
+                <span className="text-sm font-bold text-zinc-700">{skus.length} SKU(s)</span>
+              </div>
+              <div className="h-8 w-px bg-zinc-200"></div>
+              <div className="text-right">
+                <span className="block text-[11px] text-zinc-400 font-bold uppercase tracking-wider mb-1">Total Net Value</span>
+                <span className="text-2xl font-black text-[#00a669] tracking-tight">
+                  ${skus.reduce((acc, sku) => acc + ((Number(sku.orderQty) || 0) * (Number(sku.price) || 0)), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -269,44 +285,44 @@ export default function POForm() {
   );
 }
 
-// ─── Internal ERP UI Components ─────────────────────────────────────────
+// ─── Modern UI Components ─────────────────────────────────────────
 
-interface ERPInputProps {
+interface ModernInputProps {
   label: string;
   value: string | number | undefined;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   type?: string;
 }
 
-function ERPInput({ label, value, onChange, type = "text" }: ERPInputProps) {
+function ModernInput({ label, value, onChange, type = "text" }: ModernInputProps) {
   return (
-    <div className="flex flex-col gap-1">
-      <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wide">{label}</label>
+    <div className="flex flex-col gap-1.5 w-full">
+      <label className="text-[11px] font-extrabold text-zinc-500 uppercase tracking-wider">{label}</label>
       <input 
         type={type} 
         value={value || ''} 
         onChange={onChange} 
-        className="w-full bg-white border border-zinc-300 rounded outline-none focus:border-[#00a669] focus:ring-1 focus:ring-[#00a669] px-2.5 py-1.5 text-sm text-zinc-900 transition-all"
+        className="w-full bg-zinc-50 border border-zinc-200 rounded-lg outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 px-3.5 py-2 text-[13px] font-medium text-zinc-800 transition-all shadow-sm"
       />
     </div>
   );
 }
 
-interface ERPTextAreaProps {
+interface ModernTextAreaProps {
   label: string;
   value: string | undefined;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 }
 
-function ERPTextArea({ label, value, onChange }: ERPTextAreaProps) {
+function ModernTextArea({ label, value, onChange }: ModernTextAreaProps) {
   return (
-    <div className="flex flex-col gap-1">
-      <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-wide">{label}</label>
+    <div className="flex flex-col gap-1.5 w-full">
+      <label className="text-[11px] font-extrabold text-zinc-500 uppercase tracking-wider">{label}</label>
       <textarea 
         value={value || ''} 
         onChange={onChange} 
         rows={2}
-        className="w-full bg-white border border-zinc-300 rounded outline-none focus:border-[#00a669] focus:ring-1 focus:ring-[#00a669] px-2.5 py-1.5 text-sm text-zinc-900 resize-none transition-all"
+        className="w-full bg-zinc-50 border border-zinc-200 rounded-lg outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 px-3.5 py-2 text-[13px] font-medium text-zinc-800 resize-none transition-all shadow-sm"
       />
     </div>
   );
@@ -317,16 +333,17 @@ interface GridInputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
   type?: string;
+  bold?: boolean;
 }
 
-function GridInput({ value, onChange, placeholder, type = "text" }: GridInputProps) {
+function GridInput({ value, onChange, placeholder, type = "text", bold }: GridInputProps) {
   return (
     <input 
       type={type}
       value={value || ''}
       onChange={onChange}
       placeholder={placeholder}
-      className="w-full bg-transparent border border-transparent outline-none hover:border-zinc-200 focus:bg-white focus:border-[#00a669] focus:ring-1 focus:ring-[#00a669] rounded px-2 py-1 text-xs transition-all"
+      className={`w-full bg-white border border-zinc-200 hover:border-zinc-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-md px-2.5 py-1.5 text-[12px] ${bold ? 'font-bold text-zinc-900' : 'font-medium text-zinc-700'} outline-none transition-all shadow-sm`}
     />
   );
 }

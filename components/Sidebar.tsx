@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Settings, PieChart, Users, PlusSquare, FileText } from 'lucide-react';
+import Image from 'next/image';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -21,10 +22,18 @@ export default function Sidebar() {
     <div className="w-64 h-full bg-white border-r border-zinc-100 flex flex-col shrink-0">
       
       {/* Logo Area */}
-      <div className="h-24 flex items-center px-8">
-        <h1 className="text-2xl font-bold tracking-tight text-[#00a669]">
-          DE<span className="font-light">clarange</span>
-        </h1>
+      <div className="h-24 flex items-center px-6 gap-3">
+        <img 
+          src="https://static.wixstatic.com/media/68b92a_d71e34133826499983234774dea1945b~mv2.png/v1/fill/w_186,h_156,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/RKD-Logo.png" 
+          alt="RKD Logo" 
+          className="w-10 h-auto object-contain"
+        />
+        <div className="flex flex-col">
+          <h1 className="text-sm font-extrabold tracking-tight text-zinc-900 leading-tight">
+            RKD Furnishings
+          </h1>
+          <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Pvt Ltd</span>
+        </div>
       </div>
 
       {/* Navigation */}
