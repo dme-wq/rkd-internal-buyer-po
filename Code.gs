@@ -76,6 +76,8 @@ function doPost(e) {
       return handleSavePDF(data);
     } else if (action === 'getPendingInternalPOs') {
       return handleGetPendingInternalPOs();
+    } else if (action === 'getDropdowns') {
+      return handleGetDropdowns();
     } else {
        return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Unknown action' }))
         .setMimeType(ContentService.MimeType.JSON);

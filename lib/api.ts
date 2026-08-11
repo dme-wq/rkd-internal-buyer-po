@@ -26,7 +26,7 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<APIRespo
 
 // ─── GET Endpoints ──────────────────────────────────────────
 export async function getDropdowns(): Promise<APIResponse<DropdownData>> {
-  return apiFetch<DropdownData>(`${BASE_URL}?action=getDropdowns`);
+  return post({ action: 'getDropdowns', data: {} });
 }
 
 export async function getDashboardStats(): Promise<APIResponse<DashboardStats>> {
