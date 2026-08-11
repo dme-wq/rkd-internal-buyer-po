@@ -173,6 +173,7 @@ export async function generatePOPDF(
   });
 
   // ─── Payment Summary Footer ──────────────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const finalY = (doc as any).lastAutoTable.finalY + 5;
 
   if (finalY < 180) {

@@ -3,34 +3,52 @@ import Sidebar from './Sidebar';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 font-sans text-zinc-900 dark:text-zinc-100 flex">
-      {/* Permanent Sidebar (Desktop) */}
-      <Sidebar />
+    // Solid Emerald Green Background for the entire viewport
+    <div className="min-h-screen bg-[#00a669] font-sans text-zinc-900 flex overflow-hidden">
       
-      {/* Main Content Area */}
-      <div className="flex-1 md:ml-64 flex flex-col min-h-screen relative">
-        {/* Top Header - Mobile Only or Search Bar */}
-        <header className="h-20 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-8 sticky top-0 z-10">
-          <div className="flex-1 flex items-center">
-             <div className="w-full max-w-md relative">
-                <input 
-                  type="text" 
-                  placeholder="Search for declaration or PO..." 
-                  className="w-full pl-4 pr-10 py-2.5 rounded-full bg-zinc-100 dark:bg-zinc-900 border-none outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm transition-all"
-                />
-                <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-             </div>
-          </div>
+      <div className="flex w-full h-screen p-4 md:p-6 lg:p-8">
+        {/* Main Floating White Container */}
+        <div className="flex w-full bg-white rounded-3xl shadow-2xl overflow-hidden relative border border-white/20">
           
-          <div className="flex items-center gap-4">
-             {/* Add notifications or other top bar items here if needed */}
-          </div>
-        </header>
+          {/* Sidebar Area */}
+          <Sidebar />
+          
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col h-full bg-zinc-50/30 overflow-hidden relative">
+            {/* Top Header */}
+            <header className="h-20 bg-white/80 backdrop-blur-md border-b border-zinc-100 flex items-center justify-between px-8 z-10 shrink-0">
+              
+              <div className="flex-1 flex items-center">
+                <div className="w-full max-w-lg relative flex items-center">
+                  <span className="absolute left-4 text-zinc-400">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                  </span>
+                  <input 
+                    type="text" 
+                    placeholder="Search for declaration..." 
+                    className="w-full pl-12 pr-4 py-3 rounded-full bg-zinc-50 border-none outline-none focus:ring-2 focus:ring-[#00a669]/20 text-sm transition-all"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-zinc-50 border border-zinc-100 hover:bg-zinc-100 cursor-pointer transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 font-bold text-xs overflow-hidden">
+                    <img src="https://ui-avatars.com/api/?name=Adam+Pierce&background=ffe4e6&color=e11d48" alt="User" className="w-full h-full object-cover" />
+                  </div>
+                  <span className="text-sm font-medium text-zinc-700 pr-2">Adam Pierce</span>
+                </div>
+              </div>
+            </header>
 
-        {/* Page Content */}
-        <main className="flex-1 p-8 overflow-x-hidden">
-          {children}
-        </main>
+            {/* Page Content with independent scrolling */}
+            <main className="flex-1 overflow-x-hidden overflow-y-auto">
+              <div className="p-8">
+                {children}
+              </div>
+            </main>
+          </div>
+        </div>
       </div>
     </div>
   );
