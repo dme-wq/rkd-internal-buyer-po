@@ -26,11 +26,11 @@ export default function Sidebar() {
           alt="RKD Logo" 
           className="w-10 h-auto object-contain"
         />
-        <div className="flex items-baseline gap-1">
-          <h1 className="text-sm font-extrabold tracking-tight text-zinc-900 leading-tight">
+        <div className="flex items-baseline gap-1.5">
+          <h1 className="text-xl font-black tracking-tight text-emerald-900 leading-tight">
             RKD Furnishings
           </h1>
-          <span className="text-[11px] text-zinc-500 font-semibold tracking-wide">Pvt Ltd</span>
+          <span className="text-[13px] text-amber-600 font-bold tracking-wide">Pvt Ltd</span>
         </div>
       </div>
 
