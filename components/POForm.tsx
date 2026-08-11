@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, FileText, CheckCircle, CreditCard, Package, Clock } from 'lucide-react';
+import { Plus, Trash2, Save, FileText, CheckCircle, CreditCard, Package, Clock, Copy } from 'lucide-react';
 import { POHeader, SKUItem, DropdownData } from '../lib/types';
 import { createPO, savePDFtoDrive, getPendingInternalPOs, getDropdowns } from '../lib/api';
 import { generatePOPDF } from '../lib/pdf';
@@ -62,6 +62,14 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
       innerPack: '', outerPack: '', addSample: '', addProd: '', skuCode: '', designImage: '',
       totalQtyMfg: 0, lineTotal: 0
     }]);
+  };
+
+  const duplicateSku = (index: number) => {
+    const skuToCopy = skus[index];
+    const newSku = { ...skuToCopy, id: Date.now().toString() + Math.random().toString(36).substr(2, 5) };
+    const newSkus = [...skus];
+    newSkus.splice(index + 1, 0, newSku);
+    setSkus(newSkus);
   };
 
   const removeSku = (id: string) => {
@@ -404,8 +412,9 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
                     <td className="px-3 py-3 align-middle text-center bg-rose-50/20 border-b border-zinc-100"><div className="text-[12px] font-black text-rose-700 bg-white border border-rose-200 rounded py-1 px-2 shadow-sm inline-block">{sku.totalQtyMfg || 0}</div></td>
                     <td className="px-3 py-3 align-middle text-center bg-rose-50/20 border-b border-zinc-100"><div className="text-[12px] font-black text-rose-700 bg-white border border-rose-200 rounded py-1 px-2 shadow-sm inline-block">${(sku.lineTotal || 0).toFixed(2)}</div></td>
                     
-                    <td className="px-3 py-3 align-middle text-center border-b border-zinc-100">
-                      <button onClick={() => removeSku(sku.id!)} className="text-zinc-400 hover:text-rose-500 bg-white hover:bg-rose-50 border border-zinc-200 hover:border-rose-200 rounded p-1.5 transition-all shadow-sm"><Trash2 size={14} /></button>
+                    <td className="px-3 py-3 align-middle text-center border-b border-zinc-100 space-x-1 min-w-[70px]">
+                      <button onClick={() => duplicateSku(index)} className="text-zinc-400 hover:text-blue-500 bg-white hover:bg-blue-50 border border-zinc-200 hover:border-blue-200 rounded p-1.5 transition-all shadow-sm" title="Duplicate Row"><Copy size={14} /></button>
+                      <button onClick={() => removeSku(sku.id!)} className="text-zinc-400 hover:text-rose-500 bg-white hover:bg-rose-50 border border-zinc-200 hover:border-rose-200 rounded p-1.5 transition-all shadow-sm" title="Delete Row"><Trash2 size={14} /></button>
                     </td>
                   </tr>
                 )})}
