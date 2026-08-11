@@ -3,19 +3,17 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Settings, PieChart, Users, PlusSquare, FileText } from 'lucide-react';
-import Image from 'next/image';
+import { Home, PieChart, PlusSquare, FileText } from 'lucide-react';
+
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   const links = [
     { href: '/', label: 'Dashboard', icon: Home },
-    { href: '/settings', label: 'Settings', icon: Settings },
-    { href: '/stats', label: 'Declaration stats', icon: PieChart },
-    { href: '/users', label: 'User settings', icon: Users },
-    { href: '/create', label: 'Create new', icon: PlusSquare },
-    { href: '/declarations', label: 'Declarations', icon: FileText },
+    { href: '/create', label: 'Purchase Order New Entry', icon: PlusSquare },
+    { href: '/declarations', label: 'Purchase Order Data', icon: FileText },
+    { href: '/stats', label: 'Purchase Order Report', icon: PieChart },
   ];
 
   return (
