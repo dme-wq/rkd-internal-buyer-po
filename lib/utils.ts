@@ -44,8 +44,10 @@ export function formatCurrency(amount: number, currency = 'USD'): string {
   }).format(amount);
 }
 
-export function formatNumber(num: number): string {
-  return new Intl.NumberFormat('en-IN').format(num);
+export function formatNumber(num: number | string): string {
+  const parsed = typeof num === 'string' ? parseFloat(num.replace(/[^0-9.-]+/g,"")) : num;
+  if (isNaN(parsed)) return String(num);
+  return new Intl.NumberFormat('en-IN').format(parsed);
 }
 
 // ─── PO Calculations ─────────────────────────────────────────
@@ -125,6 +127,7 @@ export function createEmptySKU(): SKUItem {
     designer   : '',
     brand      : '',
     description: '',
+    sizes      : [],
     size1      : '',
     size2      : '',
     quality    : '',
@@ -135,10 +138,10 @@ export function createEmptySKU(): SKUItem {
     price      : 0,
     unitPrice  : 'piece',
     currency   : 'USD',
-    innerPack  : 0,
-    outerPack  : 0,
-    addSample  : 0,
-    addProd    : 0,
+    innerPack  : '',
+    outerPack  : '',
+    addSample  : '',
+    addProd    : '',
     totalQtyMfg: 0,
     lineTotal  : 0,
   };
