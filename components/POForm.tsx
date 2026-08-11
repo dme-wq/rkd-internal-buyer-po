@@ -146,10 +146,10 @@ export default function POForm() {
         )}
 
         {/* Top Grid: Header Data (Left) & Payment Terms (Right) */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
           
           {/* Header Data Section */}
-          <div className="xl:col-span-2 bg-white border-t-4 border-emerald-500 border-x border-b border-zinc-200 rounded-2xl shadow-md shadow-emerald-500/5 overflow-hidden flex flex-col transition-all hover:shadow-lg hover:shadow-emerald-500/10">
+          <div className="xl:col-span-3 bg-white border-t-4 border-emerald-500 border-x border-b border-zinc-200 rounded-2xl shadow-md shadow-emerald-500/5 overflow-hidden flex flex-col transition-all hover:shadow-lg hover:shadow-emerald-500/10">
             <div className="px-6 py-4 border-b border-zinc-100 bg-emerald-50/50 flex items-center gap-2">
               <FileText size={16} className="text-emerald-600" />
               <h2 className="text-[15px] font-extrabold text-emerald-900 tracking-wide">General Information</h2>
@@ -172,7 +172,7 @@ export default function POForm() {
           </div>
 
           {/* Payment Terms Section - Right Sidebar */}
-          <div className="xl:col-span-1 bg-white border-t-4 border-blue-500 border-x border-b border-zinc-200 rounded-2xl shadow-md shadow-blue-500/5 overflow-hidden flex flex-col h-max transition-all hover:shadow-lg hover:shadow-blue-500/10">
+          <div className="xl:col-span-2 bg-white border-t-4 border-blue-500 border-x border-b border-zinc-200 rounded-2xl shadow-md shadow-blue-500/5 overflow-hidden flex flex-col h-max transition-all hover:shadow-lg hover:shadow-blue-500/10">
             <div className="px-4 py-3 border-b border-zinc-100 bg-blue-50/50 flex items-center gap-2">
               <CreditCard size={14} className="text-blue-600" />
               <h2 className="text-[14px] font-extrabold text-blue-900 tracking-wide">Payment Terms</h2>
