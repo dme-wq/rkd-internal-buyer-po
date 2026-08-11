@@ -249,7 +249,7 @@ export default function POForm() {
                         value={sku.description || ''} 
                         onChange={(e) => updateSku(sku.id!, 'description', e.target.value)}
                         placeholder="Detailed description..."
-                        className="w-full h-16 bg-white border border-zinc-200 hover:border-zinc-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg px-3 py-2 text-[13px] text-zinc-700 resize-none outline-none transition-all shadow-sm"
+                        className="w-full h-16 text-center bg-purple-50/40 border border-purple-200 hover:border-purple-300 focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 rounded-lg px-3 py-2 text-[12px] font-bold text-purple-800 resize-none outline-none transition-all shadow-sm"
                       />
                     </td>
                     <td className="px-3 py-2 space-y-1.5 align-top">
@@ -266,8 +266,8 @@ export default function POForm() {
                        <GridInput type="number" value={sku.innerPack} onChange={(e) => updateSku(sku.id!, 'innerPack', parseInt(e.target.value))} placeholder="Inner (pcs)" />
                        <GridInput type="number" value={sku.outerPack} onChange={(e) => updateSku(sku.id!, 'outerPack', parseInt(e.target.value))} placeholder="Outer (pcs)" />
                     </td>
-                    <td className="px-6 py-4 text-right align-top">
-                      <div className="text-[13px] font-bold text-zinc-800 bg-white border border-zinc-200 rounded-md py-1.5 px-3 shadow-sm inline-block min-w-[80px]">
+                    <td className="px-6 py-4 text-center align-top">
+                      <div className="text-[13px] font-black text-rose-700 bg-rose-50 border border-rose-200 rounded-md py-1.5 px-3 shadow-sm inline-block min-w-[80px]">
                         ${((Number(sku.orderQty) || 0) * (Number(sku.price) || 0)).toFixed(2)}
                       </div>
                     </td>
@@ -315,13 +315,13 @@ interface ModernInputProps {
 
 function ModernInput({ label, value, onChange, type = "text" }: ModernInputProps) {
   return (
-    <div className="flex flex-col gap-1.5 w-full">
-      <label className="text-[12px] font-bold text-zinc-600 tracking-wide capitalize">{label}</label>
+    <div className="flex flex-col gap-1.5 w-full items-center">
+      <label className="text-[12px] font-bold text-zinc-600 tracking-wide capitalize text-center">{label}</label>
       <input 
         type={type} 
         value={value || ''} 
         onChange={onChange} 
-        className="w-full bg-zinc-50 border border-zinc-200 rounded-lg outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 px-3.5 py-2 text-[13px] font-medium text-zinc-800 transition-all shadow-sm"
+        className="w-full text-center bg-gradient-to-r from-indigo-50/40 to-blue-50/40 border border-indigo-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 px-3.5 py-2 text-[13px] font-bold text-indigo-900 transition-all shadow-sm"
       />
     </div>
   );
@@ -335,13 +335,13 @@ interface ModernTextAreaProps {
 
 function ModernTextArea({ label, value, onChange }: ModernTextAreaProps) {
   return (
-    <div className="flex flex-col gap-1.5 w-full">
-      <label className="text-[12px] font-bold text-zinc-600 tracking-wide capitalize">{label}</label>
+    <div className="flex flex-col gap-1.5 w-full items-center">
+      <label className="text-[12px] font-bold text-zinc-600 tracking-wide capitalize text-center">{label}</label>
       <textarea 
         value={value || ''} 
         onChange={onChange} 
         rows={2}
-        className="w-full bg-zinc-50 border border-zinc-200 rounded-lg outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 px-3.5 py-2 text-[13px] font-medium text-zinc-800 resize-none transition-all shadow-sm"
+        className="w-full text-center bg-gradient-to-r from-teal-50/40 to-emerald-50/40 border border-teal-200 rounded-lg outline-none focus:bg-white focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 px-3.5 py-2 text-[13px] font-bold text-teal-900 resize-none transition-all shadow-sm"
       />
     </div>
   );
@@ -362,7 +362,7 @@ function GridInput({ value, onChange, placeholder, type = "text", bold }: GridIn
       value={value || ''}
       onChange={onChange}
       placeholder={placeholder}
-      className={`w-full bg-white border border-zinc-200 hover:border-zinc-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-md px-2.5 py-1.5 text-[12px] ${bold ? 'font-bold text-zinc-900' : 'font-medium text-zinc-700'} outline-none transition-all shadow-sm`}
+      className={`w-full text-center bg-purple-50/40 border border-purple-200 hover:border-purple-300 focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 rounded-md px-2.5 py-1.5 text-[12px] ${bold ? 'font-extrabold text-purple-900' : 'font-bold text-purple-800'} outline-none transition-all shadow-sm`}
     />
   );
 }
