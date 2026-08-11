@@ -5,6 +5,7 @@ import { Plus, Trash2, Save, FileText, CheckCircle, CreditCard, Package, Clock }
 import { POHeader, SKUItem, DropdownData } from '../lib/types';
 import { createPO, savePDFtoDrive, getPendingInternalPOs, getDropdowns } from '../lib/api';
 import { generatePOPDF } from '../lib/pdf';
+import Select from 'react-select';
 import { DragDropImage } from './DragDropImage';
 import { MultiSelectDropdown } from './MultiSelectDropdown';
 
@@ -529,16 +530,82 @@ function GridInput({ value, onChange, placeholder, type = "text", bold }: GridIn
   );
 }
 
+const customSelectStyles = {
+  control: (provided: any, state: any) => ({
+    ...provided,
+    minHeight: '34px',
+    height: '34px',
+    backgroundColor: state.isFocused ? '#ffffff' : '#fefce8',
+    borderColor: state.isFocused ? '#facc15' : '#fef08a',
+    boxShadow: state.isFocused ? '0 0 0 1px rgba(250, 204, 21, 0.3)' : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+    borderRadius: '0.375rem',
+    fontSize: '11px',
+    fontWeight: '700',
+    color: '#27272a',
+    cursor: 'pointer',
+    textAlign: 'center',
+    '&:hover': {
+      borderColor: '#fde047'
+    }
+  }),
+  valueContainer: (provided: any) => ({
+    ...provided,
+    padding: '0 8px',
+    justifyContent: 'center',
+  }),
+  input: (provided: any) => ({
+    ...provided,
+    margin: '0px',
+    padding: '0px',
+    textAlign: 'center'
+  }),
+  indicatorSeparator: () => ({ display: 'none' }),
+  indicatorsContainer: (provided: any) => ({
+    ...provided,
+    height: '34px',
+  }),
+  dropdownIndicator: (provided: any) => ({
+    ...provided,
+    padding: '4px',
+    color: '#a1a1aa',
+    '&:hover': { color: '#71717a' }
+  }),
+  menu: (provided: any) => ({
+    ...provided,
+    fontSize: '11px',
+    fontWeight: '600',
+    borderRadius: '0.5rem',
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    zIndex: 9999,
+  }),
+  menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
+  option: (provided: any, state: any) => ({
+    ...provided,
+    backgroundColor: state.isSelected ? '#ecfdf5' : state.isFocused ? '#f0fdf4' : 'white',
+    color: state.isSelected ? '#047857' : '#3f3f46',
+    fontWeight: state.isSelected ? '700' : '600',
+    cursor: 'pointer',
+    textAlign: 'left'
+  })
+};
+
 function GridSelect({ value, onChange, options = [] }: { value: any, onChange: any, options?: string[] }) {
+  const formattedOptions = options.map(o => ({ value: o, label: o }));
+  const selectedOption = formattedOptions.find(o => o.value === value) || null;
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => { setIsMounted(true); }, []);
+
   return (
-    <div className="relative">
-      <select value={value || ''} onChange={onChange} className="w-full h-[34px] text-center bg-yellow-50 border border-yellow-200 hover:border-yellow-300 focus:bg-white focus:border-yellow-400 rounded-md px-2 text-[11px] font-bold text-zinc-800 outline-none transition-all shadow-sm appearance-none cursor-pointer">
-        <option value="">-</option>
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
-      </select>
-      <div className="absolute right-1 top-2.5 pointer-events-none text-zinc-400">
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-      </div>
-    </div>
+    <Select
+      value={selectedOption}
+      onChange={(selected: any) => onChange({ target: { value: selected?.value || '' } })}
+      options={formattedOptions}
+      styles={customSelectStyles}
+      menuPortalTarget={isMounted ? document.body : null}
+      isClearable
+      placeholder="-"
+      className="w-[140px]"
+    />
   );
 }
