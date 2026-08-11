@@ -249,7 +249,7 @@ export default function POForm() {
                         value={sku.description || ''} 
                         onChange={(e) => updateSku(sku.id!, 'description', e.target.value)}
                         placeholder="Detailed description..."
-                        className="w-full h-16 text-center bg-purple-50/40 border border-purple-200 hover:border-purple-300 focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 rounded-lg px-3 py-2 text-[12px] font-bold text-purple-800 resize-none outline-none transition-all shadow-sm"
+                        className="block w-full h-16 text-center bg-purple-50/40 border border-purple-200 hover:border-purple-300 focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 rounded-lg px-3 py-2 text-[12px] font-bold text-purple-800 resize-none outline-none transition-all shadow-sm"
                       />
                     </td>
                     <td className="px-3 py-2 space-y-1.5 align-top">
@@ -362,7 +362,7 @@ function GridInput({ value, onChange, placeholder, type = "text", bold }: GridIn
       value={value || ''}
       onChange={onChange}
       placeholder={placeholder}
-      className={`w-full text-center bg-purple-50/40 border border-purple-200 hover:border-purple-300 focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 rounded-md px-2.5 py-1.5 text-[12px] ${bold ? 'font-extrabold text-purple-900' : 'font-bold text-purple-800'} outline-none transition-all shadow-sm`}
+      className={`block w-full text-center bg-purple-50/40 border border-purple-200 hover:border-purple-300 focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 rounded-md px-2.5 py-1.5 text-[12px] ${bold ? 'font-extrabold text-purple-900' : 'font-bold text-purple-800'} outline-none transition-all shadow-sm`}
     />
   );
 }
