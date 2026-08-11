@@ -258,8 +258,8 @@ export default function POForm() {
 
 interface InputProps {
   label: string;
-  value: string | number;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  value: string | number | undefined;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   type?: string;
   placeholder?: string;
   compact?: boolean;
@@ -285,8 +285,8 @@ function Input({ label, value, onChange, type = "text", placeholder, compact, di
 
 interface TextAreaProps {
   label: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  value: string | undefined;
+  onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   placeholder?: string;
 }
 

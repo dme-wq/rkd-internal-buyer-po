@@ -173,7 +173,7 @@ export async function generatePOPDF(
   });
 
   // ─── Payment Summary Footer ──────────────────────────────
-  const finalY = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 5;
+  const finalY = (doc as any).lastAutoTable.finalY + 5;
 
   if (finalY < 180) {
     doc.setFillColor(...DARK);
