@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Plus, Trash2, Save, FileText, ChevronDown, ChevronUp, CheckCircle, CreditCard, Package } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, Save, FileText, CheckCircle, CreditCard, Package, Clock } from 'lucide-react';
 import { POHeader, SKUItem } from '../lib/types';
 import { createPO, savePDFtoDrive } from '../lib/api';
 import { generatePOPDF } from '../lib/pdf';
@@ -22,6 +22,25 @@ export default function POForm() {
     orderQty: 0, unitQty: 'pieces', price: 0, unitPrice: 'piece', currency: 'USD',
     innerPack: 0, outerPack: 0, addSample: 0, addProd: 0
   }]);
+
+  const [time, setTime] = useState<string>('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setTime(now.toLocaleTimeString('en-IN', { 
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true 
+      }));
+    };
+    
+    updateTime(); // initial call
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -92,22 +111,22 @@ export default function POForm() {
     <div className="w-full h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 bg-zinc-50 font-sans">
       
       {/* Sticky Action Bar */}
-      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-zinc-200 px-8 py-4 flex justify-between items-center shadow-sm">
+      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-zinc-200 px-8 py-5 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
-            <FileText size={20} />
+          <div className="w-11 h-11 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+            <FileText size={22} />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-zinc-900">Purchase Order Entry</h1>
-            <p className="text-xs text-zinc-500 font-medium tracking-wide uppercase mt-0.5">Draft Mode</p>
+            <h1 className="text-2xl font-medium tracking-tight bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">Internal Export Purchase Order Entry</h1>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="px-5 py-2.5 bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 rounded-lg text-sm font-semibold transition-all shadow-sm">
-            Validate Data
-          </button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 shadow-sm shadow-emerald-500/10 hover:bg-emerald-100 transition-colors mr-2">
+            <Clock size={16} className="text-emerald-500" />
+            <span className="text-sm font-bold tracking-wide tabular-nums">{time || 'Loading...'}</span>
+          </div>
           <button onClick={handleSave} disabled={loading} className="px-6 py-2.5 bg-[#00a669] hover:bg-[#009059] text-white rounded-lg text-sm font-semibold flex items-center gap-2 transition-all shadow-md shadow-emerald-500/20 disabled:opacity-50 disabled:shadow-none">
-            <Save size={18} /> {loading ? 'Saving...' : 'Save & Post PO'}
+            <Save size={18} /> {loading ? 'Saving...' : 'Save & Generate'}
           </button>
         </div>
       </div>
