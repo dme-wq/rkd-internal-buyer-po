@@ -150,7 +150,7 @@ export default function POForm() {
               <h2 className="text-[15px] font-extrabold text-emerald-900 tracking-wide">General Information</h2>
             </div>
             
-            <div className="p-6 grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-x-6 gap-y-5 transition-all duration-300">
+            <div className="p-6 grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-x-6 gap-y-5 transition-all duration-300">
               <ModernInput label="Buyer Name" value={header.buyerName} onChange={(e) => updateHeader('buyerName', e.target.value)} />
               <ModernInput label="Buyer PO" value={header.buyerPO} onChange={(e) => updateHeader('buyerPO', e.target.value)} />
               <ModernInput label="File Number" value={header.fileNumber} onChange={(e) => updateHeader('fileNumber', e.target.value)} />
@@ -158,7 +158,7 @@ export default function POForm() {
               <ModernInput label="Ex-Factory" type="date" value={header.exFactory} onChange={(e) => updateHeader('exFactory', e.target.value)} />
               <ModernInput label="Onboard Vessel" type="date" value={header.onboardDate} onChange={(e) => updateHeader('onboardDate', e.target.value)} />
               
-              <div className="col-span-full grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-6 mt-2">
+              <div className="col-span-full grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-6 mt-2">
                 <ModernTextArea label="Billing Address" value={header.billingAddr} onChange={(e) => updateHeader('billingAddr', e.target.value)} />
                 <ModernTextArea label="Delivery Address" value={header.deliveryAddr} onChange={(e) => updateHeader('deliveryAddr', e.target.value)} />
               </div>
