@@ -50,13 +50,13 @@ export interface POHeader {
   deliveryAddr: string;
   onboardDate: string;
   totalAmount: number;
-  pay1Pct: number;
-  pay1Days: number;
+  pay1Pct: string | number;
+  pay1Days: string | number;
   pay1Activity: string;
   pay1Amount: number;
   pay1DueDate: string;
-  pay2Pct: number;
-  pay2Days: number;
+  pay2Pct: string | number;
+  pay2Days: string | number;
   pay2Activity: string;
   pay2Amount: number;
   pay2DueDate: string;

@@ -11,8 +11,8 @@ export default function POForm() {
     internalPO: '', fileNumber: '', buyerName: '', buyerPO: '', poDate: '', exFactory: '',
     deliveryTerms: '', portName: '', payTerm1: '', payTerm2: '', buyerSource: '',
     buyerSubSrc: '', buyerSrcPct: 100, buyerSubPct: 0, billingAddr: '', deliveryAddr: '',
-    onboardDate: '', totalAmount: 0, pay1Pct: 100, pay1Days: 0, pay1Activity: '',
-    pay1Amount: 0, pay1DueDate: '', pay2Pct: 0, pay2Days: 0, pay2Activity: '',
+    pay1Pct: '-', pay1Days: '-', pay1Activity: '-',
+    pay1Amount: 0, pay1DueDate: '', pay2Pct: '-', pay2Days: '-', pay2Activity: '-',
     pay2Amount: 0, pay2DueDate: ''
   });
 
@@ -65,6 +65,53 @@ export default function POForm() {
     }
   };
 
+  const portTransitDays: Record<string, number> = {
+    'Genoa': 30, 'Charleston': 30, 'Baltimore': 30, 'Umm Qasr': 7, 'Savannah': 30, 'New Jersy': 30
+  };
+
+  const calculateDueDate = (activity: string, daysStr: string | number | undefined, poDate: string, exFactory: string, onboardDate: string, portName: string) => {
+    if (!activity || activity === '-') return '';
+    const days = daysStr === '-' ? 0 : parseInt(String(daysStr || '0').replace(' Days', ''));
+    if (isNaN(days)) return '';
+    const transitDays = portTransitDays[portName] || 0;
+
+    let baseDateStr = '';
+    let offsetDays = 0;
+
+    if (activity === 'Advance') {
+      baseDateStr = poDate;
+      offsetDays = 7;
+    } else if (activity === 'Before Dispatch (after inspection)') {
+      baseDateStr = exFactory;
+      offsetDays = -1;
+    } else if (activity === 'After the estimated vessel date of arrival') {
+      baseDateStr = onboardDate;
+      offsetDays = transitDays + days;
+    } else if (activity === 'Before the estimated vessel date of arrival') {
+      baseDateStr = onboardDate;
+      offsetDays = transitDays - days;
+    } else if (activity === 'From the Date of BL') {
+      baseDateStr = exFactory;
+      offsetDays = 15 + days;
+    } else if (activity === 'CAD') {
+      baseDateStr = exFactory;
+      offsetDays = 15;
+    }
+
+    if (!baseDateStr) return '';
+    const d = new Date(baseDateStr);
+    if (isNaN(d.getTime())) return '';
+    d.setDate(d.getDate() + offsetDays);
+    return d.toISOString().split('T')[0];
+  };
+
+  const percentOptions = ['-', ...Array.from({length: 100}, (_, i) => `${i + 1}%`)];
+  const daysOptions = ['-', ...Array.from({length: 180}, (_, i) => `${i + 1} Days`)];
+  const activityOptions = [
+    '-', 'Advance', 'From the Date of BL', 'Before Dispatch (after inspection)',
+    'After the estimated vessel date of arrival', 'Before the estimated vessel date of arrival', 'CAD'
+  ];
+
   const updateHeader = (field: keyof POHeader, value: string | number) => {
     setHeader({ ...header, [field]: value });
   };
@@ -81,12 +128,16 @@ export default function POForm() {
       grandTotal += lineTotal;
       return { ...sku, lineTotal, totalQtyMfg };
     });
-    
+    const p1Pct = header.pay1Pct === '-' ? 0 : parseFloat(String(header.pay1Pct || '0'));
+    const p2Pct = header.pay2Pct === '-' ? 0 : parseFloat(String(header.pay2Pct || '0'));
+
     setHeader(prev => ({ 
       ...prev, 
       totalAmount: grandTotal,
-      pay1Amount: grandTotal * (prev.pay1Pct || 0) / 100,
-      pay2Amount: grandTotal * (prev.pay2Pct || 0) / 100,
+      pay1Amount: grandTotal * p1Pct / 100,
+      pay2Amount: grandTotal * p2Pct / 100,
+      pay1DueDate: calculateDueDate(prev.pay1Activity || '', prev.pay1Days, prev.poDate || '', prev.exFactory || '', prev.onboardDate || '', prev.portName || ''),
+      pay2DueDate: calculateDueDate(prev.pay2Activity || '', prev.pay2Days, prev.poDate || '', prev.exFactory || '', prev.onboardDate || '', prev.portName || '')
     }));
     return computedSkus;
   };
@@ -163,6 +214,20 @@ export default function POForm() {
               <ModernInput label="PO Date" type="date" value={header.poDate} onChange={(e) => updateHeader('poDate', e.target.value)} />
               <ModernInput label="Ex-Factory" type="date" value={header.exFactory} onChange={(e) => updateHeader('exFactory', e.target.value)} />
               <ModernInput label="Onboard Vessel" type="date" value={header.onboardDate} onChange={(e) => updateHeader('onboardDate', e.target.value)} />
+              <ModernInput label="Delivery Terms" value={header.deliveryTerms} onChange={(e) => updateHeader('deliveryTerms', e.target.value)} />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-semibold text-zinc-700 ml-1">Port Name</label>
+                <select value={header.portName || ''} onChange={(e) => updateHeader('portName', e.target.value)} className="w-full h-11 px-4 rounded-xl border border-zinc-200 bg-zinc-50/50 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-zinc-800 shadow-sm">
+                  <option value="">Select Port</option>
+                  <option value="N/A">N/A</option>
+                  <option value="Genoa">Genoa</option>
+                  <option value="Charleston">Charleston</option>
+                  <option value="Baltimore">Baltimore</option>
+                  <option value="Umm Qasr">Umm Qasr</option>
+                  <option value="Savannah">Savannah</option>
+                  <option value="New Jersy">New Jersy</option>
+                </select>
+              </div>
               
               <div className="col-span-full grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-6 mt-2">
                 <ModernTextArea label="Billing Address" value={header.billingAddr} onChange={(e) => updateHeader('billingAddr', e.target.value)} />
@@ -186,23 +251,29 @@ export default function POForm() {
                 <div className="grid grid-cols-5 bg-blue-50/30 divide-x divide-blue-200">
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">%</label>
-                    <input type="number" placeholder="0" value={header.pay1Pct || ''} onChange={(e) => updateHeader('pay1Pct', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                    <select value={header.pay1Pct || '-'} onChange={(e) => updateHeader('pay1Pct', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 shadow-sm cursor-pointer appearance-none">
+                      {percentOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Days</label>
-                    <input type="number" placeholder="0" value={header.pay1Days || ''} onChange={(e) => updateHeader('pay1Days', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                    <select value={header.pay1Days || '-'} onChange={(e) => updateHeader('pay1Days', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 shadow-sm cursor-pointer appearance-none">
+                      {daysOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Activity</label>
-                    <input type="text" placeholder="Activity" value={header.pay1Activity || ''} onChange={(e) => updateHeader('pay1Activity', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                    <select value={header.pay1Activity || '-'} onChange={(e) => updateHeader('pay1Activity', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 shadow-sm cursor-pointer appearance-none" style={{textOverflow: 'ellipsis'}}>
+                      {activityOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Amount</label>
-                    <input type="number" placeholder="$0.00" value={header.pay1Amount || ''} onChange={(e) => updateHeader('pay1Amount', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                    <input type="text" readOnly value={`$${((header.totalAmount || 0) * (header.pay1Pct === '-' ? 0 : parseFloat(String(header.pay1Pct || '0'))) / 100).toFixed(2)}`} className="w-full text-center bg-blue-50/50 border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none shadow-sm cursor-default" />
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Due Date</label>
-                    <input type="date" value={header.pay1DueDate || ''} onChange={(e) => updateHeader('pay1DueDate', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                    <input type="text" readOnly placeholder="Auto Calculated" value={calculateDueDate(header.pay1Activity || '', header.pay1Days, header.poDate || '', header.exFactory || '', header.onboardDate || '', header.portName || '')} className="w-full text-center bg-blue-50/50 border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none shadow-sm cursor-default" />
                   </div>
                 </div>
               </div>
@@ -213,23 +284,29 @@ export default function POForm() {
                 <div className="grid grid-cols-5 bg-blue-50/30 divide-x divide-blue-200">
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">%</label>
-                    <input type="number" placeholder="0" value={header.pay2Pct || ''} onChange={(e) => updateHeader('pay2Pct', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                    <select value={header.pay2Pct || '-'} onChange={(e) => updateHeader('pay2Pct', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 shadow-sm cursor-pointer appearance-none">
+                      {percentOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Days</label>
-                    <input type="number" placeholder="0" value={header.pay2Days || ''} onChange={(e) => updateHeader('pay2Days', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                    <select value={header.pay2Days || '-'} onChange={(e) => updateHeader('pay2Days', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 shadow-sm cursor-pointer appearance-none">
+                      {daysOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Activity</label>
-                    <input type="text" placeholder="Activity" value={header.pay2Activity || ''} onChange={(e) => updateHeader('pay2Activity', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                    <select value={header.pay2Activity || '-'} onChange={(e) => updateHeader('pay2Activity', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 shadow-sm cursor-pointer appearance-none" style={{textOverflow: 'ellipsis'}}>
+                      {activityOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Amount</label>
-                    <input type="number" placeholder="$0.00" value={header.pay2Amount || ''} onChange={(e) => updateHeader('pay2Amount', Number(e.target.value))} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                    <input type="text" readOnly value={`$${((header.totalAmount || 0) * (header.pay2Pct === '-' ? 0 : parseFloat(String(header.pay2Pct || '0'))) / 100).toFixed(2)}`} className="w-full text-center bg-blue-50/50 border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none shadow-sm cursor-default" />
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Due Date</label>
-                    <input type="date" value={header.pay2DueDate || ''} onChange={(e) => updateHeader('pay2DueDate', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm" />
+                    <input type="text" readOnly placeholder="Auto Calculated" value={calculateDueDate(header.pay2Activity || '', header.pay2Days, header.poDate || '', header.exFactory || '', header.onboardDate || '', header.portName || '')} className="w-full text-center bg-blue-50/50 border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none shadow-sm cursor-default" />
                   </div>
                 </div>
               </div>
