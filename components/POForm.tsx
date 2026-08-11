@@ -216,19 +216,12 @@ export default function POForm() {
               <ModernInput label="Ex-Factory" type="date" value={header.exFactory} onChange={(e) => updateHeader('exFactory', e.target.value)} />
               <ModernInput label="Onboard Vessel" type="date" value={header.onboardDate} onChange={(e) => updateHeader('onboardDate', e.target.value)} />
               <ModernInput label="Delivery Terms" value={header.deliveryTerms} onChange={(e) => updateHeader('deliveryTerms', e.target.value)} />
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-semibold text-zinc-700 ml-1">Port of Discharge</label>
-                <select value={header.portName || ''} onChange={(e) => updateHeader('portName', e.target.value)} className="w-full h-11 px-4 rounded-xl border border-zinc-200 bg-zinc-50/50 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-zinc-800 shadow-sm">
-                  <option value="">Select Port</option>
-                  <option value="N/A">N/A</option>
-                  <option value="Genoa">Genoa</option>
-                  <option value="Charleston">Charleston</option>
-                  <option value="Baltimore">Baltimore</option>
-                  <option value="Umm Qasr">Umm Qasr</option>
-                  <option value="Savannah">Savannah</option>
-                  <option value="New Jersy">New Jersy</option>
-                </select>
-              </div>
+              <ModernSelect 
+                label="Port of Discharge" 
+                value={header.portName || ''} 
+                onChange={(e) => updateHeader('portName', e.target.value)} 
+                options={["N/A", "Genoa", "Charleston", "Baltimore", "Umm Qasr", "Savannah", "New Jersy"]} 
+              />
               
               <div className="col-span-full grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-6 mt-2">
                 <ModernTextArea label="Billing Address" value={header.billingAddr} onChange={(e) => updateHeader('billingAddr', e.target.value)} />
@@ -252,29 +245,29 @@ export default function POForm() {
                 <div className="grid grid-cols-5 bg-blue-50/30 divide-x divide-blue-200">
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">%</label>
-                    <select value={header.pay1Pct || '-'} onChange={(e) => updateHeader('pay1Pct', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 shadow-sm cursor-pointer appearance-none">
+                    <select value={header.pay1Pct || '-'} onChange={(e) => updateHeader('pay1Pct', e.target.value)} className="w-full text-center bg-yellow-50 border border-yellow-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-900 outline-none focus:border-yellow-500 shadow-sm cursor-pointer appearance-none">
                       {percentOptions.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Days</label>
-                    <select value={header.pay1Days || '-'} onChange={(e) => updateHeader('pay1Days', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 shadow-sm cursor-pointer appearance-none">
+                    <select value={header.pay1Days || '-'} onChange={(e) => updateHeader('pay1Days', e.target.value)} className="w-full text-center bg-yellow-50 border border-yellow-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-900 outline-none focus:border-yellow-500 shadow-sm cursor-pointer appearance-none">
                       {daysOptions.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Activity</label>
-                    <select value={header.pay1Activity || '-'} onChange={(e) => updateHeader('pay1Activity', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 shadow-sm cursor-pointer appearance-none" style={{textOverflow: 'ellipsis'}}>
+                    <select value={header.pay1Activity || '-'} onChange={(e) => updateHeader('pay1Activity', e.target.value)} className="w-full text-center bg-yellow-50 border border-yellow-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-900 outline-none focus:border-yellow-500 shadow-sm cursor-pointer appearance-none" style={{textOverflow: 'ellipsis'}}>
                       {activityOptions.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Amount</label>
-                    <input type="text" readOnly value={`$${((header.totalAmount || 0) * (header.pay1Pct === '-' ? 0 : parseFloat(String(header.pay1Pct || '0'))) / 100).toFixed(2)}`} className="w-full text-center bg-blue-50/50 border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none shadow-sm cursor-default" />
+                    <input type="text" readOnly value={`$${((header.totalAmount || 0) * (header.pay1Pct === '-' ? 0 : parseFloat(String(header.pay1Pct || '0'))) / 100).toFixed(2)}`} className="w-full text-center bg-zinc-100 border border-zinc-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-600 outline-none shadow-sm cursor-default" />
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Due Date</label>
-                    <input type="text" readOnly placeholder="Auto Calculated" value={calculateDueDate(header.pay1Pct, header.pay1Activity || '', header.pay1Days, header.poDate || '', header.exFactory || '', header.onboardDate || '', header.portName || '')} className="w-full text-center bg-blue-50/50 border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none shadow-sm cursor-default" />
+                    <input type="text" readOnly placeholder="Auto Calculated" value={calculateDueDate(header.pay1Pct, header.pay1Activity || '', header.pay1Days, header.poDate || '', header.exFactory || '', header.onboardDate || '', header.portName || '')} className="w-full text-center bg-zinc-100 border border-zinc-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-600 outline-none shadow-sm cursor-default" />
                   </div>
                 </div>
               </div>
@@ -285,29 +278,29 @@ export default function POForm() {
                 <div className="grid grid-cols-5 bg-blue-50/30 divide-x divide-blue-200">
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">%</label>
-                    <select value={header.pay2Pct || '-'} onChange={(e) => updateHeader('pay2Pct', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 shadow-sm cursor-pointer appearance-none">
+                    <select value={header.pay2Pct || '-'} onChange={(e) => updateHeader('pay2Pct', e.target.value)} className="w-full text-center bg-yellow-50 border border-yellow-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-900 outline-none focus:border-yellow-500 shadow-sm cursor-pointer appearance-none">
                       {percentOptions.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Days</label>
-                    <select value={header.pay2Days || '-'} onChange={(e) => updateHeader('pay2Days', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 shadow-sm cursor-pointer appearance-none">
+                    <select value={header.pay2Days || '-'} onChange={(e) => updateHeader('pay2Days', e.target.value)} className="w-full text-center bg-yellow-50 border border-yellow-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-900 outline-none focus:border-yellow-500 shadow-sm cursor-pointer appearance-none">
                       {daysOptions.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Activity</label>
-                    <select value={header.pay2Activity || '-'} onChange={(e) => updateHeader('pay2Activity', e.target.value)} className="w-full text-center bg-white border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none focus:border-blue-500 shadow-sm cursor-pointer appearance-none" style={{textOverflow: 'ellipsis'}}>
+                    <select value={header.pay2Activity || '-'} onChange={(e) => updateHeader('pay2Activity', e.target.value)} className="w-full text-center bg-yellow-50 border border-yellow-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-900 outline-none focus:border-yellow-500 shadow-sm cursor-pointer appearance-none" style={{textOverflow: 'ellipsis'}}>
                       {activityOptions.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Amount</label>
-                    <input type="text" readOnly value={`$${((header.totalAmount || 0) * (header.pay2Pct === '-' ? 0 : parseFloat(String(header.pay2Pct || '0'))) / 100).toFixed(2)}`} className="w-full text-center bg-blue-50/50 border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none shadow-sm cursor-default" />
+                    <input type="text" readOnly value={`$${((header.totalAmount || 0) * (header.pay2Pct === '-' ? 0 : parseFloat(String(header.pay2Pct || '0'))) / 100).toFixed(2)}`} className="w-full text-center bg-zinc-100 border border-zinc-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-600 outline-none shadow-sm cursor-default" />
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Due Date</label>
-                    <input type="text" readOnly placeholder="Auto Calculated" value={calculateDueDate(header.pay2Pct, header.pay2Activity || '', header.pay2Days, header.poDate || '', header.exFactory || '', header.onboardDate || '', header.portName || '')} className="w-full text-center bg-blue-50/50 border border-blue-200 rounded px-1 py-1 text-[10px] font-bold text-blue-900 outline-none shadow-sm cursor-default" />
+                    <input type="text" readOnly placeholder="Auto Calculated" value={calculateDueDate(header.pay2Pct, header.pay2Activity || '', header.pay2Days, header.poDate || '', header.exFactory || '', header.onboardDate || '', header.portName || '')} className="w-full text-center bg-zinc-100 border border-zinc-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-600 outline-none shadow-sm cursor-default" />
                   </div>
                 </div>
               </div>
@@ -369,7 +362,7 @@ export default function POForm() {
                         value={sku.description || ''} 
                         onChange={(e) => updateSku(sku.id!, 'description', e.target.value)}
                         placeholder="Detailed description..."
-                        className="block w-full h-16 text-center bg-purple-50/40 border border-purple-200 hover:border-purple-300 focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 rounded-lg px-3 py-2 text-[12px] font-bold text-purple-800 resize-none outline-none transition-all shadow-sm"
+                        className="block w-full h-16 text-center bg-yellow-50 border border-yellow-200 hover:border-yellow-300 focus:bg-white focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400/30 rounded-lg px-3 py-2 text-[12px] font-bold text-zinc-800 resize-none outline-none transition-all shadow-sm"
                       />
                     </td>
                     <td className="px-3 py-2 space-y-1.5 align-top">
@@ -441,7 +434,7 @@ function ModernInput({ label, value, onChange, type = "text" }: ModernInputProps
         type={type} 
         value={value || ''} 
         onChange={onChange} 
-        className="w-full text-center bg-gradient-to-r from-indigo-50/40 to-blue-50/40 border border-indigo-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 px-3.5 py-2 text-[13px] font-bold text-indigo-900 transition-all shadow-sm"
+        className="w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-3.5 py-2 text-[13px] font-bold text-zinc-900 transition-all shadow-sm"
       />
     </div>
   );
@@ -461,12 +454,12 @@ function ModernSelect({ label, value, onChange, options }: ModernSelectProps) {
       <select 
         value={value || ''} 
         onChange={onChange} 
-        className="w-full text-center bg-gradient-to-r from-indigo-50/40 to-blue-50/40 border border-indigo-200 rounded-lg outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 px-3.5 py-2 text-[13px] font-bold text-indigo-900 transition-all shadow-sm appearance-none cursor-pointer"
+        className="w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-3.5 py-2 text-[13px] font-bold text-zinc-900 transition-all shadow-sm appearance-none cursor-pointer"
       >
         <option value="" disabled>Select {label}</option>
         {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
       </select>
-      <div className="absolute right-3 top-[30px] pointer-events-none text-indigo-500">
+      <div className="absolute right-3 top-[30px] pointer-events-none text-zinc-400">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
       </div>
     </div>
@@ -487,7 +480,7 @@ function ModernTextArea({ label, value, onChange }: ModernTextAreaProps) {
         value={value || ''} 
         onChange={onChange} 
         rows={2}
-        className="w-full text-center bg-gradient-to-r from-teal-50/40 to-emerald-50/40 border border-teal-200 rounded-lg outline-none focus:bg-white focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 px-3.5 py-2 text-[13px] font-bold text-teal-900 resize-none transition-all shadow-sm"
+        className="w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-3.5 py-2 text-[13px] font-bold text-zinc-900 resize-none transition-all shadow-sm"
       />
     </div>
   );
@@ -508,7 +501,7 @@ function GridInput({ value, onChange, placeholder, type = "text", bold }: GridIn
       value={value || ''}
       onChange={onChange}
       placeholder={placeholder}
-      className={`block w-full text-center bg-purple-50/40 border border-purple-200 hover:border-purple-300 focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 rounded-md px-2.5 py-1.5 text-[12px] ${bold ? 'font-extrabold text-purple-900' : 'font-bold text-purple-800'} outline-none transition-all shadow-sm`}
+      className={`block w-full text-center bg-yellow-50 border border-yellow-200 hover:border-yellow-300 focus:bg-white focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400/30 rounded-md px-2.5 py-1.5 text-[12px] ${bold ? 'font-extrabold text-zinc-900' : 'font-bold text-zinc-800'} outline-none transition-all shadow-sm`}
     />
   );
 }
