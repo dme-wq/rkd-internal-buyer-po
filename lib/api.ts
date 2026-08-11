@@ -92,7 +92,7 @@ export async function savePDFtoDrive(
 
 export async function getPendingInternalPOs(): Promise<string[]> {
   const res = await post<string[]>({ action: 'getPendingInternalPOs', data: {} });
-  return res.status === 'success' ? res.data : [];
+  return res.status === 'success' && res.data ? res.data : [];
 }
 
 export async function addDropdownOption(
