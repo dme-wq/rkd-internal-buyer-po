@@ -606,6 +606,7 @@ function GridSelect({ value, onChange, options = [] }: { value: any, onChange: a
       options={formattedOptions}
       styles={customSelectStyles}
       menuPortalTarget={isMounted ? document.body : null}
+      menuPosition="fixed"
       isClearable
       placeholder="-"
       className="w-[140px]"

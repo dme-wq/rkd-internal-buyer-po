@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import Select from 'react-select';
 
 interface MultiSelectDropdownProps {
   options: string[];
@@ -9,74 +9,104 @@ interface MultiSelectDropdownProps {
   placeholder?: string;
 }
 
+const customSelectStyles = {
+  control: (provided: any, state: any) => ({
+    ...provided,
+    minHeight: '34px',
+    backgroundColor: state.isFocused ? '#ffffff' : '#fefce8',
+    borderColor: state.isFocused ? '#facc15' : '#fef08a',
+    boxShadow: state.isFocused ? '0 0 0 1px rgba(250, 204, 21, 0.3)' : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+    borderRadius: '0.375rem',
+    fontSize: '11px',
+    fontWeight: '700',
+    color: '#27272a',
+    cursor: 'pointer',
+    textAlign: 'left',
+    '&:hover': {
+      borderColor: '#fde047'
+    }
+  }),
+  valueContainer: (provided: any) => ({
+    ...provided,
+    padding: '0 8px',
+  }),
+  indicatorSeparator: () => ({ display: 'none' }),
+  indicatorsContainer: (provided: any) => ({
+    ...provided,
+    height: '34px',
+  }),
+  dropdownIndicator: (provided: any) => ({
+    ...provided,
+    padding: '4px',
+    color: '#a1a1aa',
+    '&:hover': { color: '#71717a' }
+  }),
+  menu: (provided: any) => ({
+    ...provided,
+    fontSize: '11px',
+    fontWeight: '600',
+    borderRadius: '0.5rem',
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    zIndex: 9999,
+  }),
+  menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
+  option: (provided: any, state: any) => ({
+    ...provided,
+    backgroundColor: state.isDisabled ? 'transparent' : state.isSelected ? '#ecfdf5' : state.isFocused ? '#f0fdf4' : 'white',
+    color: state.isDisabled ? '#a1a1aa' : state.isSelected ? '#047857' : '#3f3f46',
+    fontWeight: state.isSelected ? '700' : '600',
+    cursor: state.isDisabled ? 'not-allowed' : 'pointer',
+    opacity: state.isDisabled ? 0.5 : 1,
+    textAlign: 'left'
+  }),
+  multiValue: (provided: any) => ({
+    ...provided,
+    backgroundColor: '#d1fae5', // emerald-100
+    borderRadius: '4px',
+  }),
+  multiValueLabel: (provided: any) => ({
+    ...provided,
+    color: '#065f46', // emerald-800
+    fontWeight: 'bold',
+    fontSize: '10px',
+    padding: '2px 4px',
+    paddingLeft: '6px'
+  }),
+  multiValueRemove: (provided: any) => ({
+    ...provided,
+    color: '#065f46',
+    ':hover': {
+      backgroundColor: '#a7f3d0', // emerald-200
+      color: '#022c22', // emerald-950
+    },
+  }),
+};
+
 export function MultiSelectDropdown({ options, selected, onChange, maxSelect = 2, placeholder = 'Select...' }: MultiSelectDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
+  const formattedOptions = options.map(o => ({ value: o, label: o }));
+  const selectedOptions = selected.map(s => ({ value: s, label: s }));
+
+  const handleChange = (newVal: any) => {
+    if (newVal.length <= maxSelect) {
+      onChange(newVal.map((v: any) => v.value));
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [wrapperRef]);
-
-  const toggleOption = (option: string) => {
-    if (selected.includes(option)) {
-      onChange(selected.filter(item => item !== option));
-    } else {
-      if (selected.length < maxSelect) {
-        onChange([...selected, option]);
-      }
-    }
-  };
-
-  const removeOption = (e: React.MouseEvent, option: string) => {
-    e.stopPropagation();
-    onChange(selected.filter(item => item !== option));
   };
 
   return (
-    <div ref={wrapperRef} className="relative w-full text-left">
-      <div 
-        onClick={() => setIsOpen(!isOpen)}
-        className="min-h-[34px] w-full bg-yellow-50 border border-yellow-200 hover:border-yellow-300 focus:bg-white focus:border-yellow-400 rounded-md px-2 py-1 flex items-center justify-between cursor-pointer transition-all shadow-sm"
-      >
-        <div className="flex flex-wrap gap-1 items-center flex-1 overflow-hidden">
-          {selected.length === 0 && <span className="text-zinc-400 text-[11px] font-bold px-1">{placeholder}</span>}
-          {selected.map(item => (
-            <span key={item} className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
-              {item}
-              <X size={10} className="cursor-pointer hover:text-emerald-950" onClick={(e) => removeOption(e, item)} />
-            </span>
-          ))}
-        </div>
-        <ChevronDown size={14} className="text-zinc-400 shrink-0 ml-1" />
-      </div>
-
-      {isOpen && (
-        <div className="absolute z-50 w-64 mt-1 bg-white border border-zinc-200 rounded-md shadow-xl max-h-60 overflow-auto flex flex-col">
-          {options.map((option, index) => {
-            const isSelected = selected.includes(option);
-            const isDisabled = !isSelected && selected.length >= maxSelect;
-            return (
-              <div 
-                key={index} 
-                onClick={() => !isDisabled && toggleOption(option)}
-                className={`px-3 py-2 text-[12px] font-bold flex items-center justify-between transition-colors
-                  ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-yellow-50'}
-                  ${isSelected ? 'text-emerald-700 bg-emerald-50/30' : 'text-zinc-700'}
-                `}
-              >
-                <span>{option}</span>
-                {isSelected && <Check size={14} className="text-emerald-600" />}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+    <Select
+      isMulti
+      value={selectedOptions}
+      onChange={handleChange}
+      options={formattedOptions}
+      styles={customSelectStyles}
+      menuPortalTarget={isMounted ? document.body : null}
+      menuPosition="fixed"
+      placeholder={placeholder}
+      className="w-full"
+      isOptionDisabled={() => selected.length >= maxSelect}
+    />
   );
 }
