@@ -16,7 +16,7 @@ export default function POForm() {
     pay2Amount: 0, pay2DueDate: ''
   });
 
-  const [skus, setSkus] = useState<Partial<SKUItem>[]>([{
+  const [skus, setSkus] = useState<Partial<SKUItem>[]>(() => [{
     id: Date.now().toString(), product: '', shape: '', designer: '', brand: '',
     description: '', size1: '', size2: '', quality: '', color: '', colorRef: '',
     orderQty: 0, unitQty: 'pieces', price: 0, unitPrice: 'piece', currency: 'USD',
@@ -41,11 +41,11 @@ export default function POForm() {
     }
   };
 
-  const updateHeader = (field: keyof POHeader, value: any) => {
+  const updateHeader = (field: keyof POHeader, value: string | number) => {
     setHeader({ ...header, [field]: value });
   };
 
-  const updateSku = (id: string, field: keyof SKUItem, value: any) => {
+  const updateSku = (id: string, field: keyof SKUItem, value: string | number) => {
     setSkus(skus.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
@@ -73,7 +73,7 @@ export default function POForm() {
     try {
       const finalSkus = calculateTotals();
       // createPO
-      const res = await createPO(header as Omit<POHeader, 'uid' | 'internalPO'>, finalSkus as any);
+      const res = await createPO(header as Omit<POHeader, 'uid' | 'internalPO'>, finalSkus as SKUItem[]);
       if (res.status === 'success' && res.data) {
         setMessage(`PO Saved Successfully! Internal PO: ${res.data.internalPO}`);
         
@@ -87,8 +87,8 @@ export default function POForm() {
       } else {
         setMessage('Error: ' + res.message);
       }
-    } catch (err: any) {
-      setMessage('Exception: ' + err.message);
+    } catch (err: unknown) {
+      setMessage('Exception: ' + (err as Error).message);
     }
     setLoading(false);
   };
@@ -138,21 +138,21 @@ export default function POForm() {
           <FileText size={18} className="text-blue-500"/> General Information
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <Input label="File Number" value={header.fileNumber} onChange={(e: any) => updateHeader('fileNumber', e.target.value)} />
-          <Input label="Buyer PO Number" value={header.buyerPO} onChange={(e: any) => updateHeader('buyerPO', e.target.value)} />
-          <Input label="Buyer Name" value={header.buyerName} onChange={(e: any) => updateHeader('buyerName', e.target.value)} />
+          <Input label="File Number" value={header.fileNumber} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('fileNumber', e.target.value)} />
+          <Input label="Buyer PO Number" value={header.buyerPO} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('buyerPO', e.target.value)} />
+          <Input label="Buyer Name" value={header.buyerName} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('buyerName', e.target.value)} />
           
-          <Input label="PO Date" type="date" value={header.poDate} onChange={(e: any) => updateHeader('poDate', e.target.value)} />
-          <Input label="Ex-Factory Date" type="date" value={header.exFactory} onChange={(e: any) => updateHeader('exFactory', e.target.value)} />
-          <Input label="Onboard Vessel Date" type="date" value={header.onboardDate} onChange={(e: any) => updateHeader('onboardDate', e.target.value)} />
+          <Input label="PO Date" type="date" value={header.poDate} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('poDate', e.target.value)} />
+          <Input label="Ex-Factory Date" type="date" value={header.exFactory} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('exFactory', e.target.value)} />
+          <Input label="Onboard Vessel Date" type="date" value={header.onboardDate} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('onboardDate', e.target.value)} />
           
-          <Input label="Delivery Terms" value={header.deliveryTerms} onChange={(e: any) => updateHeader('deliveryTerms', e.target.value)} />
-          <Input label="Port Name" value={header.portName} onChange={(e: any) => updateHeader('portName', e.target.value)} />
+          <Input label="Delivery Terms" value={header.deliveryTerms} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('deliveryTerms', e.target.value)} />
+          <Input label="Port Name" value={header.portName} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('portName', e.target.value)} />
           <Input label="Currency" value="USD" disabled />
           
           <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-5">
-            <TextArea label="Billing Address" value={header.billingAddr} onChange={(e: any) => updateHeader('billingAddr', e.target.value)} />
-            <TextArea label="Delivery Address" value={header.deliveryAddr} onChange={(e: any) => updateHeader('deliveryAddr', e.target.value)} />
+            <TextArea label="Billing Address" value={header.billingAddr} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('billingAddr', e.target.value)} />
+            <TextArea label="Delivery Address" value={header.deliveryAddr} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('deliveryAddr', e.target.value)} />
           </div>
         </div>
       </div>
@@ -166,19 +166,19 @@ export default function POForm() {
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider">Term 1</h3>
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Description" value={header.payTerm1} onChange={(e: any) => updateHeader('payTerm1', e.target.value)} placeholder="e.g. BL 75 Days" />
-              <Input label="Percentage (%)" type="number" value={header.pay1Pct} onChange={(e: any) => updateHeader('pay1Pct', parseFloat(e.target.value))} />
-              <Input label="Days" type="number" value={header.pay1Days} onChange={(e: any) => updateHeader('pay1Days', parseInt(e.target.value))} />
-              <Input label="Activity" value={header.pay1Activity} onChange={(e: any) => updateHeader('pay1Activity', e.target.value)} placeholder="e.g. From date of shipment" />
+              <Input label="Description" value={header.payTerm1} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('payTerm1', e.target.value)} placeholder="e.g. BL 75 Days" />
+              <Input label="Percentage (%)" type="number" value={header.pay1Pct} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('pay1Pct', parseFloat(e.target.value))} />
+              <Input label="Days" type="number" value={header.pay1Days} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('pay1Days', parseInt(e.target.value))} />
+              <Input label="Activity" value={header.pay1Activity} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('pay1Activity', e.target.value)} placeholder="e.g. From date of shipment" />
             </div>
           </div>
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider">Term 2</h3>
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Description" value={header.payTerm2} onChange={(e: any) => updateHeader('payTerm2', e.target.value)} />
-              <Input label="Percentage (%)" type="number" value={header.pay2Pct} onChange={(e: any) => updateHeader('pay2Pct', parseFloat(e.target.value))} />
-              <Input label="Days" type="number" value={header.pay2Days} onChange={(e: any) => updateHeader('pay2Days', parseInt(e.target.value))} />
-              <Input label="Activity" value={header.pay2Activity} onChange={(e: any) => updateHeader('pay2Activity', e.target.value)} />
+              <Input label="Description" value={header.payTerm2} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('payTerm2', e.target.value)} />
+              <Input label="Percentage (%)" type="number" value={header.pay2Pct} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('pay2Pct', parseFloat(e.target.value))} />
+              <Input label="Days" type="number" value={header.pay2Days} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('pay2Days', parseInt(e.target.value))} />
+              <Input label="Activity" value={header.pay2Activity} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateHeader('pay2Activity', e.target.value)} />
             </div>
           </div>
         </div>
@@ -208,32 +208,32 @@ export default function POForm() {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-              {skus.map((sku, index) => (
+              {skus.map((sku) => (
                 <tr key={sku.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
                   <td className="px-4 py-3 align-top space-y-2 min-w-[200px]">
-                    <Input label="SKU Code" value={sku.skuCode} onChange={(e: any) => updateSku(sku.id!, 'skuCode', e.target.value)} compact />
-                    <Input label="Product" value={sku.product} onChange={(e: any) => updateSku(sku.id!, 'product', e.target.value)} compact />
-                    <Input label="Brand" value={sku.brand} onChange={(e: any) => updateSku(sku.id!, 'brand', e.target.value)} compact />
+                    <Input label="SKU Code" value={sku.skuCode} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateSku(sku.id!, 'skuCode', e.target.value)} compact />
+                    <Input label="Product" value={sku.product} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateSku(sku.id!, 'product', e.target.value)} compact />
+                    <Input label="Brand" value={sku.brand} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateSku(sku.id!, 'brand', e.target.value)} compact />
                   </td>
                   <td className="px-4 py-3 align-top space-y-2 min-w-[200px]">
-                    <Input label="Description" value={sku.description} onChange={(e: any) => updateSku(sku.id!, 'description', e.target.value)} compact />
+                    <Input label="Description" value={sku.description} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateSku(sku.id!, 'description', e.target.value)} compact />
                     <div className="grid grid-cols-2 gap-2">
-                      <Input label="Size 1" value={sku.size1} onChange={(e: any) => updateSku(sku.id!, 'size1', e.target.value)} compact />
-                      <Input label="Size 2" value={sku.size2} onChange={(e: any) => updateSku(sku.id!, 'size2', e.target.value)} compact />
+                      <Input label="Size 1" value={sku.size1} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateSku(sku.id!, 'size1', e.target.value)} compact />
+                      <Input label="Size 2" value={sku.size2} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateSku(sku.id!, 'size2', e.target.value)} compact />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <Input label="Color" value={sku.color} onChange={(e: any) => updateSku(sku.id!, 'color', e.target.value)} compact />
-                      <Input label="Quality" value={sku.quality} onChange={(e: any) => updateSku(sku.id!, 'quality', e.target.value)} compact />
+                      <Input label="Color" value={sku.color} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateSku(sku.id!, 'color', e.target.value)} compact />
+                      <Input label="Quality" value={sku.quality} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateSku(sku.id!, 'quality', e.target.value)} compact />
                     </div>
                   </td>
                   <td className="px-4 py-3 align-top space-y-2 min-w-[150px]">
-                    <Input label="Order Qty" type="number" value={sku.orderQty} onChange={(e: any) => updateSku(sku.id!, 'orderQty', parseFloat(e.target.value))} compact />
-                    <Input label="Price" type="number" value={sku.price} onChange={(e: any) => updateSku(sku.id!, 'price', parseFloat(e.target.value))} compact />
-                    <Input label="Add. Sample" type="number" value={sku.addSample} onChange={(e: any) => updateSku(sku.id!, 'addSample', parseFloat(e.target.value))} compact />
+                    <Input label="Order Qty" type="number" value={sku.orderQty} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateSku(sku.id!, 'orderQty', parseFloat(e.target.value))} compact />
+                    <Input label="Price" type="number" value={sku.price} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateSku(sku.id!, 'price', parseFloat(e.target.value))} compact />
+                    <Input label="Add. Sample" type="number" value={sku.addSample} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateSku(sku.id!, 'addSample', parseFloat(e.target.value))} compact />
                   </td>
                   <td className="px-4 py-3 align-top space-y-2 min-w-[120px]">
-                    <Input label="Inner Pack" type="number" value={sku.innerPack} onChange={(e: any) => updateSku(sku.id!, 'innerPack', parseInt(e.target.value))} compact />
-                    <Input label="Outer Pack" type="number" value={sku.outerPack} onChange={(e: any) => updateSku(sku.id!, 'outerPack', parseInt(e.target.value))} compact />
+                    <Input label="Inner Pack" type="number" value={sku.innerPack} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateSku(sku.id!, 'innerPack', parseInt(e.target.value))} compact />
+                    <Input label="Outer Pack" type="number" value={sku.outerPack} onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => updateSku(sku.id!, 'outerPack', parseInt(e.target.value))} compact />
                   </td>
                   <td className="px-4 py-3 align-top">
                     <div className="flex flex-col gap-1 text-sm">
@@ -256,8 +256,18 @@ export default function POForm() {
   );
 }
 
+interface InputProps {
+  label: string;
+  value: string | number;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  type?: string;
+  placeholder?: string;
+  compact?: boolean;
+  disabled?: boolean;
+}
+
 // Simple internal UI Components
-function Input({ label, value, onChange, type = "text", placeholder, compact, disabled }: any) {
+function Input({ label, value, onChange, type = "text", placeholder, compact, disabled }: InputProps) {
   return (
     <div className={`flex flex-col ${compact ? 'gap-1' : 'gap-1.5'}`}>
       <label className={`font-medium text-zinc-600 dark:text-zinc-400 ${compact ? 'text-xs' : 'text-sm'}`}>{label}</label>
@@ -273,7 +283,14 @@ function Input({ label, value, onChange, type = "text", placeholder, compact, di
   );
 }
 
-function TextArea({ label, value, onChange, placeholder }: any) {
+interface TextAreaProps {
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  placeholder?: string;
+}
+
+function TextArea({ label, value, onChange, placeholder }: TextAreaProps) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-sm font-medium text-zinc-600 dark:text-zinc-400">{label}</label>
