@@ -125,10 +125,10 @@ export default function POForm() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Header Data Section */}
-          <div className="lg:col-span-2 bg-white border border-zinc-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center gap-2">
-              <FileText size={16} className="text-emerald-500" />
-              <h2 className="text-sm font-bold text-zinc-800 tracking-wide">General Information</h2>
+          <div className="lg:col-span-2 bg-white border-t-4 border-emerald-500 border-x border-b border-zinc-200 rounded-2xl shadow-md shadow-emerald-500/5 overflow-hidden flex flex-col transition-all hover:shadow-lg hover:shadow-emerald-500/10">
+            <div className="px-6 py-4 border-b border-zinc-100 bg-emerald-50/50 flex items-center gap-2">
+              <FileText size={16} className="text-emerald-600" />
+              <h2 className="text-[15px] font-extrabold text-emerald-900 tracking-wide">General Information</h2>
             </div>
             
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
@@ -147,10 +147,10 @@ export default function POForm() {
           </div>
 
           {/* Payment Terms Section - Right Side */}
-          <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-max">
-            <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center gap-2">
-              <CreditCard size={16} className="text-emerald-500" />
-              <h2 className="text-sm font-bold text-zinc-800 tracking-wide">Payment Terms</h2>
+          <div className="bg-white border-t-4 border-blue-500 border-x border-b border-zinc-200 rounded-2xl shadow-md shadow-blue-500/5 overflow-hidden flex flex-col h-max transition-all hover:shadow-lg hover:shadow-blue-500/10">
+            <div className="px-6 py-4 border-b border-zinc-100 bg-blue-50/50 flex items-center gap-2">
+              <CreditCard size={16} className="text-blue-600" />
+              <h2 className="text-[15px] font-extrabold text-blue-900 tracking-wide">Payment Terms</h2>
             </div>
             
             <div className="p-6 space-y-6">
@@ -189,13 +189,13 @@ export default function POForm() {
         </div>
 
         {/* Item Overview Grid */}
-        <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm flex flex-col overflow-hidden">
-          <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
+        <div className="bg-white border-t-4 border-purple-500 border-x border-b border-zinc-200 rounded-2xl shadow-md shadow-purple-500/5 flex flex-col overflow-hidden transition-all hover:shadow-lg hover:shadow-purple-500/10">
+          <div className="px-6 py-4 border-b border-zinc-100 bg-purple-50/50 flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <Package size={16} className="text-emerald-500" />
-              <h2 className="text-sm font-bold text-zinc-800 tracking-wide">Item Overview</h2>
+              <Package size={16} className="text-purple-600" />
+              <h2 className="text-[15px] font-extrabold text-purple-900 tracking-wide">Item Overview</h2>
             </div>
-            <button onClick={addSku} className="px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 text-[13px] font-bold rounded-lg flex items-center gap-1.5 transition-all">
+            <button onClick={addSku} className="px-4 py-2 bg-purple-100 text-purple-700 hover:bg-purple-200 hover:text-purple-900 text-[13px] font-extrabold rounded-lg flex items-center gap-1.5 transition-all shadow-sm">
               <Plus size={16} /> Add Line Item
             </button>
           </div>

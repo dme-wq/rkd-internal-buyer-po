@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import DashboardLayout from '@/components/DashboardLayout';
 import './globals.css';
+import { Josefin_Sans } from 'next/font/google';
+
+const josefin = Josefin_Sans({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'RKD Export PO Manager — Buyer Purchase Order System',
@@ -30,7 +33,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body>
+      <body className={josefin.className}>
         <div className="page-wrapper">
           <DashboardLayout>
             {children}
