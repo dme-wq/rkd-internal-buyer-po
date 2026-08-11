@@ -1,8 +1,29 @@
-import React from 'react';
+"use client";
+
+import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import { Clock } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const [time, setTime] = useState<string>('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setTime(now.toLocaleTimeString('en-IN', { 
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true 
+      }));
+    };
+    
+    updateTime(); // initial call
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     // Solid Emerald Green Background for the entire viewport
     <div className="min-h-screen bg-[#00a669] font-sans text-zinc-900 flex overflow-hidden">
@@ -33,8 +54,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
               
               <div className="flex items-center gap-4">
-                <div className="flex items-center justify-center w-11 h-11 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 shadow-sm shadow-emerald-500/10 cursor-pointer hover:bg-emerald-100 hover:scale-105 transition-all">
-                  <Clock size={20} className="stroke-[2.5px]" />
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 shadow-sm shadow-emerald-500/10 hover:bg-emerald-100 transition-colors">
+                  <Clock size={16} className="text-emerald-500" />
+                  <span className="text-sm font-bold tracking-wide tabular-nums">{time || 'Loading...'}</span>
                 </div>
               </div>
             </header>
