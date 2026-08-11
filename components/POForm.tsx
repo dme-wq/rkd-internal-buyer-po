@@ -223,15 +223,15 @@ export default function POForm() {
             <table className="w-full text-left whitespace-nowrap">
               <thead className="bg-white border-b border-zinc-200">
                 <tr>
-                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide w-12 text-center">#</th>
-                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide w-48">Product Info</th>
-                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[200px]">Description</th>
-                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide w-32">Attributes</th>
-                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide w-24">Order Qty</th>
-                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide w-24">Unit Price</th>
-                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide w-32">Packing</th>
-                  <th className="px-6 py-3 text-[12px] font-bold text-zinc-600 tracking-wide w-32 text-right">Line Total</th>
-                  <th className="px-4 py-3 w-12"></th>
+                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[48px] text-center">#</th>
+                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[200px]">Product Info</th>
+                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[240px]">Description</th>
+                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[160px]">Attributes</th>
+                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[120px]">Order Qty</th>
+                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[120px]">Unit Price</th>
+                  <th className="px-4 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[160px]">Packing</th>
+                  <th className="px-6 py-3 text-[12px] font-bold text-zinc-600 tracking-wide min-w-[120px] text-center">Line Total</th>
+                  <th className="px-4 py-3 min-w-[48px]"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 bg-zinc-50/20">
