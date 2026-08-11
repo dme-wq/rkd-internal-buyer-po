@@ -9,7 +9,7 @@ import Select from 'react-select';
 import { DragDropImage } from './DragDropImage';
 import { MultiSelectDropdown } from './MultiSelectDropdown';
 
-export default function POForm() {
+export default function POForm({ initialDropdowns }: { initialDropdowns?: Partial<DropdownData> }) {
   const [header, setHeader] = useState<Partial<POHeader>>({
     internalPO: '', fileNumber: '', buyerName: '', buyerPO: '', poDate: '', exFactory: '',
     deliveryTerms: '', portName: '', payTerm1: '', payTerm2: '', buyerSource: '',
@@ -28,6 +28,10 @@ export default function POForm() {
   }]);
 
   const [time, setTime] = useState<string>('');
+  const [dropdowns, setDropdowns] = useState<Partial<DropdownData>>(initialDropdowns || {});
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [pendingPOs, setPendingPOs] = useState<string[]>([]);
 
   useEffect(() => {
     const updateTime = () => {
@@ -46,19 +50,9 @@ export default function POForm() {
     
     // Fetch pending Internal POs
     getPendingInternalPOs().then(setPendingPOs);
-    getDropdowns().then(res => {
-      if (res.status === 'success' && res.data) {
-        setDropdowns(res.data);
-      }
-    });
     
     return () => clearInterval(interval);
   }, []);
-
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [pendingPOs, setPendingPOs] = useState<string[]>([]);
-  const [dropdowns, setDropdowns] = useState<DropdownData | null>(null);
 
   const addSku = () => {
     setSkus([...skus, { 
@@ -280,7 +274,7 @@ export default function POForm() {
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Due Date</label>
-                    <input type="text" readOnly placeholder="Auto Calculated" value={calculateDueDate(header.pay1Pct, header.pay1Activity || '', header.pay1Days, header.poDate || '', header.exFactory || '', header.onboardDate || '', header.portName || '')} className="w-full text-center bg-zinc-100 border border-zinc-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-600 outline-none shadow-sm cursor-default" />
+                    <input type="text" readOnly placeholder="" value={calculateDueDate(header.pay1Pct, header.pay1Activity || '', header.pay1Days, header.poDate || '', header.exFactory || '', header.onboardDate || '', header.portName || '')} className="w-full text-center bg-zinc-100 border border-zinc-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-600 outline-none shadow-sm cursor-default" />
                   </div>
                 </div>
               </div>
@@ -313,7 +307,7 @@ export default function POForm() {
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Due Date</label>
-                    <input type="text" readOnly placeholder="Auto Calculated" value={calculateDueDate(header.pay2Pct, header.pay2Activity || '', header.pay2Days, header.poDate || '', header.exFactory || '', header.onboardDate || '', header.portName || '')} className="w-full text-center bg-zinc-100 border border-zinc-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-600 outline-none shadow-sm cursor-default" />
+                    <input type="text" readOnly placeholder="" value={calculateDueDate(header.pay2Pct, header.pay2Activity || '', header.pay2Days, header.poDate || '', header.exFactory || '', header.onboardDate || '', header.portName || '')} className="w-full text-center bg-zinc-100 border border-zinc-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-600 outline-none shadow-sm cursor-default" />
                   </div>
                 </div>
               </div>
