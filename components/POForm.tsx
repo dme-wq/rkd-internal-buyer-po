@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus, Trash2, Save, FileText, CheckCircle, CreditCard, Package, Clock, Copy } from 'lucide-react';
-import { POHeader, SKUItem, DropdownData } from '../lib/types';
+import { POHeader, SKUItem, DropdownData, PendingPO } from '../lib/types';
 import { createPO, savePDFtoDrive, getPendingInternalPOs, getDropdowns, addDropdownOption, extractPOData } from '../lib/api';
 import { generatePOPDF } from '../lib/pdf';
 import Select from 'react-select';
@@ -83,9 +83,25 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
     return null;
   };
 
-  const handleInternalPOChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleInternalPOChange = async (e: React.ChangeEvent<HTMLSelectElement> | { target: { value: string } }) => {
     const selectedPO = e.target.value;
-    updateHeader('internalPO', selectedPO);
+    const poData = pendingPOs.find(p => p.internalPO === selectedPO);
+
+    if (poData) {
+      setHeader(prev => ({
+        ...prev,
+        internalPO: selectedPO,
+        buyerName: poData.buyerName || prev.buyerName,
+        buyerPO: poData.buyerPO || prev.buyerPO,
+        fileNumber: poData.fileNumber || prev.fileNumber,
+        poDate: poData.poDate || prev.poDate,
+        exFactory: poData.exFactory || prev.exFactory,
+        deliveryAddr: poData.deliveryAddr || prev.deliveryAddr,
+        onboardDate: poData.onboardDate || prev.onboardDate
+      }));
+    } else {
+      updateHeader('internalPO', selectedPO);
+    }
 
     if (selectedPO) {
       const result = await MySwal.fire({
@@ -178,7 +194,7 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
   const [dropdowns, setDropdowns] = useState<Partial<DropdownData>>(initialDropdowns || {});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [pendingPOs, setPendingPOs] = useState<string[]>([]);
+  const [pendingPOs, setPendingPOs] = useState<PendingPO[]>([]);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollSpeedRef = useRef<number>(0);
@@ -273,7 +289,9 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
     const interval = setInterval(updateTime, 1000);
     
     // Fetch pending Internal POs
-    getPendingInternalPOs().then(setPendingPOs);
+    getPendingInternalPOs().then(res => {
+      if (res.status === 'success' && res.data) setPendingPOs(res.data);
+    });
     
     return () => clearInterval(interval);
   }, []);
@@ -448,25 +466,26 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
             
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5 transition-all duration-300">
               <div className="flex gap-2 items-end">
-                <ModernSelect label="Internal PO Number" value={header.internalPO || ''} onChange={handleInternalPOChange} options={pendingPOs} />
+                <ModernSelect label="Internal PO Number" value={header.internalPO || ''} onChange={handleInternalPOChange as any} options={pendingPOs.map(p => p.internalPO)} />
                 {header.internalPO && (
-                  <button onClick={() => handleInternalPOChange({ target: { value: header.internalPO } } as any)} className="mb-1 p-2 bg-purple-100 text-purple-600 hover:bg-purple-200 rounded-lg shrink-0" title="Extract AI Data Again">
+                  <button onClick={() => handleInternalPOChange({ target: { value: header.internalPO || '' } })} className="mb-1 p-2 bg-purple-100 text-purple-600 hover:bg-purple-200 rounded-lg shrink-0" title="Extract AI Data Again">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></svg>
                   </button>
                 )}
               </div>
-              <ModernInput label="Buyer Name" value={header.buyerName} onChange={(e) => updateHeader('buyerName', e.target.value)} />
-              <ModernInput label="Buyer PO Number" value={header.buyerPO} onChange={(e) => updateHeader('buyerPO', e.target.value)} />
-              <ModernInput label="File Number" value={header.fileNumber} onChange={(e) => updateHeader('fileNumber', e.target.value)} />
+              <ModernInput label="Buyer Name" value={header.buyerName} readOnly={true} />
+              <ModernInput label="Buyer PO Number" value={header.buyerPO} readOnly={true} />
+              <ModernInput label="File Number" value={header.fileNumber} readOnly={true} />
               
-              <ModernInput label="PO Date" type="date" value={header.poDate} onChange={(e) => updateHeader('poDate', e.target.value)} />
-              <ModernInput label="Ex-Factory" type="date" value={header.exFactory} onChange={(e) => updateHeader('exFactory', e.target.value)} />
+              <ModernInput label="PO Date" type="date" value={header.poDate} readOnly={true} />
+              <ModernInput label="Ex-Factory" type="date" value={header.exFactory} readOnly={true} />
+              <ModernInput label="Onboard Vessel Date" type="date" value={header.onboardDate} readOnly={true} />
               <ModernSelect label="Delivery Terms" value={header.deliveryTerms || ''} onChange={(e) => updateHeader('deliveryTerms', e.target.value)} options={dropdowns?.deliveryTerms || []} onAddNew={() => handleAddNewDropdown('deliveryTerms')} />
               <ModernSelect label="Port of Discharge" value={header.portName || ''} onChange={(e) => updateHeader('portName', e.target.value)} options={dropdowns?.portNames || []} onAddNew={() => handleAddNewDropdown('portNames')} />
               
               <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
                 <ModernTextArea label="Billing Address" value={header.billingAddr} onChange={(e) => updateHeader('billingAddr', e.target.value)} />
-                <ModernTextArea label="Delivery Address" value={header.deliveryAddr} onChange={(e) => updateHeader('deliveryAddr', e.target.value)} />
+                <ModernTextArea label="Delivery Address" value={header.deliveryAddr} readOnly={true} />
               </div>
             </div>
           </div>
@@ -681,19 +700,22 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
 interface ModernInputProps {
   label: string;
   value: string | number | undefined;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   type?: string;
+  readOnly?: boolean;
+  className?: string;
 }
 
-function ModernInput({ label, value, onChange, type = "text" }: ModernInputProps) {
+function ModernInput({ label, value, onChange, type = "text", readOnly, className }: ModernInputProps) {
   return (
     <div className="flex flex-col gap-1.5 w-full items-center">
       <label className="text-[12px] font-bold text-zinc-600 tracking-wide capitalize text-center">{label}</label>
       <input 
-        type={type} 
+        type={type}
         value={value || ''} 
         onChange={onChange} 
-        className="w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-3.5 py-2 text-[13px] font-bold text-zinc-900 transition-all shadow-sm"
+        readOnly={readOnly}
+        className={className ? className : `w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-3.5 py-2 text-[13px] font-bold text-zinc-900 transition-all shadow-sm ${readOnly ? 'bg-zinc-100 border-zinc-200 text-zinc-500' : ''}`}
       />
     </div>
   );
@@ -745,10 +767,11 @@ function ModernSelect({ label, value, onChange, options, onAddNew }: ModernSelec
 interface ModernTextAreaProps {
   label: string;
   value: string | undefined;
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  readOnly?: boolean;
 }
 
-function ModernTextArea({ label, value, onChange }: ModernTextAreaProps) {
+function ModernTextArea({ label, value, onChange, readOnly }: ModernTextAreaProps) {
   return (
     <div className="flex flex-col gap-1.5 w-full items-center">
       <label className="text-[12px] font-bold text-zinc-600 tracking-wide capitalize text-center">{label}</label>
@@ -756,7 +779,8 @@ function ModernTextArea({ label, value, onChange }: ModernTextAreaProps) {
         value={value || ''} 
         onChange={onChange} 
         rows={2}
-        className="w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-3.5 py-2 text-[13px] font-bold text-zinc-900 resize-none transition-all shadow-sm"
+        readOnly={readOnly}
+        className={`w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-3.5 py-2 text-[13px] font-bold text-zinc-900 resize-none transition-all shadow-sm ${readOnly ? 'bg-zinc-100 border-zinc-200 text-zinc-500' : ''}`}
       />
     </div>
   );

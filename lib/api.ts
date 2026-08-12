@@ -10,6 +10,7 @@ import type {
   POListItem,
   PurchaseOrder,
   SKUItem,
+  PendingPO
 } from './types';
 
 const BASE_URL = 'https://script.google.com/macros/s/AKfycbwfDb3OiDuAvTJoQCF3WNCeY-4YctSaEyCDitn8D7z3n3d-rHUiz8kDK98T1duuyocp/exec';
@@ -72,6 +73,14 @@ function post<T>(body: object): Promise<APIResponse<T>> {
   });
 }
 
+export async function getPendingInternalPOs(): Promise<APIResponse<PendingPO[]>> {
+  return apiFetch<PendingPO[]>(BASE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: 'getPendingInternalPOs', data: {} }),
+  });
+}
+
 export async function createPO(
   header: Omit<POHeader, 'uid' | 'internalPO'>,
   skus: Omit<SKUItem, 'id' | 'lineTotal' | 'totalQtyMfg' | 'skuCode'>[]
@@ -102,10 +111,6 @@ export async function savePDFtoDrive(
   });
 }
 
-export async function getPendingInternalPOs(): Promise<string[]> {
-  const res = await post<string[]>({ action: 'getPendingInternalPOs', data: {} });
-  return res.status === 'success' && res.data ? res.data : [];
-}
 
 export async function addDropdownOption(
   field: string,

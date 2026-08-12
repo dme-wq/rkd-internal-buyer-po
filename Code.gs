@@ -109,23 +109,59 @@ function handleGetPendingInternalPOs() {
   const poEntryData = poEntrySheet.getDataRange().getValues();
   const allInternalPOs = [];
   
-  // Find column index for "Internal PO Number" to be robust
-  let internalPOColIndex = 13; // default to N
+  // Find column indices
+  let colMap = {
+    internalPO: 13,
+    fileNumber: 3,
+    buyerName: 4,
+    buyerPO: 12,
+    poDate: 6,
+    exFactory: 16,
+    onboardDate: 17,
+    deliveryAddr: 18
+  };
   let dataStartRow = 1;
   for (let i = 0; i < Math.min(poEntryData.length, 20); i++) {
     for (let j = 0; j < poEntryData[i].length; j++) {
-      if (poEntryData[i][j] && poEntryData[i][j].toString().trim().toLowerCase() === 'internal po number') {
-        internalPOColIndex = j;
-        dataStartRow = i + 1;
-        break;
-      }
+      const headerText = (poEntryData[i][j] || '').toString().trim().toLowerCase();
+      if (headerText === 'internal po number') colMap.internalPO = j;
+      else if (headerText === 'file number') colMap.fileNumber = j;
+      else if (headerText === 'buyer name') colMap.buyerName = j;
+      else if (headerText === 'buyer po number') colMap.buyerPO = j;
+      else if (headerText === 'po date') colMap.poDate = j;
+      else if (headerText === 'ex-factory date') colMap.exFactory = j;
+      else if (headerText === 'onboard vessel date') colMap.onboardDate = j;
+      else if (headerText === 'delivery address') colMap.deliveryAddr = j;
+    }
+    // If we found internal po number, we assume this is the header row
+    if (poEntryData[i].some(v => (v || '').toString().trim().toLowerCase() === 'internal po number')) {
+      dataStartRow = i + 1;
+      break;
     }
   }
 
+  // Parse Date object to yyyy-MM-dd
+  const formatDate = (dateObj) => {
+    if (!dateObj) return '';
+    if (dateObj instanceof Date) {
+      return dateObj.toISOString().split('T')[0];
+    }
+    return dateObj.toString().trim();
+  };
+
   for (let i = dataStartRow; i < poEntryData.length; i++) {
-    const val = poEntryData[i][internalPOColIndex];
+    const val = poEntryData[i][colMap.internalPO];
     if (val && val.toString().trim() !== '') {
-      allInternalPOs.push(val.toString().trim());
+      allInternalPOs.push({
+        internalPO: val.toString().trim(),
+        fileNumber: (poEntryData[i][colMap.fileNumber] || '').toString().trim(),
+        buyerName: (poEntryData[i][colMap.buyerName] || '').toString().trim(),
+        buyerPO: (poEntryData[i][colMap.buyerPO] || '').toString().trim(),
+        poDate: formatDate(poEntryData[i][colMap.poDate]),
+        exFactory: formatDate(poEntryData[i][colMap.exFactory]),
+        onboardDate: formatDate(poEntryData[i][colMap.onboardDate]),
+        deliveryAddr: (poEntryData[i][colMap.deliveryAddr] || '').toString().trim(),
+      });
     }
   }
   
@@ -143,12 +179,18 @@ function handleGetPendingInternalPOs() {
   
   // 3. Filter pending POs
   const pendingPOs = allInternalPOs.filter(po => {
-    // If the exact PO is in the DB, or the normalized PO is in the DB, skip it.
-    return !usedPOs.has(normalizePO(po));
+    return !usedPOs.has(normalizePO(po.internalPO));
   });
   
-  // Remove duplicates
-  const uniquePendingPOs = [...new Set(pendingPOs)];
+  // Remove duplicates by internalPO
+  const uniquePendingPOs = [];
+  const seen = new Set();
+  for (const po of pendingPOs) {
+    if (!seen.has(po.internalPO)) {
+      seen.add(po.internalPO);
+      uniquePendingPOs.push(po);
+    }
+  }
   
   return ContentService.createTextOutput(JSON.stringify({
     status: 'success',

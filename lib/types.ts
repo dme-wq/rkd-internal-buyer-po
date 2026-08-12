@@ -2,6 +2,17 @@
 // RKD Export Buyer PO — TypeScript Type Definitions
 // ============================================================
 
+export interface PendingPO {
+  internalPO: string;
+  buyerName: string;
+  buyerPO: string;
+  fileNumber: string;
+  poDate: string;
+  exFactory: string;
+  deliveryAddr: string;
+  onboardDate: string;
+}
+
 export interface SKUItem {
   id: string; // client-side only for React key
   skuCode: string;
