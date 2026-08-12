@@ -12,7 +12,7 @@ import type {
   SKUItem,
 } from './types';
 
-const BASE_URL = 'https://script.google.com/macros/s/AKfycbyNJOhDuoVL049S6_e3-Pg6CFSkfCHNTpINduno9t9qSflEVXHvk-iB-wsZEuAgw280/exec';
+const BASE_URL = 'https://script.google.com/macros/s/AKfycbx3uuUE7Ru3GALWG5F0D6GHXNY1VwchaMnMmS3oWK4nzlhjiowCsvTUePQui73Cfu2j/exec';
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<APIResponse<T>> {
   try {
