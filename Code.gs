@@ -390,7 +390,18 @@ function handleExtractPOData(data) {
   const fileId = extractFileId(fileUrl.toString());
   if (!fileId) throw new Error("Invalid Google Drive file URL.");
 
-  const file = DriveApp.getFileById(fileId);
+  let file;
+  try {
+    file = DriveApp.getFileById(fileId);
+  } catch (e) {
+    throw new Error("Could not access the file. Make sure the file exists and is accessible: " + e.message);
+  }
+
+  const size = file.getSize();
+  if (size > 7 * 1024 * 1024) { // 7MB limit to avoid Google Apps Script Out of Memory HTML crash
+    throw new Error("File is too large (" + Math.round(size/1024/1024) + "MB). Please use a file smaller than 7MB for AI extraction.");
+  }
+
   const blob = file.getBlob();
   const base64Data = Utilities.base64Encode(blob.getBytes());
   const mimeType = getMimeTypeFromBlob(blob);

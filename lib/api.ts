@@ -17,8 +17,16 @@ const BASE_URL = 'https://script.google.com/macros/s/AKfycbxi-NUDbMZKOEdZJ4ocA_l
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<APIResponse<T>> {
   try {
     const res = await fetch(url, options);
-    const json: APIResponse<T> = await res.json();
-    return json;
+    const text = await res.text();
+    try {
+      const json: APIResponse<T> = JSON.parse(text);
+      return json;
+    } catch (e) {
+      if (text.trim().startsWith('<')) {
+        return { status: 'error', message: "Google Apps Script returned an HTML error. This usually happens if the uploaded file is too large (causing a memory crash), or if the script permissions are incorrect. Please ensure the Apps Script is deployed as 'Execute as: Me' and 'Who has access: Anyone'." };
+      }
+      return { status: 'error', message: 'Invalid JSON response from server' };
+    }
   } catch (err) {
     return { status: 'error', message: String(err) };
   }
