@@ -97,6 +97,7 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
         poDate: poData.poDate || prev.poDate,
         exFactory: poData.exFactory || prev.exFactory,
         deliveryAddr: poData.deliveryAddr || prev.deliveryAddr,
+        billingAddr: poData.billingAddr || prev.billingAddr,
         onboardDate: poData.onboardDate || prev.onboardDate
       }));
     } else {
@@ -484,7 +485,7 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
               <ModernSelect label="Port of Discharge" value={header.portName || ''} onChange={(e) => updateHeader('portName', e.target.value)} options={dropdowns?.portNames || []} onAddNew={() => handleAddNewDropdown('portNames')} />
               
               <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
-                <ModernTextArea label="Billing Address" value={header.billingAddr} onChange={(e) => updateHeader('billingAddr', e.target.value)} />
+                <ModernTextArea label="Billing Address" value={header.billingAddr} readOnly={true} />
                 <ModernTextArea label="Delivery Address" value={header.deliveryAddr} readOnly={true} />
               </div>
             </div>

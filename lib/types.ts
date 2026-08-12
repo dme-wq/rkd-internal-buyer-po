@@ -10,6 +10,7 @@ export interface PendingPO {
   poDate: string;
   exFactory: string;
   deliveryAddr: string;
+  billingAddr?: string;
   onboardDate: string;
 }
 

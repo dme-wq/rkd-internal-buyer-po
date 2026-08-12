@@ -149,18 +149,35 @@ function handleGetPendingInternalPOs() {
     return dateObj.toString().trim();
   };
 
+  // 1.5 Get Billing Addresses from 'Buyer Name' sheet
+  // Buyer Name is in Col G (index 6), Billing Address is in Col I (index 8)
+  const buyerNameSheet = ss.getSheetByName('Buyer Name');
+  const billingAddrMap = {};
+  if (buyerNameSheet) {
+    const buyerData = buyerNameSheet.getDataRange().getValues();
+    for (let i = 1; i < buyerData.length; i++) { // Skip header if present, or just process all
+      const bName = (buyerData[i][6] || '').toString().trim();
+      const bAddr = (buyerData[i][8] || '').toString().trim();
+      if (bName) {
+        billingAddrMap[bName.toLowerCase()] = bAddr;
+      }
+    }
+  }
+
   for (let i = dataStartRow; i < poEntryData.length; i++) {
     const val = poEntryData[i][colMap.internalPO];
     if (val && val.toString().trim() !== '') {
+      const buyerNameRaw = (poEntryData[i][colMap.buyerName] || '').toString().trim();
       allInternalPOs.push({
         internalPO: val.toString().trim(),
         fileNumber: (poEntryData[i][colMap.fileNumber] || '').toString().trim(),
-        buyerName: (poEntryData[i][colMap.buyerName] || '').toString().trim(),
+        buyerName: buyerNameRaw,
         buyerPO: (poEntryData[i][colMap.buyerPO] || '').toString().trim(),
         poDate: formatDate(poEntryData[i][colMap.poDate]),
         exFactory: formatDate(poEntryData[i][colMap.exFactory]),
         onboardDate: formatDate(poEntryData[i][colMap.onboardDate]),
         deliveryAddr: (poEntryData[i][colMap.deliveryAddr] || '').toString().trim(),
+        billingAddr: billingAddrMap[buyerNameRaw.toLowerCase()] || ''
       });
     }
   }
