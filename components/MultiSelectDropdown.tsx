@@ -7,6 +7,7 @@ interface MultiSelectDropdownProps {
   onChange: (selected: string[]) => void;
   maxSelect?: number;
   placeholder?: string;
+  onAddNew?: () => Promise<string | null>;
 }
 
 const customSelectStyles = {
@@ -82,14 +83,30 @@ const customSelectStyles = {
   }),
 };
 
-export function MultiSelectDropdown({ options, selected, onChange, maxSelect = 2, placeholder = 'Select...' }: MultiSelectDropdownProps) {
+export function MultiSelectDropdown({ options, selected, onChange, maxSelect = 2, placeholder = 'Select...', onAddNew }: MultiSelectDropdownProps) {
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => { setIsMounted(true); }, []);
 
-  const formattedOptions = options.map(o => ({ value: o, label: o }));
+  const formattedOptions = [
+    ...options.map(o => ({ value: o, label: o })),
+    ...(onAddNew ? [{ value: '__add_new__', label: '+ Add New...', isAddNew: true }] : [])
+  ];
   const selectedOptions = selected.map(s => ({ value: s, label: s }));
 
-  const handleChange = (newVal: any) => {
+  const handleChange = async (newVal: any, actionMeta: any) => {
+    // If the user selects the Add New option
+    if (actionMeta.action === 'select-option' && actionMeta.option?.value === '__add_new__') {
+      if (onAddNew) {
+        const newValue = await onAddNew();
+        if (newValue) {
+          if (selected.length < maxSelect) {
+            onChange([...selected, newValue]);
+          }
+        }
+      }
+      return;
+    }
+
     if (newVal.length <= maxSelect) {
       onChange(newVal.map((v: any) => v.value));
     }

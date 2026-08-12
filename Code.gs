@@ -41,6 +41,8 @@ function handleGetDropdowns() {
   const qualities = extractUnique('Drop Downs', 33); // AH
   const colors = extractUnique('Drop Downs', 17); // R
   const ppTopSamples = extractUnique('Drop Downs', 35); // AJ
+  const portNames = extractUnique('Drop Downs', 36); // AK
+  const deliveryTerms = extractUnique('Drop Downs', 8); // I
 
   const unitsQty = extractUnique('list', 4); // E
   const unitsPrice = extractUnique('list', 3); // D
@@ -48,7 +50,7 @@ function handleGetDropdowns() {
 
   return ContentService.createTextOutput(JSON.stringify({
     status: 'success',
-    data: { shapes, designers, brands, sizes, qualities, colors, unitsQty, unitsPrice, packs, ppTopSamples }
+    data: { shapes, designers, brands, sizes, qualities, colors, unitsQty, unitsPrice, packs, ppTopSamples, portNames, deliveryTerms }
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -78,6 +80,8 @@ function doPost(e) {
       return handleGetPendingInternalPOs();
     } else if (action === 'getDropdowns') {
       return handleGetDropdowns();
+    } else if (action === 'addDropdown') {
+      return handleAddDropdown(data);
     } else {
        return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Unknown action' }))
         .setMimeType(ContentService.MimeType.JSON);
@@ -280,4 +284,54 @@ function doOptions(e) {
   return ContentService.createTextOutput("")
     .setMimeType(ContentService.MimeType.TEXT)
     .setHeaders(headers);
+}
+
+function handleAddDropdown(data) {
+  const { field, value } = data;
+  if (!field || !value) {
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Missing field or value' })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const mapping = {
+    shapes: { sheet: 'Drop Downs', col: 28 }, // AB -> 28
+    designers: { sheet: 'Drop Downs', col: 17 }, // Q -> 17
+    brands: { sheet: 'Drop Downs', col: 33 }, // AG -> 33
+    sizes: { sheet: 'Drop Downs', col: 23 }, // W -> 23
+    qualities: { sheet: 'Drop Downs', col: 34 }, // AH -> 34
+    colors: { sheet: 'Drop Downs', col: 18 }, // R -> 18
+    ppTopSamples: { sheet: 'Drop Downs', col: 36 }, // AJ -> 36
+    portNames: { sheet: 'Drop Downs', col: 37 }, // AK -> 37
+    deliveryTerms: { sheet: 'Drop Downs', col: 9 }, // I -> 9
+    
+    unitsQty: { sheet: 'list', col: 5 }, // E -> 5
+    unitsPrice: { sheet: 'list', col: 4 }, // D -> 4
+    packs: { sheet: 'list', col: 6 } // F -> 6
+  };
+
+  const map = mapping[field];
+  if (!map) {
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Unknown field: ' + field })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sheet = ss.getSheetByName(map.sheet);
+  if (!sheet) {
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Sheet not found' })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const dataRange = sheet.getRange(1, map.col, sheet.getMaxRows(), 1).getValues();
+  let firstEmptyRow = dataRange.length + 1;
+  for (let i = 0; i < dataRange.length; i++) {
+    if (!dataRange[i][0] || dataRange[i][0].toString().trim() === '') {
+      firstEmptyRow = i + 1;
+      break;
+    }
+  }
+
+  sheet.getRange(firstEmptyRow, map.col).setValue(value);
+
+  return ContentService.createTextOutput(JSON.stringify({
+    status: 'success',
+    message: 'Added successfully'
+  })).setMimeType(ContentService.MimeType.JSON);
 }

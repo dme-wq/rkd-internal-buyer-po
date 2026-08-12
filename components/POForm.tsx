@@ -3,11 +3,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus, Trash2, Save, FileText, CheckCircle, CreditCard, Package, Clock, Copy } from 'lucide-react';
 import { POHeader, SKUItem, DropdownData } from '../lib/types';
-import { createPO, savePDFtoDrive, getPendingInternalPOs, getDropdowns } from '../lib/api';
+import { createPO, savePDFtoDrive, getPendingInternalPOs, getDropdowns, addDropdownOption } from '../lib/api';
 import { generatePOPDF } from '../lib/pdf';
 import Select from 'react-select';
 import { DragDropImage } from './DragDropImage';
 import { MultiSelectDropdown } from './MultiSelectDropdown';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
+
+const MySwal = withReactContent(Swal);
 
 export default function POForm({ initialDropdowns }: { initialDropdowns?: Partial<DropdownData> }) {
   const [header, setHeader] = useState<Partial<POHeader>>({
@@ -28,6 +32,56 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
   }]);
 
   const [time, setTime] = useState<string>('');
+
+  const handleAddNewDropdown = async (field: keyof DropdownData) => {
+    const { value: newValue } = await MySwal.fire({
+      title: 'Add New Option',
+      input: 'text',
+      inputLabel: `Enter new value`,
+      inputPlaceholder: 'Type here...',
+      showCancelButton: true,
+      confirmButtonText: 'Add',
+      confirmButtonColor: '#00a669',
+      inputValidator: (value) => {
+        if (!value) return 'You need to write something!'
+      }
+    });
+
+    if (newValue) {
+      MySwal.fire({
+        title: 'Saving...',
+        allowOutsideClick: false,
+        didOpen: () => {
+          MySwal.showLoading();
+        }
+      });
+      
+      const res = await addDropdownOption(field as string, newValue);
+      
+      if (res.status === 'success') {
+        setDropdowns(prev => ({
+          ...prev,
+          [field]: [...(prev[field] as string[] || []), newValue]
+        }));
+        MySwal.fire({
+          icon: 'success',
+          title: 'Added!',
+          text: `${newValue} has been added.`,
+          timer: 1500,
+          showConfirmButton: false
+        });
+        return newValue;
+      } else {
+        MySwal.fire({
+          icon: 'error',
+          title: 'Oops...',
+          text: res.message || 'Something went wrong!',
+        });
+        return null;
+      }
+    }
+    return null;
+  };
   const [dropdowns, setDropdowns] = useState<Partial<DropdownData>>(initialDropdowns || {});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -36,6 +90,29 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollSpeedRef = useRef<number>(0);
   const scrollAnimationFrameRef = useRef<number | null>(null);
+  const isHoveringRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (!isHoveringRef.current || !scrollContainerRef.current) return;
+      
+      const target = e.target as HTMLElement;
+      const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+      if (isInput) return; // Allow normal cursor movement in inputs
+
+      const scrollAmount = 60; // Pixels to scroll per key press
+      if (e.key === 'ArrowRight') {
+        scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        e.preventDefault();
+      } else if (e.key === 'ArrowLeft') {
+        scrollContainerRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   const performScroll = useCallback(() => {
     if (scrollContainerRef.current && scrollSpeedRef.current !== 0) {
@@ -79,6 +156,7 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
   }, [performScroll]);
 
   const handleMouseLeave = useCallback(() => {
+    isHoveringRef.current = false;
     scrollSpeedRef.current = 0;
     if (scrollAnimationFrameRef.current) {
       cancelAnimationFrame(scrollAnimationFrameRef.current);
@@ -278,18 +356,12 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
             <div className="p-6 grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-x-6 gap-y-5 transition-all duration-300">
               <ModernSelect label="Internal PO Number" value={header.internalPO || ''} onChange={(e) => updateHeader('internalPO', e.target.value)} options={pendingPOs} />
               <ModernInput label="Buyer Name" value={header.buyerName} onChange={(e) => updateHeader('buyerName', e.target.value)} />
-              <ModernInput label="Buyer PO" value={header.buyerPO} onChange={(e) => updateHeader('buyerPO', e.target.value)} />
+              <ModernInput label="Buyer PO Number" value={header.buyerPO} onChange={(e) => updateHeader('buyerPO', e.target.value)} />
               <ModernInput label="File Number" value={header.fileNumber} onChange={(e) => updateHeader('fileNumber', e.target.value)} />
               <ModernInput label="PO Date" type="date" value={header.poDate} onChange={(e) => updateHeader('poDate', e.target.value)} />
               <ModernInput label="Ex-Factory" type="date" value={header.exFactory} onChange={(e) => updateHeader('exFactory', e.target.value)} />
-              <ModernInput label="Onboard Vessel" type="date" value={header.onboardDate} onChange={(e) => updateHeader('onboardDate', e.target.value)} />
-              <ModernInput label="Delivery Terms" value={header.deliveryTerms} onChange={(e) => updateHeader('deliveryTerms', e.target.value)} />
-              <ModernSelect 
-                label="Port of Discharge" 
-                value={header.portName || ''} 
-                onChange={(e) => updateHeader('portName', e.target.value)} 
-                options={["N/A", "Genoa", "Charleston", "Baltimore", "Umm Qasr", "Savannah", "New Jersy"]} 
-              />
+              <ModernSelect label="Delivery Terms" value={header.deliveryTerms || ''} onChange={(e) => updateHeader('deliveryTerms', e.target.value)} options={dropdowns?.deliveryTerms || []} onAddNew={() => handleAddNewDropdown('deliveryTerms')} />
+              <ModernSelect label="Port of Discharge" value={header.portName || ''} onChange={(e) => updateHeader('portName', e.target.value)} options={dropdowns?.portNames || []} onAddNew={() => handleAddNewDropdown('portNames')} />
               
               <div className="col-span-full grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-6 mt-2">
                 <ModernTextArea label="Billing Address" value={header.billingAddr} onChange={(e) => updateHeader('billingAddr', e.target.value)} />
@@ -404,6 +476,7 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
             className="overflow-x-auto pb-6"
             ref={scrollContainerRef}
             onMouseMove={handleMouseMove}
+            onMouseEnter={() => { isHoveringRef.current = true; }}
             onMouseLeave={handleMouseLeave}
           >
             <table className="w-full text-left whitespace-nowrap min-w-max border-separate border-spacing-0">
@@ -445,26 +518,26 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
                     <td className="px-3 py-3 align-top sticky left-[41px] bg-white group-hover:bg-emerald-50/90 border-b border-r border-zinc-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] z-10"><GridInput value={sku.skuCode} onChange={(e) => updateSku(sku.id!, 'skuCode', e.target.value)} placeholder="SKU Code" /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridInput value={sku.product} onChange={(e) => updateSku(sku.id!, 'product', e.target.value)} placeholder="Product Name" bold /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><DragDropImage value={sku.designImage || ''} onChange={(val) => updateSku(sku.id!, 'designImage', val)} /></td>
-                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.shape} onChange={(e: any) => updateSku(sku.id!, 'shape', e.target.value)} options={dropdowns?.shapes} /></td>
-                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.designer} onChange={(e: any) => updateSku(sku.id!, 'designer', e.target.value)} options={dropdowns?.designers} /></td>
-                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.brand} onChange={(e: any) => updateSku(sku.id!, 'brand', e.target.value)} options={dropdowns?.brands} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.shape} onChange={(e: any) => updateSku(sku.id!, 'shape', e.target.value)} options={dropdowns?.shapes} onAddNew={() => handleAddNewDropdown('shapes')} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.designer} onChange={(e: any) => updateSku(sku.id!, 'designer', e.target.value)} options={dropdowns?.designers} onAddNew={() => handleAddNewDropdown('designers')} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.brand} onChange={(e: any) => updateSku(sku.id!, 'brand', e.target.value)} options={dropdowns?.brands} onAddNew={() => handleAddNewDropdown('brands')} /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100">
                       <textarea 
                         value={sku.description || ''} onChange={(e) => updateSku(sku.id!, 'description', e.target.value)} placeholder="Desc..."
                         className="block w-full h-[34px] leading-[22px] text-center bg-yellow-50 border border-yellow-200 focus:bg-white focus:border-yellow-400 rounded-md px-2 text-[11px] font-bold text-zinc-800 resize-none outline-none transition-all shadow-sm"
                       />
                     </td>
-                    <td className="px-3 py-3 align-top border-b border-zinc-100"><MultiSelectDropdown options={dropdowns?.sizes || []} selected={sku.sizes || []} onChange={handleSizesChange} maxSelect={2} /></td>
-                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.quality} onChange={(e: any) => updateSku(sku.id!, 'quality', e.target.value)} options={dropdowns?.qualities} /></td>
-                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.color} onChange={(e: any) => updateSku(sku.id!, 'color', e.target.value)} options={dropdowns?.colors} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><MultiSelectDropdown options={dropdowns?.sizes || []} selected={sku.sizes || []} onChange={handleSizesChange} maxSelect={2} onAddNew={() => handleAddNewDropdown('sizes')} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.quality} onChange={(e: any) => updateSku(sku.id!, 'quality', e.target.value)} options={dropdowns?.qualities} onAddNew={() => handleAddNewDropdown('qualities')} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.color} onChange={(e: any) => updateSku(sku.id!, 'color', e.target.value)} options={dropdowns?.colors} onAddNew={() => handleAddNewDropdown('colors')} /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridInput type="number" value={sku.orderQty} onChange={(e) => updateSku(sku.id!, 'orderQty', e.target.value)} placeholder="0" /></td>
-                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.unitQty} onChange={(e: any) => updateSku(sku.id!, 'unitQty', e.target.value)} options={dropdowns?.unitsQty} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.unitQty} onChange={(e: any) => updateSku(sku.id!, 'unitQty', e.target.value)} options={dropdowns?.unitsQty} onAddNew={() => handleAddNewDropdown('unitsQty')} /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridInput type="number" value={sku.price} onChange={(e) => updateSku(sku.id!, 'price', e.target.value)} placeholder="0.00" /></td>
-                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.unitPrice} onChange={(e: any) => updateSku(sku.id!, 'unitPrice', e.target.value)} options={dropdowns?.unitsPrice} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.unitPrice} onChange={(e: any) => updateSku(sku.id!, 'unitPrice', e.target.value)} options={dropdowns?.unitsPrice} onAddNew={() => handleAddNewDropdown('unitsPrice')} /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.currency} onChange={(e: any) => updateSku(sku.id!, 'currency', e.target.value)} options={['USD', 'INR', 'EUR', 'CAD', 'AUD', 'CNY']} /></td>
-                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.innerPack} onChange={(e: any) => updateSku(sku.id!, 'innerPack', e.target.value)} options={dropdowns?.packs} /></td>
-                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.outerPack} onChange={(e: any) => updateSku(sku.id!, 'outerPack', e.target.value)} options={dropdowns?.packs} /></td>
-                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.addSample} onChange={(e: any) => updateSku(sku.id!, 'addSample', e.target.value)} options={dropdowns?.ppTopSamples} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.innerPack} onChange={(e: any) => updateSku(sku.id!, 'innerPack', e.target.value)} options={dropdowns?.packs} onAddNew={() => handleAddNewDropdown('packs')} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.outerPack} onChange={(e: any) => updateSku(sku.id!, 'outerPack', e.target.value)} options={dropdowns?.packs} onAddNew={() => handleAddNewDropdown('packs')} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.addSample} onChange={(e: any) => updateSku(sku.id!, 'addSample', e.target.value)} options={dropdowns?.ppTopSamples} onAddNew={() => handleAddNewDropdown('ppTopSamples')} /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.addProd} onChange={(e: any) => updateSku(sku.id!, 'addProd', e.target.value)} options={['0%', '1%', '2%', '3%', '4%', '5%', '6%', '7%', '8%', '9%', '10%']} /></td>
                     
                     <td className="px-3 py-3 align-middle text-center bg-rose-50/20 border-b border-zinc-100"><div className="text-[12px] font-black text-rose-700 bg-white border border-rose-200 rounded py-1 px-2 shadow-sm inline-block">{sku.totalQtyMfg || 0}</div></td>
@@ -530,19 +603,36 @@ interface ModernSelectProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   options: string[];
+  onAddNew?: () => Promise<string | null>;
 }
 
-function ModernSelect({ label, value, onChange, options }: ModernSelectProps) {
+function ModernSelect({ label, value, onChange, options, onAddNew }: ModernSelectProps) {
+  const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (e.target.value === '__add_new__') {
+      if (onAddNew) {
+        const newValue = await onAddNew();
+        if (newValue) {
+          onChange({ target: { value: newValue } } as any);
+        } else {
+          onChange({ target: { value: value || '' } } as any);
+        }
+      }
+    } else {
+      onChange(e);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-1.5 w-full items-center relative">
       <label className="text-[12px] font-bold text-zinc-600 tracking-wide capitalize text-center">{label}</label>
       <select 
         value={value || ''} 
-        onChange={onChange} 
+        onChange={handleChange} 
         className="w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-3.5 py-2 text-[13px] font-bold text-zinc-900 transition-all shadow-sm appearance-none cursor-pointer"
       >
         <option value="" disabled>Select {label}</option>
         {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+        {onAddNew && <option value="__add_new__" className="font-bold text-blue-600 bg-blue-50">+ Add New...</option>}
       </select>
       <div className="absolute right-3 top-[30px] pointer-events-none text-zinc-400">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
@@ -650,8 +740,11 @@ const customSelectStyles = {
   })
 };
 
-function GridSelect({ value, onChange, options = [] }: { value: any, onChange: any, options?: string[] }) {
-  const formattedOptions = options.map(o => ({ value: o, label: o }));
+function GridSelect({ value, onChange, options = [], onAddNew }: { value: any, onChange: any, options?: string[], onAddNew?: () => Promise<string | null> }) {
+  const formattedOptions = [
+    ...options.map(o => ({ value: o, label: o })),
+    ...(onAddNew ? [{ value: '__add_new__', label: '+ Add New...', isAddNew: true }] : [])
+  ];
   const selectedOption = formattedOptions.find(o => o.value === value) || null;
   const [isMounted, setIsMounted] = useState(false);
   
@@ -660,7 +753,18 @@ function GridSelect({ value, onChange, options = [] }: { value: any, onChange: a
   return (
     <Select
       value={selectedOption}
-      onChange={(selected: any) => onChange({ target: { value: selected?.value || '' } })}
+      onChange={async (selected: any) => {
+        if (selected?.value === '__add_new__') {
+          if (onAddNew) {
+            const newValue = await onAddNew();
+            if (newValue) {
+              onChange({ target: { value: newValue } });
+            }
+          }
+        } else {
+          onChange({ target: { value: selected?.value || '' } });
+        }
+      }}
       options={formattedOptions}
       styles={customSelectStyles}
       menuPortalTarget={isMounted ? document.body : null}
