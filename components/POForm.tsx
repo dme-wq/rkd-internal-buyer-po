@@ -447,7 +447,14 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
             </div>
             
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5 transition-all duration-300">
-              <ModernSelect label="Internal PO Number" value={header.internalPO || ''} onChange={handleInternalPOChange} options={pendingPOs} />
+              <div className="flex gap-2 items-end">
+                <ModernSelect label="Internal PO Number" value={header.internalPO || ''} onChange={handleInternalPOChange} options={pendingPOs} />
+                {header.internalPO && (
+                  <button onClick={() => handleInternalPOChange({ target: { value: header.internalPO } } as any)} className="mb-1 p-2 bg-purple-100 text-purple-600 hover:bg-purple-200 rounded-lg shrink-0" title="Extract AI Data Again">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></svg>
+                  </button>
+                )}
+              </div>
               <ModernInput label="Buyer Name" value={header.buyerName} onChange={(e) => updateHeader('buyerName', e.target.value)} />
               <ModernInput label="Buyer PO Number" value={header.buyerPO} onChange={(e) => updateHeader('buyerPO', e.target.value)} />
               <ModernInput label="File Number" value={header.fileNumber} onChange={(e) => updateHeader('fileNumber', e.target.value)} />
