@@ -11,6 +11,17 @@ import { MultiSelectDropdown } from './MultiSelectDropdown';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 
+const formatDisplayDate = (dateString?: string) => {
+  if (!dateString) return '';
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return dateString; 
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = months[d.getMonth()];
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
 const MySwal = withReactContent(Swal);
 
 export default function POForm({ initialDropdowns }: { initialDropdowns?: Partial<DropdownData> }) {
@@ -355,11 +366,15 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
       offsetDays = 15;
     }
 
-    if (!baseDateStr) return '';
-    const d = new Date(baseDateStr);
-    if (isNaN(d.getTime())) return '';
-    d.setDate(d.getDate() + offsetDays);
-    return d.toISOString().split('T')[0];
+    try {
+      if (!baseDateStr) return '';
+      const d = new Date(baseDateStr);
+      if (isNaN(d.getTime())) return '';
+      d.setDate(d.getDate() + offsetDays);
+      return formatDisplayDate(d.toISOString().split('T')[0]);
+    } catch (e) {
+      return '';
+    }
   };
 
   const percentOptions = ['-', ...Array.from({length: 100}, (_, i) => `${i + 1}%`)];
@@ -478,9 +493,9 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
               <ModernInput label="Buyer PO Number" value={header.buyerPO} readOnly={true} />
               <ModernInput label="File Number" value={header.fileNumber} readOnly={true} />
               
-              <ModernInput label="PO Date" type="date" value={header.poDate} readOnly={true} />
-              <ModernInput label="Ex-Factory" type="date" value={header.exFactory} readOnly={true} />
-              <ModernInput label="Onboard Vessel Date" type="date" value={header.onboardDate} readOnly={true} />
+              <ModernInput label="PO Date" type="text" value={formatDisplayDate(header.poDate)} readOnly={true} />
+              <ModernInput label="Ex-Factory" type="text" value={formatDisplayDate(header.exFactory)} readOnly={true} />
+              <ModernInput label="Onboard Vessel Date" type="text" value={formatDisplayDate(header.onboardDate)} readOnly={true} />
               <ModernSelect label="Delivery Terms" value={header.deliveryTerms || ''} onChange={(e) => updateHeader('deliveryTerms', e.target.value)} options={dropdowns?.deliveryTerms || []} onAddNew={() => handleAddNewDropdown('deliveryTerms')} />
               <ModernSelect label="Port of Discharge" value={header.portName || ''} onChange={(e) => updateHeader('portName', e.target.value)} options={dropdowns?.portNames || []} onAddNew={() => handleAddNewDropdown('portNames')} />
               
