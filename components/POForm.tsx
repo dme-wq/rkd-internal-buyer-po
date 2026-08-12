@@ -434,6 +434,36 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
   };
 
   const handleSave = async () => {
+    const requiredHeader = ['internalPO', 'buyerName', 'buyerPO', 'fileNumber', 'poDate', 'exFactory', 'onboardDate', 'deliveryTerms', 'portName', 'billingAddr', 'deliveryAddr'];
+    for (const field of requiredHeader) {
+      if (!header[field as keyof POHeader] || header[field as keyof POHeader] === '-') {
+        MySwal.fire('Incomplete Field', `Please fill General Information field: ${field}`, 'warning');
+        return;
+      }
+    }
+
+    const payFields = ['pay1Pct', 'pay1Days', 'pay1Activity', 'pay2Pct', 'pay2Days', 'pay2Activity'];
+    for (const field of payFields) {
+      if (!header[field as keyof POHeader] || header[field as keyof POHeader] === '-') {
+        MySwal.fire('Incomplete Payment Terms', `Please complete Payment Terms.`, 'warning');
+        return;
+      }
+    }
+
+    if (skus.length === 0) {
+      MySwal.fire('No Items', 'Please add at least one item.', 'warning');
+      return;
+    }
+
+    for (let i = 0; i < skus.length; i++) {
+      const s = skus[i];
+      const isComplete = !!(s.product && s.shape && s.designer && s.brand && s.quality && s.color && Number(s.orderQty) > 0 && Number(s.price) > 0);
+      if (!isComplete) {
+        MySwal.fire('Incomplete Line Item', `Please complete all required fields for Item #${i + 1} (Product, Shape, Designer, Brand, Quality, Color, Qty, Price).`, 'warning');
+        return;
+      }
+    }
+
     setLoading(true);
     setMessage('');
     try {
