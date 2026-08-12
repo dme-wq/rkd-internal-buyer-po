@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus, Trash2, Save, FileText, CheckCircle, CreditCard, Package, Clock, Copy } from 'lucide-react';
 import { POHeader, SKUItem, DropdownData } from '../lib/types';
-import { createPO, savePDFtoDrive, getPendingInternalPOs, getDropdowns, addDropdownOption } from '../lib/api';
+import { createPO, savePDFtoDrive, getPendingInternalPOs, getDropdowns, addDropdownOption, extractPOData } from '../lib/api';
 import { generatePOPDF } from '../lib/pdf';
 import Select from 'react-select';
 import { DragDropImage } from './DragDropImage';
@@ -82,6 +82,99 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
     }
     return null;
   };
+
+  const handleInternalPOChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedPO = e.target.value;
+    updateHeader('internalPO', selectedPO);
+
+    if (selectedPO) {
+      const result = await MySwal.fire({
+        title: 'Auto-Extract Data?',
+        text: 'Do you want to use AI to automatically extract PO details from the uploaded document?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Extract with AI',
+        confirmButtonColor: '#00a669',
+        cancelButtonText: 'No, enter manually'
+      });
+
+      if (result.isConfirmed) {
+        MySwal.fire({
+          title: 'Extracting Data...',
+          html: 'AI is analyzing the document. This may take 15-20 seconds.',
+          allowOutsideClick: false,
+          didOpen: () => {
+            MySwal.showLoading();
+          }
+        });
+
+        try {
+          const res = await extractPOData(selectedPO, dropdowns);
+          if (res.status === 'success' && res.data) {
+            const data = res.data;
+            
+            setHeader(prev => ({
+              ...prev,
+              buyerName: data.buyerName || prev.buyerName,
+              buyerPO: data.buyerPO || prev.buyerPO,
+              fileNumber: data.fileNumber || prev.fileNumber,
+              poDate: data.poDate || prev.poDate,
+              exFactory: data.exFactory || prev.exFactory,
+              deliveryTerms: data.deliveryTerms || prev.deliveryTerms,
+              portName: data.portName || prev.portName,
+              billingAddr: data.billingAddr || prev.billingAddr,
+              deliveryAddr: data.deliveryAddr || prev.deliveryAddr
+            }));
+
+            if (data.items && data.items.length > 0) {
+              const newSkus = data.items.map((item: any, index: number) => ({
+                id: Date.now().toString() + index,
+                product: item.product || '',
+                shape: item.shape || '',
+                designer: item.designer || '',
+                brand: item.brand || '',
+                description: item.description || '',
+                sizes: Array.isArray(item.sizes) ? item.sizes.slice(0, 2) : [],
+                quality: item.quality || '',
+                color: item.color || '',
+                orderQty: item.orderQty || 0,
+                unitQty: item.unitQty || 'pieces',
+                price: item.price || 0,
+                unitPrice: item.unitPrice || 'piece',
+                currency: item.currency || 'USD',
+                innerPack: item.innerPack || '',
+                outerPack: item.outerPack || '',
+                addSample: item.addSample || '',
+                addProd: item.addProd || '',
+                skuCode: '',
+                designImage: '',
+                totalQtyMfg: item.orderQty || 0,
+                lineTotal: (item.orderQty || 0) * (item.price || 0)
+              }));
+              setSkus(newSkus);
+            }
+
+            MySwal.fire({
+              icon: 'success',
+              title: 'Extraction Complete!',
+              text: `Successfully extracted ${data.items ? data.items.length : 0} line items.`,
+              timer: 2000,
+              showConfirmButton: false
+            });
+          } else {
+            throw new Error(res.message || "Failed to extract data");
+          }
+        } catch (error: any) {
+          MySwal.fire({
+            icon: 'error',
+            title: 'Extraction Failed',
+            text: error.message || 'Something went wrong during extraction.',
+          });
+        }
+      }
+    }
+  };
+
   const [dropdowns, setDropdowns] = useState<Partial<DropdownData>>(initialDropdowns || {});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -354,7 +447,7 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
             </div>
             
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5 transition-all duration-300">
-              <ModernSelect label="Internal PO Number" value={header.internalPO || ''} onChange={(e) => updateHeader('internalPO', e.target.value)} options={pendingPOs} />
+              <ModernSelect label="Internal PO Number" value={header.internalPO || ''} onChange={handleInternalPOChange} options={pendingPOs} />
               <ModernInput label="Buyer Name" value={header.buyerName} onChange={(e) => updateHeader('buyerName', e.target.value)} />
               <ModernInput label="Buyer PO Number" value={header.buyerPO} onChange={(e) => updateHeader('buyerPO', e.target.value)} />
               <ModernInput label="File Number" value={header.fileNumber} onChange={(e) => updateHeader('fileNumber', e.target.value)} />

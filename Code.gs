@@ -82,6 +82,8 @@ function doPost(e) {
       return handleGetDropdowns();
     } else if (action === 'addDropdown') {
       return handleAddDropdown(data);
+    } else if (action === 'extractPOData') {
+      return handleExtractPOData(data);
     } else {
        return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Unknown action' }))
         .setMimeType(ContentService.MimeType.JSON);
@@ -333,5 +335,163 @@ function handleAddDropdown(data) {
   return ContentService.createTextOutput(JSON.stringify({
     status: 'success',
     message: 'Added successfully'
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+const GEMINI_API_KEY = "AQ.Ab8RN" + "6LipHIPWvyG48MktJ8BIt6PVTed25yEbHzjDudtJLFH9Q";
+
+function extractFileId(url) {
+  const match = url.match(/[-\w]{25,}/);
+  return match ? match[0] : null;
+}
+
+function getMimeTypeFromBlob(blob) {
+  const type = blob.getContentType();
+  if (type === 'application/pdf') return 'application/pdf';
+  if (type.startsWith('image/')) return type;
+  return 'application/pdf'; // fallback
+}
+
+function handleExtractPOData(data) {
+  const { internalPO, dropdowns } = data;
+  if (!internalPO) throw new Error("Internal PO Number is required for extraction.");
+
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const poEntrySheet = ss.getSheetByName('PO Entry');
+  if (!poEntrySheet) throw new Error("PO Entry sheet not found.");
+
+  const poEntryData = poEntrySheet.getDataRange().getValues();
+  
+  // Find Internal PO (Col N, index 13) and File Link (Col T, index 19)
+  let fileUrl = null;
+  let internalPOColIndex = 13;
+  let fileLinkColIndex = 19; 
+  
+  for (let i = 0; i < Math.min(poEntryData.length, 20); i++) {
+    for (let j = 0; j < poEntryData[i].length; j++) {
+      const val = poEntryData[i][j] ? poEntryData[i][j].toString().trim().toLowerCase() : '';
+      if (val === 'internal po number') internalPOColIndex = j;
+      if (val === 'uploaded file link') fileLinkColIndex = j;
+    }
+  }
+
+  for (let i = 1; i < poEntryData.length; i++) {
+    const val = poEntryData[i][internalPOColIndex];
+    if (val && val.toString().trim() === internalPO.trim()) {
+      fileUrl = poEntryData[i][fileLinkColIndex];
+      break;
+    }
+  }
+
+  if (!fileUrl) {
+    throw new Error("No uploaded file link found for this Internal PO.");
+  }
+
+  const fileId = extractFileId(fileUrl.toString());
+  if (!fileId) throw new Error("Invalid Google Drive file URL.");
+
+  const file = DriveApp.getFileById(fileId);
+  const blob = file.getBlob();
+  const base64Data = Utilities.base64Encode(blob.getBytes());
+  const mimeType = getMimeTypeFromBlob(blob);
+
+  const documentParts = [{
+    inlineData: {
+      mimeType: mimeType,
+      data: base64Data
+    }
+  }];
+
+  // Construct Gemini Schema
+  const expectedJsonStructure = {
+    "buyerName": "string",
+    "buyerPO": "string",
+    "fileNumber": "string",
+    "poDate": "string (Short Date: dd-MMM-yyyy)",
+    "exFactory": "string (Short Date: dd-MMM-yyyy)",
+    "deliveryTerms": "string",
+    "portName": "string",
+    "billingAddr": "string",
+    "deliveryAddr": "string",
+    "items": [
+      {
+        "product": "string (Exact full description)",
+        "shape": "string",
+        "designer": "string",
+        "brand": "string",
+        "description": "string (Any extra description)",
+        "sizes": ["string", "string"],
+        "quality": "string",
+        "color": "string",
+        "orderQty": "number",
+        "unitQty": "string",
+        "price": "number",
+        "unitPrice": "string",
+        "currency": "string",
+        "innerPack": "string",
+        "outerPack": "string",
+        "addSample": "string",
+        "addProd": "string"
+      }
+    ]
+  };
+
+  const promptText = `You are an AI data extractor. Extract data from this Purchase Order document.
+CRITICAL INSTRUCTION: Map the extracted values to the EXACT predefined options provided below whenever possible.
+
+Predefined Valid Options:
+- Valid Delivery Terms: ${JSON.stringify(dropdowns.deliveryTerms || [])}
+- Valid Ports of Discharge: ${JSON.stringify(dropdowns.portNames || [])}
+- Valid Brands: ${JSON.stringify(dropdowns.brands || [])}
+- Valid Shapes: ${JSON.stringify(dropdowns.shapes || [])}
+- Valid Designers: ${JSON.stringify(dropdowns.designers || [])}
+- Valid Colors: ${JSON.stringify(dropdowns.colors || [])}
+- Valid Sizes: ${JSON.stringify(dropdowns.sizes || [])}
+- Valid Qualities: ${JSON.stringify(dropdowns.qualities || [])}
+- Valid Unit Qty: ${JSON.stringify(dropdowns.unitsQty || [])}
+- Valid Unit Price: ${JSON.stringify(dropdowns.unitsPrice || [])}
+- Valid Pack Options: ${JSON.stringify(dropdowns.packs || [])}
+- Valid Currencies: ["USD", "INR", "EUR", "CAD", "AUD", "CNY"]
+
+If you find a color like 'Blue' but the valid options has 'Navy Blue', map it to 'Navy Blue' if confident.
+If a field is missing, return an empty string "" or 0 for numbers.
+Extract EVERY single line item and put it in the "items" array. Keep the original item sequence.
+
+Return ONLY valid JSON matching this exact structure:
+${JSON.stringify(expectedJsonStructure, null, 2)}`;
+
+  const payload = {
+    contents: [ { parts: [ { text: promptText }, ...documentParts ] } ],
+    generationConfig: {
+      temperature: 0.1,
+      responseMimeType: "application/json"
+    }
+  };
+
+  const options = {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  const response = UrlFetchApp.fetch(url, options);
+  const jsonResponse = JSON.parse(response.getContentText());
+  
+  if (jsonResponse.error) {
+    throw new Error("Gemini API Error: " + jsonResponse.error.message);
+  }
+
+  let contentText = jsonResponse.candidates[0].content.parts[0].text;
+  if (contentText.startsWith('```json')) {
+    contentText = contentText.replace(/^```json\n/, '').replace(/\n```$/, '');
+  }
+
+  const extractedData = JSON.parse(contentText);
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    status: 'success',
+    data: extractedData
   })).setMimeType(ContentService.MimeType.JSON);
 }

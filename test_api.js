@@ -1,12 +1,12 @@
-async function checkPOs() {
-  const url = 'https://script.google.com/macros/s/AKfycbyNJOhDuoVL049S6_e3-Pg6CFSkfCHNTpINduno9t9qSflEVXHvk-iB-wsZEuAgw280/exec';
+async function checkDropdowns() {
+  const url = 'https://script.google.com/macros/s/AKfycbx3uuUE7Ru3GALWG5F0D6GHXNY1VwchaMnMmS3oWK4nzlhjiowCsvTUePQui73Cfu2j/exec';
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action: 'getPendingInternalPOs', data: {} })
+    body: JSON.stringify({ action: 'getDropdowns', data: {} })
   });
   const data = await res.json();
-  console.log(JSON.stringify(data, null, 2));
+  console.log(Object.keys(data.data));
 }
 
-checkPOs();
+checkDropdowns();

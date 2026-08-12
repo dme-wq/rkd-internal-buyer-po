@@ -29,6 +29,10 @@ export async function getDropdowns(): Promise<APIResponse<DropdownData>> {
   return post({ action: 'getDropdowns', data: {} });
 }
 
+export async function extractPOData(internalPO: string, dropdowns: Partial<DropdownData>): Promise<APIResponse<any>> {
+  return post({ action: 'extractPOData', data: { internalPO, dropdowns } });
+}
+
 export async function getDashboardStats(): Promise<APIResponse<DashboardStats>> {
   return apiFetch<DashboardStats>(`${BASE_URL}?action=getStats`);
 }
