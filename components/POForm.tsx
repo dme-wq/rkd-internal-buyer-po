@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus, Trash2, Save, FileText, CheckCircle, CreditCard, Package, Clock, Copy } from 'lucide-react';
 import { POHeader, SKUItem, DropdownData } from '../lib/types';
 import { createPO, savePDFtoDrive, getPendingInternalPOs, getDropdowns } from '../lib/api';
@@ -32,6 +32,59 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [pendingPOs, setPendingPOs] = useState<string[]>([]);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollSpeedRef = useRef<number>(0);
+  const scrollAnimationFrameRef = useRef<number | null>(null);
+
+  const performScroll = useCallback(() => {
+    if (scrollContainerRef.current && scrollSpeedRef.current !== 0) {
+      scrollContainerRef.current.scrollLeft += scrollSpeedRef.current;
+      scrollAnimationFrameRef.current = requestAnimationFrame(performScroll);
+    } else {
+      scrollAnimationFrameRef.current = null;
+    }
+  }, []);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!scrollContainerRef.current) return;
+    
+    const container = scrollContainerRef.current;
+    const { left, right } = container.getBoundingClientRect();
+    const edgeThreshold = 150; // pixels from edge to trigger scroll
+    const maxSpeed = 25; // max scroll speed
+
+    const mouseX = e.clientX;
+    const distLeft = mouseX - left;
+    const distRight = right - mouseX;
+
+    let speed = 0;
+
+    if (distLeft > 0 && distLeft < edgeThreshold) {
+      const intensity = Math.max(0, 1 - (distLeft / edgeThreshold));
+      speed = -maxSpeed * (intensity * intensity);
+    } else if (distRight > 0 && distRight < edgeThreshold) {
+      const intensity = Math.max(0, 1 - (distRight / edgeThreshold));
+      speed = maxSpeed * (intensity * intensity);
+    }
+
+    scrollSpeedRef.current = speed;
+
+    if (speed !== 0 && !scrollAnimationFrameRef.current) {
+      scrollAnimationFrameRef.current = requestAnimationFrame(performScroll);
+    } else if (speed === 0 && scrollAnimationFrameRef.current) {
+      cancelAnimationFrame(scrollAnimationFrameRef.current);
+      scrollAnimationFrameRef.current = null;
+    }
+  }, [performScroll]);
+
+  const handleMouseLeave = useCallback(() => {
+    scrollSpeedRef.current = 0;
+    if (scrollAnimationFrameRef.current) {
+      cancelAnimationFrame(scrollAnimationFrameRef.current);
+      scrollAnimationFrameRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     const updateTime = () => {
@@ -347,13 +400,18 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
             </button>
           </div>
           
-          <div className="overflow-x-auto pb-6">
+          <div 
+            className="overflow-x-auto pb-6"
+            ref={scrollContainerRef}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+          >
             <table className="w-full text-left whitespace-nowrap min-w-max border-separate border-spacing-0">
               <thead className="bg-white">
                 <tr>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 text-center sticky left-0 bg-white z-10 border-b border-r border-zinc-200">#</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[180px] sticky left-[41px] bg-white z-10 border-b border-r border-zinc-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Product Name</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] border-b border-zinc-200">SKU Code</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] sticky left-[41px] bg-white z-10 border-b border-r border-zinc-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">SKU Code</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[180px] border-b border-zinc-200">Product Name</th>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[80px] text-center border-b border-zinc-200">Designer Picture</th>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[130px] border-b border-zinc-200">Shape</th>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[140px] border-b border-zinc-200">Designer Name</th>
@@ -384,8 +442,8 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
                   return (
                   <tr key={sku.id} className="group hover:bg-emerald-50/20 transition-colors">
                     <td className="px-3 py-3 text-center text-zinc-400 text-[11px] font-bold sticky left-0 bg-white group-hover:bg-emerald-50/90 border-b border-r border-zinc-100 z-10">{index + 1}</td>
-                    <td className="px-3 py-3 align-top sticky left-[41px] bg-white group-hover:bg-emerald-50/90 border-b border-r border-zinc-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] z-10"><GridInput value={sku.product} onChange={(e) => updateSku(sku.id!, 'product', e.target.value)} placeholder="Product Name" bold /></td>
-                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridInput value={sku.skuCode} onChange={(e) => updateSku(sku.id!, 'skuCode', e.target.value)} placeholder="SKU Code" /></td>
+                    <td className="px-3 py-3 align-top sticky left-[41px] bg-white group-hover:bg-emerald-50/90 border-b border-r border-zinc-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] z-10"><GridInput value={sku.skuCode} onChange={(e) => updateSku(sku.id!, 'skuCode', e.target.value)} placeholder="SKU Code" /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridInput value={sku.product} onChange={(e) => updateSku(sku.id!, 'product', e.target.value)} placeholder="Product Name" bold /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><DragDropImage value={sku.designImage || ''} onChange={(val) => updateSku(sku.id!, 'designImage', val)} /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.shape} onChange={(e: any) => updateSku(sku.id!, 'shape', e.target.value)} options={dropdowns?.shapes} /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.designer} onChange={(e: any) => updateSku(sku.id!, 'designer', e.target.value)} options={dropdowns?.designers} /></td>
