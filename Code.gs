@@ -6,6 +6,12 @@ function doGet(e) {
     const action = e.parameter.action;
     if (action === 'getDropdowns') {
       return handleGetDropdowns();
+    } else if (action === 'getAllPOs') {
+      return handleGetAllPOs(e.parameter);
+    } else if (action === 'getPOById') {
+      return handleGetPOById(e.parameter);
+    } else if (action === 'getStats') {
+      return handleGetStats();
     }
     return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Unknown action' }))
         .setMimeType(ContentService.MimeType.JSON);
@@ -74,6 +80,8 @@ function doPost(e) {
     // Simple Router
     if (action === 'createPO') {
       return handleCreatePO(data);
+    } else if (action === 'updatePO') {
+      return handleUpdatePO(data);
     } else if (action === 'savePDF') {
       return handleSavePDF(data);
     } else if (action === 'getPendingInternalPOs') {
@@ -251,11 +259,17 @@ function handleCreatePO(data) {
       row[17] = header.deliveryAddr || ''; // ColR Delivery Address
       row[18] = header.onboardDate || ''; // ColS Onboard Vessel Date
       
+      // Handle Base64 Image upload to Drive
+      let finalImageUrl = item.designImage || '';
+      if (finalImageUrl.startsWith('data:image')) {
+        finalImageUrl = saveImageToDrive(finalImageUrl, `Image_${internalPO}_${Date.now()}_${i}.png`);
+      }
+
       // Map Line Items
       row[22] = item.skuCode || ''; // ColW SKU Code
       row[23] = item.product || ''; // ColX Product
       row[24] = item.articleNum || ''; // ColY Item/Product/Article #
-      row[25] = item.designImage || ''; // ColZ Design Image
+      row[25] = finalImageUrl; // ColZ Design Image
       row[26] = item.shape || ''; // ColAA Shape
       row[27] = item.designer || ''; // ColAB Designer Name
       row[28] = item.brand || ''; // ColAC Brand Name
@@ -563,5 +577,293 @@ ${JSON.stringify(expectedJsonStructure, null, 2)}`;
   return ContentService.createTextOutput(JSON.stringify({
     status: 'success',
     data: extractedData
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function saveImageToDrive(base64Str, filename) {
+  try {
+    const folder = DriveApp.getFolderById(FOLDER_ID);
+    const contentType = base64Str.substring(5, base64Str.indexOf(';'));
+    const base64Data = base64Str.split('base64,')[1] || base64Str;
+    const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), contentType || 'image/png', filename);
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return file.getUrl(); 
+  } catch(e) {
+    return "";
+  }
+}
+
+function handleUpdatePO(data) {
+    const { uid, header, skus } = data;
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('DATABASE');
+    const dataRange = sheet.getDataRange().getValues();
+    
+    let rowsToDelete = [];
+    for (let i = dataRange.length - 1; i >= 1; i--) {
+        if (dataRange[i][1] === uid) {
+            rowsToDelete.push(i + 1);
+        }
+    }
+    
+    for (let i = 0; i < rowsToDelete.length; i++) {
+        sheet.deleteRow(rowsToDelete[i]);
+    }
+    
+    const timestamp = new Date().toLocaleString();
+    const internalPO = header.internalPO || ''; 
+    const rowsToInsert = [];
+    
+    for (let i = 0; i < skus.length; i++) {
+      const item = skus[i];
+      const row = new Array(64).fill('');
+      
+      let finalImageUrl = item.designImage || '';
+      if (finalImageUrl.startsWith('data:image')) {
+        finalImageUrl = saveImageToDrive(finalImageUrl, `Image_${internalPO}_${Date.now()}_${i}.png`);
+      }
+
+      row[0] = timestamp;
+      row[1] = uid;
+      row[2] = header.fileNumber || '';
+      row[3] = header.buyerName || '';
+      row[4] = internalPO;
+      row[5] = header.buyerPO || '';
+      row[6] = header.poDate || '';
+      row[7] = header.exFactory || '';
+      row[8] = header.deliveryTerms || '';
+      row[9] = header.portName || '';
+      row[10] = header.payTerm1 || '';
+      row[11] = header.payTerm2 || '';
+      row[12] = header.buyerSource || '';
+      row[13] = header.buyerSubSrc || '';
+      row[14] = header.buyerSrcPct || '';
+      row[15] = header.buyerSubPct || '';
+      row[16] = header.billingAddr || '';
+      row[17] = header.deliveryAddr || '';
+      row[18] = header.onboardDate || '';
+      
+      row[22] = item.skuCode || '';
+      row[23] = item.product || '';
+      row[24] = item.articleNum || '';
+      row[25] = finalImageUrl;
+      row[26] = item.shape || '';
+      row[27] = item.designer || '';
+      row[28] = item.brand || '';
+      row[29] = item.description || '';
+      row[30] = item.size1 || '';
+      row[31] = item.size2 || '';
+      row[32] = item.quality || '';
+      row[33] = item.color || '';
+      row[34] = item.colorRef || '';
+      row[35] = item.orderQty || '';
+      row[36] = item.unitQty || '';
+      row[37] = item.price || '';
+      row[38] = item.unitPrice || '';
+      row[39] = item.currency || 'USD';
+      row[40] = item.innerPack || '';
+      row[41] = item.outerPack || '';
+      row[42] = item.addSample || '';
+      row[43] = item.addProd || '';
+      row[44] = item.totalQtyMfg || '';
+      row[50] = item.lineTotal || '';
+      
+      row[52] = header.pay1Pct || '';
+      row[53] = header.pay1Days || '';
+      row[54] = header.pay1Activity || '';
+      row[55] = header.pay1Amount || '';
+      row[56] = header.pay1DueDate || '';
+      
+      row[58] = header.pay2Pct || '';
+      row[59] = header.pay2Days || '';
+      row[60] = header.pay2Activity || '';
+      row[61] = header.pay2Amount || '';
+      row[62] = header.pay2DueDate || '';
+      
+      for (let j = 1; j < dataRange.length; j++) {
+        if (dataRange[j][1] === uid) {
+          row[63] = dataRange[j][63] || '';
+          break;
+        }
+      }
+      
+      rowsToInsert.push(row);
+    }
+    
+    if (rowsToInsert.length > 0) {
+      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToInsert.length, 64).setValues(rowsToInsert);
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({ 
+      status: 'success', 
+      data: { uid: uid, internalPO: internalPO } 
+    })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function handleGetAllPOs(params) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sheet = ss.getSheetByName('DATABASE');
+  if (!sheet) return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'DATABASE sheet not found' })).setMimeType(ContentService.MimeType.JSON);
+  
+  const data = sheet.getDataRange().getValues();
+  const posMap = {};
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const uid = row[1];
+    if (!uid) continue;
+    
+    if (!posMap[uid]) {
+      posMap[uid] = {
+        uid: uid,
+        timestamp: row[0],
+        fileNumber: row[2],
+        buyerName: row[3],
+        internalPO: row[4],
+        buyerPO: row[5],
+        poDate: row[6],
+        exFactory: row[7],
+        deliveryTerms: row[8],
+        portName: row[9],
+        totalAmount: 0,
+        currency: row[39] || 'USD',
+        payTerm1: row[10],
+        payTerm2: row[11]
+      };
+    }
+    posMap[uid].totalAmount += (parseFloat(row[50]) || 0);
+  }
+  
+  const pos = Object.values(posMap).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    status: 'success',
+    data: { pos: pos, total: pos.length, page: 1, limit: pos.length }
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function handleGetPOById(params) {
+  const uid = params.uid;
+  if (!uid) return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'UID missing' })).setMimeType(ContentService.MimeType.JSON);
+  
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sheet = ss.getSheetByName('DATABASE');
+  const data = sheet.getDataRange().getValues();
+  
+  const skus = [];
+  let header = null;
+  
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (row[1] === uid) {
+      if (!header) {
+        header = {
+          uid: uid,
+          fileNumber: row[2],
+          buyerName: row[3],
+          internalPO: row[4],
+          buyerPO: row[5],
+          poDate: row[6],
+          exFactory: row[7],
+          deliveryTerms: row[8],
+          portName: row[9],
+          payTerm1: row[10],
+          payTerm2: row[11],
+          buyerSource: row[12],
+          buyerSubSrc: row[13],
+          buyerSrcPct: row[14],
+          buyerSubPct: row[15],
+          billingAddr: row[16],
+          deliveryAddr: row[17],
+          onboardDate: row[18],
+          pay1Pct: row[52],
+          pay1Days: row[53],
+          pay1Activity: row[54],
+          pay1Amount: row[55],
+          pay1DueDate: row[56],
+          pay2Pct: row[58],
+          pay2Days: row[59],
+          pay2Activity: row[60],
+          pay2Amount: row[61],
+          pay2DueDate: row[62],
+          totalAmount: 0
+        };
+      }
+      
+      const itemAmount = parseFloat(row[50]) || 0;
+      header.totalAmount += itemAmount;
+      
+      skus.push({
+        id: "SKU-" + i,
+        skuCode: row[22],
+        product: row[23],
+        articleNum: row[24],
+        designImage: row[25],
+        shape: row[26],
+        designer: row[27],
+        brand: row[28],
+        description: row[29],
+        size1: row[30],
+        size2: row[31],
+        sizes: [row[30], row[31]].filter(s => s),
+        quality: row[32],
+        color: row[33],
+        colorRef: row[34],
+        orderQty: row[35],
+        unitQty: row[36],
+        price: row[37],
+        unitPrice: row[38],
+        currency: row[39],
+        innerPack: row[40],
+        outerPack: row[41],
+        addSample: row[42],
+        addProd: row[43],
+        totalQtyMfg: row[44],
+        lineTotal: itemAmount
+      });
+    }
+  }
+  
+  if (!header) return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'PO not found' })).setMimeType(ContentService.MimeType.JSON);
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    status: 'success',
+    data: { header, skus }
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function handleGetStats() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sheet = ss.getSheetByName('DATABASE');
+  if (!sheet) return ContentService.createTextOutput(JSON.stringify({ status: 'error' })).setMimeType(ContentService.MimeType.JSON);
+  
+  const data = sheet.getDataRange().getValues();
+  const uids = new Set();
+  const buyers = new Set();
+  let thisMonth = 0;
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  
+  for (let i = 1; i < data.length; i++) {
+    const uid = data[i][1];
+    if (uid && !uids.has(uid)) {
+      uids.add(uid);
+      const buyer = data[i][3];
+      if (buyer) buyers.add(buyer);
+      
+      const ts = new Date(data[i][0]);
+      if (ts.getMonth() === currentMonth && ts.getFullYear() === currentYear) {
+        thisMonth++;
+      }
+    }
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    status: 'success',
+    data: {
+      totalPOs: uids.size,
+      totalValue: 0, 
+      thisMonth: thisMonth,
+      buyers: buyers.size
+    }
   })).setMimeType(ContentService.MimeType.JSON);
 }

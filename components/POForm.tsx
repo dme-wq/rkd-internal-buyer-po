@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus, Trash2, Save, FileText, CheckCircle, CreditCard, Package, Clock, Copy } from 'lucide-react';
-import { POHeader, SKUItem, DropdownData, PendingPO } from '../lib/types';
-import { createPO, savePDFtoDrive, getPendingInternalPOs, getDropdowns, addDropdownOption, extractPOData } from '../lib/api';
+import { POHeader, SKUItem, DropdownData, PendingPO, PurchaseOrder } from '../lib/types';
+import { createPO, updatePO, savePDFtoDrive, getPendingInternalPOs, getDropdowns, addDropdownOption, extractPOData } from '../lib/api';
 import { generatePOPDF } from '../lib/pdf';
 import Select from 'react-select';
 import { DragDropImage } from './DragDropImage';
@@ -24,23 +24,29 @@ const formatDisplayDate = (dateString?: string) => {
 
 const MySwal = withReactContent(Swal);
 
-export default function POForm({ initialDropdowns }: { initialDropdowns?: Partial<DropdownData> }) {
-  const [header, setHeader] = useState<Partial<POHeader>>({
-    internalPO: '', fileNumber: '', buyerName: '', buyerPO: '', poDate: '', exFactory: '',
-    deliveryTerms: '', portName: '', payTerm1: '', payTerm2: '', buyerSource: '',
-    buyerSubSrc: '', buyerSrcPct: 100, buyerSubPct: 0, billingAddr: '', deliveryAddr: '',
-    pay1Pct: '-', pay1Days: '-', pay1Activity: '-',
-    pay1Amount: 0, pay1DueDate: '', pay2Pct: '-', pay2Days: '-', pay2Activity: '-',
-    pay2Amount: 0, pay2DueDate: ''
+export default function POForm({ initialDropdowns, initialData }: { initialDropdowns?: Partial<DropdownData>, initialData?: PurchaseOrder }) {
+  const [header, setHeader] = useState<Partial<POHeader>>(() => {
+    if (initialData?.header) return initialData.header;
+    return {
+      internalPO: '', fileNumber: '', buyerName: '', buyerPO: '', poDate: '', exFactory: '',
+      deliveryTerms: '', portName: '', payTerm1: '', payTerm2: '', buyerSource: '',
+      buyerSubSrc: '', buyerSrcPct: 100, buyerSubPct: 0, billingAddr: '', deliveryAddr: '',
+      pay1Pct: '-', pay1Days: '-', pay1Activity: '-',
+      pay1Amount: 0, pay1DueDate: '', pay2Pct: '-', pay2Days: '-', pay2Activity: '-',
+      pay2Amount: 0, pay2DueDate: ''
+    };
   });
 
-  const [skus, setSkus] = useState<Partial<SKUItem>[]>(() => [{
-    id: Date.now().toString(), product: '', shape: '', designer: '', brand: '',
-    description: '', sizes: [], size1: '', size2: '', quality: '', color: '', colorRef: '',
-    orderQty: 0, unitQty: 'pieces', price: 0, unitPrice: 'piece', currency: 'USD',
-    innerPack: '', outerPack: '', addSample: '', addProd: '', skuCode: '', designImage: '',
-    totalQtyMfg: 0, lineTotal: 0
-  }]);
+  const [skus, setSkus] = useState<Partial<SKUItem>[]>(() => {
+    if (initialData?.skus && initialData.skus.length > 0) return initialData.skus.map((s: Partial<SKUItem>) => ({ ...s, id: s.id || Date.now().toString() + Math.random().toString(36).substr(2, 5) }));
+    return [{
+      id: Date.now().toString(), product: '', shape: '', designer: '', brand: '',
+      description: '', sizes: [], size1: '', size2: '', quality: '', color: '', colorRef: '',
+      orderQty: 0, unitQty: 'pieces', price: 0, unitPrice: 'piece', currency: 'USD',
+      innerPack: '', outerPack: '', addSample: '', addProd: '', skuCode: '', designImage: '',
+      totalQtyMfg: 0, lineTotal: 0
+    }];
+  });
 
   const [time, setTime] = useState<string>('');
 
@@ -468,12 +474,19 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
     setMessage('');
     try {
       const finalSkus = calculateTotals();
-      const res = await createPO(header as Omit<POHeader, 'uid' | 'internalPO'>, finalSkus as SKUItem[]);
+      
+      let res;
+      if (initialData?.header?.uid) {
+        res = await updatePO(initialData.header.uid, header as Omit<POHeader, 'uid' | 'internalPO'>, finalSkus as SKUItem[]);
+      } else {
+        res = await createPO(header as Omit<POHeader, 'uid' | 'internalPO'>, finalSkus as SKUItem[]);
+      }
+      
       if (res.status === 'success' && res.data) {
         setMessage(`Success! Internal PO: ${res.data.internalPO} saved.`);
-        const fullHeader = { ...header, internalPO: res.data.internalPO, uid: res.data.uid } as POHeader;
+        const fullHeader = { ...header, internalPO: res.data.internalPO, uid: res.data.uid || initialData?.header?.uid } as POHeader;
         const pdfData = await generatePOPDF({ header: fullHeader, skus: finalSkus as SKUItem[] });
-        await savePDFtoDrive(res.data.uid, pdfData.filename, pdfData.base64);
+        await savePDFtoDrive(fullHeader.uid!, pdfData.filename, pdfData.base64);
         setMessage(prev => prev + ' PDF generated and saved to Drive.');
       } else {
         setMessage('Error: ' + res.message);
@@ -503,7 +516,7 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
             <span className="text-sm font-bold tracking-wide tabular-nums">{time || 'Loading...'}</span>
           </div>
           <button onClick={handleSave} disabled={loading} className="px-6 py-2.5 bg-[#00a669] hover:bg-[#009059] text-white rounded-lg text-sm font-semibold flex items-center gap-2 transition-all shadow-md shadow-emerald-500/20 disabled:opacity-50 disabled:shadow-none">
-            <Save size={18} /> {loading ? 'Saving...' : 'Save & Generate'}
+            <Save size={18} /> {loading ? 'Saving...' : (initialData?.header?.uid ? 'Update PO' : 'Save & Generate')}
           </button>
         </div>
       </div>
@@ -668,7 +681,7 @@ export default function POForm({ initialDropdowns }: { initialDropdowns?: Partia
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 text-center sticky left-0 bg-white z-10 border-b border-r border-zinc-200">#</th>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] sticky left-[41px] bg-white z-10 border-b border-r border-zinc-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">SKU Code</th>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[180px] border-b border-zinc-200">Product Name</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[80px] text-center border-b border-zinc-200">Designer Picture</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] text-center border-b border-zinc-200">Designer Picture</th>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[130px] border-b border-zinc-200">Shape</th>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[140px] border-b border-zinc-200">Designer Name</th>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[140px] border-b border-zinc-200">Brand Name</th>
