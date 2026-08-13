@@ -901,7 +901,7 @@ function handleGetStats() {
   const data = sheet.getDataRange().getValues();
   const posMap = {};
   
-  for (let i = 1; i < data.length; i++) {
+  for (let i = data.length - 1; i >= 1; i--) {
     const row = data[i];
     const internalPO = row[4];
     if (!internalPO) continue;
