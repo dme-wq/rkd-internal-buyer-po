@@ -757,6 +757,16 @@ function handleGetAllPOs(params) {
         pdfUrl: row[63] || '',
         rowIndex: i
       };
+    } else {
+      // Update rowIndex so it sorts by the latest added line item for this PO
+      posMap[uid].rowIndex = i;
+      // Also update pdfUrl if it's available in a later row
+      if (row[63]) posMap[uid].pdfUrl = row[63];
+      if (row[6]) posMap[uid].poDate = row[6];
+      if (row[0]) posMap[uid].timestamp = row[0];
+      if (row[3]) posMap[uid].buyerName = row[3];
+      if (row[4]) posMap[uid].internalPO = row[4];
+      if (row[5]) posMap[uid].buyerPO = row[5];
     }
     posMap[uid].totalAmount += (parseFloat(row[50]) || 0);
   }
