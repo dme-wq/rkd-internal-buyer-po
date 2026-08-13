@@ -317,8 +317,7 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
   useEffect(() => {
     let needsUpdate = false;
     const newSkus = skus.map((s, idx) => {
-      const isComplete = !!(s.product && s.shape && s.designer && s.brand && s.quality && s.color && Number(s.orderQty) > 0 && Number(s.price) > 0);
-      const expectedSkuCode = (isComplete && header.internalPO) ? `${header.internalPO}-${idx + 1}` : '';
+      const expectedSkuCode = header.internalPO ? `${header.internalPO}-${idx + 1}` : '';
       if (s.skuCode !== expectedSkuCode) {
         needsUpdate = true;
         return { ...s, skuCode: expectedSkuCode };
