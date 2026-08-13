@@ -754,13 +754,14 @@ function handleGetAllPOs(params) {
         currency: row[39] || 'USD',
         payTerm1: row[10],
         payTerm2: row[11],
-        pdfUrl: row[63] || ''
+        pdfUrl: row[63] || '',
+        rowIndex: i
       };
     }
     posMap[uid].totalAmount += (parseFloat(row[50]) || 0);
   }
   
-  const pos = Object.values(posMap).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  const pos = Object.values(posMap).sort((a, b) => b.rowIndex - a.rowIndex);
   
   return ContentService.createTextOutput(JSON.stringify({
     status: 'success',

@@ -17,7 +17,11 @@ const BASE_URL = 'https://script.google.com/macros/s/AKfycbx-EyEYTh6eX8yvc9XYXzG
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<APIResponse<T>> {
   try {
-    const res = await fetch(url, options);
+    const fetchOptions = {
+      ...options,
+      cache: 'no-store' as RequestCache
+    };
+    const res = await fetch(url, fetchOptions);
     const text = await res.text();
     try {
       const json: APIResponse<T> = JSON.parse(text);
