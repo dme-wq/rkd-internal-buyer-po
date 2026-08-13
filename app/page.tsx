@@ -14,12 +14,14 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const dashboardStats = await getDashboardStats();
+        const [dashboardStats, poList] = await Promise.all([
+          getDashboardStats(),
+          getAllPOs()
+        ]);
+
         if (dashboardStats.status === 'success' && dashboardStats.data) {
           setStats(dashboardStats.data as DashboardStats);
         }
-
-        const poList = await getAllPOs();
         if (poList.status === 'success' && poList.data && poList.data.pos) {
           setRecentPOs(poList.data.pos.slice(0, 8)); // Top 8 recent POs
         }
