@@ -481,13 +481,33 @@ function handleExtractPOData(data) {
   }
 
   const blob = file.getBlob();
-  const base64Data = Utilities.base64Encode(blob.getBytes());
   const mimeType = getMimeTypeFromBlob(blob);
+  
+  // Upload to Gemini File API to avoid Apps Script memory crash with large base64 strings
+  const uploadUrl = `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${GEMINI_API_KEY}`;
+  const uploadOptions = {
+    method: 'post',
+    payload: blob,
+    headers: {
+      'X-Goog-Upload-Protocol': 'raw',
+      'X-Goog-Upload-Header-Content-Type': mimeType
+    },
+    muteHttpExceptions: true
+  };
+  
+  const uploadResponse = UrlFetchApp.fetch(uploadUrl, uploadOptions);
+  const uploadJson = JSON.parse(uploadResponse.getContentText());
+  
+  if (uploadJson.error) {
+    throw new Error("Gemini Upload Error: " + uploadJson.error.message);
+  }
+  
+  const fileUri = uploadJson.file.uri;
 
   const documentParts = [{
-    inlineData: {
+    fileData: {
       mimeType: mimeType,
-      data: base64Data
+      fileUri: fileUri
     }
   }];
 
