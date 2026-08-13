@@ -232,8 +232,9 @@ function handleCreatePO(data) {
     
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('DATABASE');
     const timestamp = new Date().toLocaleString();
-    const uniqueId = "PO-" + Date.now();
     const internalPO = header.internalPO || ''; 
+    const uniqueId = internalPO;
+
     
     // Create an array of rows to insert
     const rowsToInsert = [];
@@ -333,11 +334,11 @@ function handleSavePDF(data) {
         const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), 'application/pdf', fileName || `${uid}.pdf`);
         const file = folder.createFile(blob);
         
-        // Find row by uid and update column 64 with PDF URL
+        // Find row by internalPO or uid and update column 64 with PDF URL
         const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('DATABASE');
         const dataRange = sheet.getDataRange().getValues();
         for (let i = 1; i < dataRange.length; i++) {
-           if (dataRange[i][1] === uid) {
+           if (dataRange[i][4] === uid || dataRange[i][1] === uid) {
                sheet.getRange(i + 1, 64).setValue(file.getUrl());
            }
         }
@@ -626,7 +627,7 @@ function handleUpdatePO(data) {
     
     let rowsToDelete = [];
     for (let i = dataRange.length - 1; i >= 1; i--) {
-        if (dataRange[i][1] === uid) {
+        if (dataRange[i][4] === uid || dataRange[i][1] === uid) {
             rowsToDelete.push(i + 1);
         }
     }
@@ -636,7 +637,8 @@ function handleUpdatePO(data) {
     }
     
     const timestamp = new Date().toLocaleString();
-    const internalPO = header.internalPO || ''; 
+    const internalPO = header.internalPO || uid; 
+    const uniqueId = internalPO;
     const rowsToInsert = [];
     
     for (let i = 0; i < skus.length; i++) {
@@ -649,7 +651,7 @@ function handleUpdatePO(data) {
       }
 
       row[0] = timestamp;
-      row[1] = uid;
+      row[1] = uniqueId;
       row[2] = header.fileNumber || '';
       row[3] = header.buyerName || '';
       row[4] = internalPO;
@@ -706,7 +708,7 @@ function handleUpdatePO(data) {
       row[62] = header.pay2DueDate || '';
       
       for (let j = 1; j < dataRange.length; j++) {
-        if (dataRange[j][1] === uid) {
+        if (dataRange[j][4] === uid || dataRange[j][1] === uid) {
           row[63] = dataRange[j][63] || '';
           break;
         }
@@ -733,18 +735,19 @@ function handleGetAllPOs(params) {
   
   const data = sheet.getDataRange().getValues();
   const posMap = {};
-  for (let i = 1; i < data.length; i++) {
+  for (let i = data.length - 1; i >= 1; i--) {
     const row = data[i];
-    const uid = row[1];
-    if (!uid) continue;
+    const internalPO = row[4];
+    if (!internalPO) continue;
     
-    if (!posMap[uid]) {
-      posMap[uid] = {
-        uid: uid,
+    if (!posMap[internalPO]) {
+      posMap[internalPO] = {
+        uid: internalPO, // Force UID to be Internal PO Number for frontend
+        originalUid: row[1],
         timestamp: row[0],
         fileNumber: row[2],
         buyerName: row[3],
-        internalPO: row[4],
+        internalPO: internalPO,
         buyerPO: row[5],
         poDate: row[6],
         exFactory: row[7],
@@ -757,18 +760,16 @@ function handleGetAllPOs(params) {
         pdfUrl: row[63] || '',
         rowIndex: i
       };
-    } else {
-      // Update rowIndex so it sorts by the latest added line item for this PO
-      posMap[uid].rowIndex = i;
-      // Also update pdfUrl if it's available in a later row
-      if (row[63]) posMap[uid].pdfUrl = row[63];
-      if (row[6]) posMap[uid].poDate = row[6];
-      if (row[0]) posMap[uid].timestamp = row[0];
-      if (row[3]) posMap[uid].buyerName = row[3];
-      if (row[4]) posMap[uid].internalPO = row[4];
-      if (row[5]) posMap[uid].buyerPO = row[5];
     }
-    posMap[uid].totalAmount += (parseFloat(row[50]) || 0);
+    
+    // Check if this row belongs to the latest active batch
+    const isSameBatch = posMap[internalPO].originalUid 
+        ? (row[1] === posMap[internalPO].originalUid) 
+        : (row[0] === posMap[internalPO].timestamp);
+        
+    if (isSameBatch) {
+      posMap[internalPO].totalAmount += (parseFloat(row[50]) || 0);
+    }
   }
   
   const pos = Object.values(posMap).sort((a, b) => b.rowIndex - a.rowIndex);
@@ -780,60 +781,82 @@ function handleGetAllPOs(params) {
 }
 
 function handleGetPOById(params) {
-  const uid = params.uid;
-  if (!uid) return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'UID missing' })).setMimeType(ContentService.MimeType.JSON);
+  const targetUid = params.uid;
+  if (!targetUid) return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'UID missing' })).setMimeType(ContentService.MimeType.JSON);
   
   const ss = SpreadsheetApp.openById(SHEET_ID);
   const sheet = ss.getSheetByName('DATABASE');
   const data = sheet.getDataRange().getValues();
+  
+  let targetInternalPO = targetUid;
+  let latestBatchUid = null;
+  let latestBatchTimestamp = null;
+  
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (data[i][4] === targetInternalPO || data[i][1] === targetInternalPO) {
+      targetInternalPO = data[i][4] || targetUid;
+      latestBatchUid = data[i][1];
+      latestBatchTimestamp = data[i][0];
+      break;
+    }
+  }
   
   const skus = [];
   let header = null;
   
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
-    if (row[1] === uid) {
-      if (!header) {
-        header = {
-          uid: uid,
-          fileNumber: row[2],
-          buyerName: row[3],
-          internalPO: row[4],
-          buyerPO: row[5],
-          poDate: row[6],
-          exFactory: row[7],
-          deliveryTerms: row[8],
-          portName: row[9],
-          payTerm1: row[10],
-          payTerm2: row[11],
-          buyerSource: row[12],
-          buyerSubSrc: row[13],
-          buyerSrcPct: row[14],
-          buyerSubPct: row[15],
-          billingAddr: row[16],
-          deliveryAddr: row[17],
-          onboardDate: row[18],
-          pay1Pct: row[52],
-          pay1Days: row[53],
-          pay1Activity: row[54],
-          pay1Amount: row[55],
-          pay1DueDate: row[56],
-          pay2Pct: row[58],
-          pay2Days: row[59],
-          pay2Activity: row[60],
-          pay2Amount: row[61],
-          pay2DueDate: row[62],
-          totalAmount: 0
-        };
-      }
-      
-      const itemAmount = parseFloat(row[50]) || 0;
-      header.totalAmount += itemAmount;
-      
-      skus.push({
-        id: "SKU-" + i,
-        skuCode: row[22],
-        product: row[23],
+    if (row[4] === targetInternalPO || row[1] === targetUid) {
+      const isSameBatch = latestBatchUid 
+          ? (row[1] === latestBatchUid) 
+          : (row[0] === latestBatchTimestamp);
+          
+      if (isSameBatch) {
+        if (!header) {
+          header = {
+            uid: targetInternalPO, // use internalPO as uid
+            fileNumber: row[2],
+            buyerName: row[3],
+            internalPO: row[4] || targetInternalPO,
+            buyerPO: row[5],
+            poDate: row[6],
+            exFactory: row[7],
+            deliveryTerms: row[8],
+            portName: row[9],
+            payTerm1: row[10],
+            payTerm2: row[11],
+            buyerSource: row[12],
+            buyerSubSrc: row[13],
+            buyerSrcPct: row[14],
+            buyerSubPct: row[15],
+            billingAddr: row[16],
+            deliveryAddr: row[17],
+            onboardDate: row[18],
+            pay1Pct: row[52],
+            pay1Days: row[53],
+            pay1Activity: row[54],
+            pay1Amount: row[55],
+            pay1DueDate: row[56],
+            pay2Pct: row[58],
+            pay2Days: row[59],
+            pay2Activity: row[60],
+            pay2Amount: row[61],
+            pay2DueDate: row[62],
+            totalAmount: 0
+          };
+        } else {
+          header.poDate = row[6] || header.poDate;
+          header.exFactory = row[7] || header.exFactory;
+          header.onboardDate = row[18] || header.onboardDate;
+        }
+        
+        const itemAmount = parseFloat(row[50]) || 0;
+        header.totalAmount += itemAmount;
+        
+        skus.push({
+          id: "SKU-" + i,
+          skuCode: row[22],
+          product: row[23],
         articleNum: row[24],
         designImage: row[25],
         shape: row[26],
@@ -858,6 +881,7 @@ function handleGetPOById(params) {
         totalQtyMfg: row[44],
         lineTotal: itemAmount
       });
+      }
     }
   }
   
@@ -879,22 +903,22 @@ function handleGetStats() {
   
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
-    const uid = row[1];
-    if (!uid) continue;
+    const internalPO = row[4];
+    if (!internalPO) continue;
     
-    if (!posMap[uid]) {
-      posMap[uid] = { 
+    if (!posMap[internalPO]) {
+      posMap[internalPO] = { 
         buyer: row[3] || 'Unknown Buyer', 
         totalQty: 0, 
         totalAmount: 0, 
         date: row[0] 
       };
     } else {
-      if (row[3]) posMap[uid].buyer = row[3];
-      if (row[0]) posMap[uid].date = row[0];
+      if (row[3]) posMap[internalPO].buyer = row[3];
+      if (row[0]) posMap[internalPO].date = row[0];
     }
-    posMap[uid].totalQty += (parseInt(row[35]) || 0);
-    posMap[uid].totalAmount += (parseFloat(row[50]) || 0);
+    posMap[internalPO].totalQty += (parseInt(row[35]) || 0);
+    posMap[internalPO].totalAmount += (parseFloat(row[50]) || 0);
   }
   
   let thisMonth = 0;
