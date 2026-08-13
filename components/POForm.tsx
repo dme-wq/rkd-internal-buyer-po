@@ -784,14 +784,14 @@ interface ModernInputProps {
 
 function ModernInput({ label, value, onChange, type = "text", readOnly, className }: ModernInputProps) {
   return (
-    <div className="flex flex-col gap-1.5 w-full items-center">
-      <label className="text-[12px] font-bold text-zinc-600 tracking-wide capitalize text-center">{label}</label>
+    <div className="flex flex-col gap-1 w-full items-center">
+      <label className="text-[11px] font-bold text-zinc-500 tracking-wide capitalize text-center">{label}</label>
       <input 
         type={type}
         value={value || ''} 
         onChange={onChange} 
         readOnly={readOnly}
-        className={className ? className : `w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-3.5 py-2 text-[13px] font-bold text-zinc-900 transition-all shadow-sm ${readOnly ? 'bg-zinc-100 border-zinc-200 text-zinc-500' : ''}`}
+        className={className ? className : `w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-2.5 py-1.5 text-[12px] font-bold text-zinc-900 transition-all shadow-sm ${readOnly ? 'bg-zinc-100 border-zinc-200 text-zinc-500' : ''}`}
       />
     </div>
   );
@@ -822,18 +822,18 @@ function ModernSelect({ label, value, onChange, options, onAddNew }: ModernSelec
   };
 
   return (
-    <div className="flex flex-col gap-1.5 w-full items-center relative">
-      <label className="text-[12px] font-bold text-zinc-600 tracking-wide capitalize text-center">{label}</label>
+    <div className="flex flex-col gap-1 w-full items-center relative">
+      <label className="text-[11px] font-bold text-zinc-500 tracking-wide capitalize text-center">{label}</label>
       <select 
         value={value || ''} 
         onChange={handleChange} 
-        className="w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-3.5 py-2 text-[13px] font-bold text-zinc-900 transition-all shadow-sm appearance-none cursor-pointer"
+        className="w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-2.5 py-1.5 text-[12px] font-bold text-zinc-900 transition-all shadow-sm appearance-none cursor-pointer"
       >
         <option value="" disabled>Select {label}</option>
         {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
         {onAddNew && <option value="__add_new__" className="font-bold text-blue-600 bg-blue-50">+ Add New...</option>}
       </select>
-      <div className="absolute right-3 top-[30px] pointer-events-none text-zinc-400">
+      <div className="absolute right-3 top-[26px] pointer-events-none text-zinc-400">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
       </div>
     </div>
@@ -849,14 +849,14 @@ interface ModernTextAreaProps {
 
 function ModernTextArea({ label, value, onChange, readOnly }: ModernTextAreaProps) {
   return (
-    <div className="flex flex-col gap-1.5 w-full items-center">
-      <label className="text-[12px] font-bold text-zinc-600 tracking-wide capitalize text-center">{label}</label>
+    <div className="flex flex-col gap-1 w-full items-center">
+      <label className="text-[11px] font-bold text-zinc-500 tracking-wide capitalize text-center">{label}</label>
       <textarea 
         value={value || ''} 
         onChange={onChange} 
         rows={2}
         readOnly={readOnly}
-        className={`w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-3.5 py-2 text-[13px] font-bold text-zinc-900 resize-none transition-all shadow-sm ${readOnly ? 'bg-zinc-100 border-zinc-200 text-zinc-500' : ''}`}
+        className={`w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-2.5 py-1.5 text-[12px] font-bold text-zinc-900 resize-none transition-all shadow-sm ${readOnly ? 'bg-zinc-100 border-zinc-200 text-zinc-500' : ''}`}
       />
     </div>
   );
