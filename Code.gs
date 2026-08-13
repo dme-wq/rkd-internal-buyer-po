@@ -622,18 +622,39 @@ function saveImageToDrive(base64Str, filename) {
 
 function handleUpdatePO(data) {
     const { uid, header, skus } = data;
-    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('DATABASE');
-    const dataRange = sheet.getDataRange().getValues();
+    const activeRows = getActiveRows();
+    let existingPdfUrl = '';
+    for (let i = 0; i < activeRows.length; i++) {
+      if (activeRows[i][4] === uid || activeRows[i][1] === uid) {
+        existingPdfUrl = activeRows[i][63] || '';
+        if (existingPdfUrl) break;
+      }
+    }
+
+    const ss = SpreadsheetApp.openById(SHEET_ID);
     
-    let rowsToDelete = [];
-    for (let i = dataRange.length - 1; i >= 1; i--) {
-        if (dataRange[i][4] === uid || dataRange[i][1] === uid) {
-            rowsToDelete.push(i + 1);
-        }
+    const sheetDatabase = ss.getSheetByName('DATABASE');
+    if (sheetDatabase) {
+      const dbData = sheetDatabase.getDataRange().getValues();
+      let rowsToDelete = [];
+      for (let i = dbData.length - 1; i >= 1; i--) {
+          if (dbData[i][4] === uid || dbData[i][1] === uid) {
+              rowsToDelete.push(i + 1);
+          }
+      }
+      for (let i = 0; i < rowsToDelete.length; i++) {
+          sheetDatabase.deleteRow(rowsToDelete[i]);
+      }
     }
     
-    for (let i = 0; i < rowsToDelete.length; i++) {
-        sheet.deleteRow(rowsToDelete[i]);
+    const sheetDatatab = ss.getSheetByName('DATATAB');
+    if (sheetDatatab) {
+      const dtData = sheetDatatab.getDataRange().getValues();
+      for (let i = dtData.length - 1; i >= 1; i--) {
+          if (dtData[i][4] === uid || dtData[i][1] === uid) {
+              sheetDatatab.getRange(i + 1, 65).setValue("NON ACTIVE");
+          }
+      }
     }
     
     const timestamp = new Date().toLocaleString();
@@ -707,12 +728,7 @@ function handleUpdatePO(data) {
       row[61] = header.pay2Amount || '';
       row[62] = header.pay2DueDate || '';
       
-      for (let j = 1; j < dataRange.length; j++) {
-        if (dataRange[j][4] === uid || dataRange[j][1] === uid) {
-          row[63] = dataRange[j][63] || '';
-          break;
-        }
-      }
+      row[63] = existingPdfUrl;
       
       rowsToInsert.push(row);
     }
@@ -728,21 +744,43 @@ function handleUpdatePO(data) {
     })).setMimeType(ContentService.MimeType.JSON);
 }
 
-function handleGetAllPOs(params) {
+function getActiveRows() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
-  const sheet = ss.getSheetByName('DATABASE');
-  if (!sheet) return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'DATABASE sheet not found' })).setMimeType(ContentService.MimeType.JSON);
+  let allRows = [];
   
-  const data = sheet.getDataRange().getValues();
+  const sheetDatatab = ss.getSheetByName('DATATAB');
+  if (sheetDatatab) {
+    const data = sheetDatatab.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][64] === 'ACTIVATE') {
+        allRows.push(data[i]);
+      }
+    }
+  }
+  
+  const sheetDatabase = ss.getSheetByName('DATABASE');
+  if (sheetDatabase) {
+    const data = sheetDatabase.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      allRows.push(data[i]);
+    }
+  }
+  
+  return allRows;
+}
+
+function handleGetAllPOs(params) {
+  const activeRows = getActiveRows();
   const posMap = {};
-  for (let i = data.length - 1; i >= 1; i--) {
-    const row = data[i];
+  
+  for (let i = activeRows.length - 1; i >= 0; i--) {
+    const row = activeRows[i];
     const internalPO = row[4];
     if (!internalPO) continue;
     
     if (!posMap[internalPO]) {
       posMap[internalPO] = {
-        uid: internalPO, // Force UID to be Internal PO Number for frontend
+        uid: internalPO,
         originalUid: row[1],
         timestamp: row[0],
         fileNumber: row[2],
@@ -762,12 +800,7 @@ function handleGetAllPOs(params) {
       };
     }
     
-    // Use strictly the timestamp to group active batches, as old edits might share the same UID
-    const isSameBatch = (row[0] === posMap[internalPO].timestamp);
-        
-    if (isSameBatch) {
-      posMap[internalPO].totalAmount += (parseFloat(row[50]) || 0);
-    }
+    posMap[internalPO].totalAmount += (parseFloat(row[50]) || 0);
   }
   
   const pos = Object.values(posMap).sort((a, b) => b.rowIndex - a.rowIndex);
@@ -782,19 +815,12 @@ function handleGetPOById(params) {
   const targetUid = params.uid;
   if (!targetUid) return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'UID missing' })).setMimeType(ContentService.MimeType.JSON);
   
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const sheet = ss.getSheetByName('DATABASE');
-  const data = sheet.getDataRange().getValues();
-  
+  const activeRows = getActiveRows();
   let targetInternalPO = targetUid;
-  let latestBatchUid = null;
-  let latestBatchTimestamp = null;
   
-  for (let i = data.length - 1; i >= 1; i--) {
-    if (data[i][4] === targetInternalPO || data[i][1] === targetInternalPO) {
-      targetInternalPO = data[i][4] || targetUid;
-      latestBatchUid = data[i][1];
-      latestBatchTimestamp = data[i][0];
+  for (let i = activeRows.length - 1; i >= 0; i--) {
+    if (activeRows[i][4] === targetInternalPO || activeRows[i][1] === targetInternalPO) {
+      targetInternalPO = activeRows[i][4] || targetUid;
       break;
     }
   }
@@ -802,13 +828,10 @@ function handleGetPOById(params) {
   const skus = [];
   let header = null;
   
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
+  for (let i = 0; i < activeRows.length; i++) {
+    const row = activeRows[i];
     if (row[4] === targetInternalPO || row[1] === targetUid) {
-      const isSameBatch = (row[0] === latestBatchTimestamp);
-          
-      if (isSameBatch) {
-        if (!header) {
+      if (!header) {
           header = {
             uid: targetInternalPO, // use internalPO as uid
             fileNumber: row[2],
@@ -840,19 +863,19 @@ function handleGetPOById(params) {
             pay2DueDate: row[62],
             totalAmount: 0
           };
-        } else {
+      } else {
           header.poDate = row[6] || header.poDate;
           header.exFactory = row[7] || header.exFactory;
           header.onboardDate = row[18] || header.onboardDate;
-        }
-        
-        const itemAmount = parseFloat(row[50]) || 0;
-        header.totalAmount += itemAmount;
-        
-        skus.push({
-          id: "SKU-" + i,
-          skuCode: row[22],
-          product: row[23],
+      }
+      
+      const itemAmount = parseFloat(row[50]) || 0;
+      header.totalAmount += itemAmount;
+      
+      skus.push({
+        id: "SKU-" + i,
+        skuCode: row[22],
+        product: row[23],
         articleNum: row[24],
         designImage: row[25],
         shape: row[26],
@@ -877,7 +900,6 @@ function handleGetPOById(params) {
         totalQtyMfg: row[44],
         lineTotal: itemAmount
       });
-      }
     }
   }
   
@@ -890,22 +912,16 @@ function handleGetPOById(params) {
 }
 
 function handleGetStats() {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const sheet = ss.getSheetByName('DATABASE');
-  if (!sheet) return ContentService.createTextOutput(JSON.stringify({ status: 'error' })).setMimeType(ContentService.MimeType.JSON);
-  
-  const data = sheet.getDataRange().getValues();
+  const activeRows = getActiveRows();
   const posMap = {};
   
-  for (let i = data.length - 1; i >= 1; i--) {
-    const row = data[i];
+  for (let i = activeRows.length - 1; i >= 0; i--) {
+    const row = activeRows[i];
     const internalPO = row[4];
     if (!internalPO) continue;
     
     if (!posMap[internalPO]) {
       posMap[internalPO] = { 
-        originalUid: row[1],
-        timestamp: row[0],
         buyer: row[3] || 'Unknown Buyer', 
         totalQty: 0, 
         totalAmount: 0, 
@@ -914,13 +930,9 @@ function handleGetStats() {
       };
     }
     
-    const isSameBatch = (row[0] === posMap[internalPO].timestamp);
-        
-    if (isSameBatch) {
-      posMap[internalPO].totalQty += (parseInt(row[35]) || 0);
-      posMap[internalPO].totalAmount += (parseFloat(row[50]) || 0);
-      if (row[39]) posMap[internalPO].currency = row[39];
-    }
+    posMap[internalPO].totalQty += (parseInt(row[35]) || 0);
+    posMap[internalPO].totalAmount += (parseFloat(row[50]) || 0);
+    if (row[39]) posMap[internalPO].currency = row[39];
   }
   
   let thisMonth = 0;
