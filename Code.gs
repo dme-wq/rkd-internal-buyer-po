@@ -908,36 +908,46 @@ function handleGetStats() {
     
     if (!posMap[internalPO]) {
       posMap[internalPO] = { 
+        originalUid: row[1],
+        timestamp: row[0],
         buyer: row[3] || 'Unknown Buyer', 
         totalQty: 0, 
         totalAmount: 0, 
+        currency: row[39] || 'USD',
         date: row[0] 
       };
-    } else {
-      if (row[3]) posMap[internalPO].buyer = row[3];
-      if (row[0]) posMap[internalPO].date = row[0];
     }
-    posMap[internalPO].totalQty += (parseInt(row[35]) || 0);
-    posMap[internalPO].totalAmount += (parseFloat(row[50]) || 0);
+    
+    const isSameBatch = posMap[internalPO].originalUid 
+        ? (row[1] === posMap[internalPO].originalUid) 
+        : (row[0] === posMap[internalPO].timestamp);
+        
+    if (isSameBatch) {
+      posMap[internalPO].totalQty += (parseInt(row[35]) || 0);
+      posMap[internalPO].totalAmount += (parseFloat(row[50]) || 0);
+      if (row[39]) posMap[internalPO].currency = row[39];
+    }
   }
   
   let thisMonth = 0;
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
-  let totalValue = 0;
   let totalQty = 0;
   const buyersMap = {};
+  const totalValueByCurrency = {};
   
   Object.values(posMap).forEach(po => {
-    totalValue += po.totalAmount;
     totalQty += po.totalQty;
+    const curr = (po.currency || 'USD').toString().trim().toUpperCase();
+    
+    totalValueByCurrency[curr] = (totalValueByCurrency[curr] || 0) + po.totalAmount;
     
     if (!buyersMap[po.buyer]) {
-      buyersMap[po.buyer] = { name: po.buyer, poCount: 0, totalQty: 0, totalValue: 0 };
+      buyersMap[po.buyer] = { name: po.buyer, poCount: 0, totalQty: 0, totalValueByCurrency: {} };
     }
     buyersMap[po.buyer].poCount++;
     buyersMap[po.buyer].totalQty += po.totalQty;
-    buyersMap[po.buyer].totalValue += po.totalAmount;
+    buyersMap[po.buyer].totalValueByCurrency[curr] = (buyersMap[po.buyer].totalValueByCurrency[curr] || 0) + po.totalAmount;
     
     const ts = new Date(po.date);
     if (ts.getMonth() === currentMonth && ts.getFullYear() === currentYear) {
@@ -945,13 +955,13 @@ function handleGetStats() {
     }
   });
   
-  const buyersList = Object.values(buyersMap).sort((a, b) => b.totalValue - a.totalValue);
+  const buyersList = Object.values(buyersMap).sort((a, b) => b.totalQty - a.totalQty);
   
   return ContentService.createTextOutput(JSON.stringify({
     status: 'success',
     data: {
       totalPOs: Object.keys(posMap).length,
-      totalValue: totalValue, 
+      totalValueByCurrency: totalValueByCurrency, 
       totalQty: totalQty,
       thisMonth: thisMonth,
       buyersCount: buyersList.length,

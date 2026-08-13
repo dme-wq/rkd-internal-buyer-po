@@ -125,12 +125,12 @@ export interface BuyerStat {
   name: string;
   poCount: number;
   totalQty: number;
-  totalValue: number;
+  totalValueByCurrency: Record<string, number>;
 }
 
 export interface DashboardStats {
   totalPOs: number;
-  totalValue: number;
+  totalValueByCurrency: Record<string, number>;
   totalQty: number;
   thisMonth: number;
   buyersCount: number;

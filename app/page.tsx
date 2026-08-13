@@ -46,7 +46,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-12">
         
         {/* Card 1: Total POs */}
         <div className="bg-white border-t-4 border-blue-500 rounded-xl p-4 shadow-sm flex flex-col justify-center items-center min-h-[100px] hover:shadow-md transition-shadow text-center">
@@ -70,18 +70,20 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Card 3: Total Value */}
-        <div className="bg-white border-t-4 border-amber-500 rounded-xl p-4 shadow-sm flex flex-col justify-center items-center min-h-[100px] hover:shadow-md transition-shadow text-center">
-          <div className="flex justify-center items-center gap-2 mb-1">
-            <DollarSign size={16} className="text-amber-500" />
-            <h3 className="text-zinc-500 font-semibold text-[11px] uppercase tracking-wider">Total Value (USD)</h3>
+        {/* Dynamic Cards: Total Value by Currency */}
+        {Object.entries(stats?.totalValueByCurrency || { 'USD': 0 }).map(([currency, value]) => (
+          <div key={`total-${currency}`} className="bg-white border-t-4 border-amber-500 rounded-xl p-4 shadow-sm flex flex-col justify-center items-center min-h-[100px] hover:shadow-md transition-shadow text-center">
+            <div className="flex justify-center items-center gap-2 mb-1">
+              <DollarSign size={16} className="text-amber-500" />
+              <h3 className="text-zinc-500 font-semibold text-[11px] uppercase tracking-wider">Total Value ({currency})</h3>
+            </div>
+            <div className="text-[28px] font-black text-zinc-800 tracking-tight">
+              {loading ? '...' : `${currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : ''}${(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            </div>
           </div>
-          <div className="text-[28px] font-black text-zinc-800 tracking-tight">
-            {loading ? '...' : `$${(stats?.totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          </div>
-        </div>
+        ))}
         
-        {/* Card 4: Buyers Count */}
+        {/* Card: Buyers Count */}
         <div className="bg-white border-t-4 border-purple-500 rounded-xl p-4 shadow-sm flex flex-col justify-center items-center min-h-[100px] hover:shadow-md transition-shadow text-center">
           <div className="flex justify-center items-center gap-2 mb-1">
             <Users size={16} className="text-purple-500" />
@@ -137,7 +139,8 @@ export default function DashboardPage() {
                           {new Date(po.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </td>
                         <td className="px-6 py-4 text-right font-bold text-emerald-600">
-                          ${(po.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {po.currency === 'USD' ? '$' : po.currency === 'EUR' ? '€' : po.currency === 'INR' ? '₹' : (po.currency || '') + ' '}
+                          {(po.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </td>
                         <td className="px-6 py-4 text-center">
                           {po.pdfUrl ? (
@@ -186,7 +189,11 @@ export default function DashboardPage() {
                          </div>
                          <div className="flex flex-col text-right">
                            <span className="text-[11px] text-zinc-400 font-semibold uppercase">Total Value</span>
-                           <span className="font-bold text-emerald-600">${buyer.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                           {Object.entries(buyer.totalValueByCurrency || {}).map(([currency, value]) => (
+                             <span key={currency} className="font-bold text-emerald-600 leading-tight">
+                               {currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : currency + ' '}{value.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                             </span>
+                           ))}
                          </div>
                       </div>
                     </div>
