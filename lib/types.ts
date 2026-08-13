@@ -96,6 +96,7 @@ export interface POListItem {
   payTerm1: string;
   payTerm2: string;
   pdfUrl?: string;
+  isOld?: boolean;
 }
 
 export interface DropdownData {

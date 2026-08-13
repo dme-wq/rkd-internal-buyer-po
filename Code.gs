@@ -748,12 +748,31 @@ function getActiveRows() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   let allRows = [];
   
+  const sheetPdf = ss.getSheetByName('PO PDF Links');
+  let pdfMap = {};
+  if (sheetPdf) {
+    const pdfData = sheetPdf.getDataRange().getValues();
+    for (let i = 1; i < pdfData.length; i++) {
+      const internalPO = pdfData[i][0];
+      const link = pdfData[i][1];
+      if (internalPO && link) {
+        pdfMap[internalPO] = link;
+      }
+    }
+  }
+  
   const sheetDatatab = ss.getSheetByName('DATATAB');
   if (sheetDatatab) {
     const data = sheetDatatab.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
       if (data[i][64] === 'ACTIVATE') {
-        allRows.push(data[i]);
+        const row = data[i];
+        const internalPO = row[4];
+        if (pdfMap[internalPO]) {
+          row[63] = pdfMap[internalPO];
+        }
+        row[65] = true; // mark as old
+        allRows.push(row);
       }
     }
   }
@@ -762,7 +781,9 @@ function getActiveRows() {
   if (sheetDatabase) {
     const data = sheetDatabase.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
-      allRows.push(data[i]);
+      const row = data[i];
+      row[65] = false; // mark as new
+      allRows.push(row);
     }
   }
   
@@ -796,6 +817,7 @@ function handleGetAllPOs(params) {
         payTerm1: row[10],
         payTerm2: row[11],
         pdfUrl: row[63] || '',
+        isOld: row[65] || false,
         rowIndex: i
       };
     }
@@ -861,6 +883,7 @@ function handleGetPOById(params) {
             pay2Activity: row[60],
             pay2Amount: row[61],
             pay2DueDate: row[62],
+            isOld: row[65] || false,
             totalAmount: 0
           };
       } else {
