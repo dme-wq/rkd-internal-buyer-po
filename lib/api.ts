@@ -17,11 +17,7 @@ const BASE_URL = 'https://script.google.com/macros/s/AKfycbzfl5m9vONb7lJw1HVgxSl
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<APIResponse<T>> {
   try {
-    const fetchOptions = {
-      ...options,
-      cache: 'no-store' as RequestCache
-    };
-    const res = await fetch(url, fetchOptions);
+    const res = await fetch(url, options);
     const text = await res.text();
     try {
       const json: APIResponse<T> = JSON.parse(text);
@@ -47,7 +43,7 @@ export async function extractPOData(internalPO: string, dropdowns: Partial<Dropd
 }
 
 export async function getDashboardStats(): Promise<APIResponse<DashboardStats>> {
-  return apiFetch<DashboardStats>(`${BASE_URL}?action=getStats`);
+  return apiFetch<DashboardStats>(`${BASE_URL}?action=getStats&_t=${Date.now()}`);
 }
 
 export async function getAllPOs(params?: {
@@ -60,12 +56,13 @@ export async function getAllPOs(params?: {
     page: String(params?.page ?? 1),
     limit: String(params?.limit ?? 20),
     search: params?.search ?? '',
+    _t: String(Date.now()),
   });
   return apiFetch(`${BASE_URL}?${query.toString()}`);
 }
 
 export async function getPOById(uid: string): Promise<APIResponse<PurchaseOrder>> {
-  return apiFetch<PurchaseOrder>(`${BASE_URL}?action=getPOById&uid=${encodeURIComponent(uid)}`);
+  return apiFetch<PurchaseOrder>(`${BASE_URL}?action=getPOById&uid=${encodeURIComponent(uid)}&_t=${Date.now()}`);
 }
 
 // ─── POST Endpoints ──────────────────────────────────────────
