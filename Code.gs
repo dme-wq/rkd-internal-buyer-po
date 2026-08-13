@@ -875,62 +875,62 @@ function handleGetStats() {
   if (!sheet) return ContentService.createTextOutput(JSON.stringify({ status: 'error' })).setMimeType(ContentService.MimeType.JSON);
   
   const data = sheet.getDataRange().getValues();
-  const uids = new Set();
-  const buyersMap = {}; // store { poCount, totalQty, totalValue } per buyer
+  const posMap = {};
+  
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const uid = row[1];
+    if (!uid) continue;
+    
+    if (!posMap[uid]) {
+      posMap[uid] = { 
+        buyer: row[3] || 'Unknown Buyer', 
+        totalQty: 0, 
+        totalAmount: 0, 
+        date: row[0] 
+      };
+    } else {
+      if (row[3]) posMap[uid].buyer = row[3];
+      if (row[0]) posMap[uid].date = row[0];
+    }
+    posMap[uid].totalQty += (parseInt(row[35]) || 0);
+    posMap[uid].totalAmount += (parseFloat(row[50]) || 0);
+  }
   
   let thisMonth = 0;
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
   let totalValue = 0;
   let totalQty = 0;
+  const buyersMap = {};
   
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-    const uid = row[1];
+  Object.values(posMap).forEach(po => {
+    totalValue += po.totalAmount;
+    totalQty += po.totalQty;
     
-    if (!uid) continue;
-    
-    const buyer = row[3] || 'Unknown Buyer';
-    const amount = parseFloat(row[50]) || 0;
-    const qty = parseInt(row[35]) || 0;
-    
-    totalValue += amount;
-    totalQty += qty;
-    
-    if (!buyersMap[buyer]) {
-      buyersMap[buyer] = { name: buyer, poCount: 0, totalQty: 0, totalValue: 0, uids: new Set() };
+    if (!buyersMap[po.buyer]) {
+      buyersMap[po.buyer] = { name: po.buyer, poCount: 0, totalQty: 0, totalValue: 0 };
     }
+    buyersMap[po.buyer].poCount++;
+    buyersMap[po.buyer].totalQty += po.totalQty;
+    buyersMap[po.buyer].totalValue += po.totalAmount;
     
-    buyersMap[buyer].totalQty += qty;
-    buyersMap[buyer].totalValue += amount;
-    
-    if (!uids.has(uid)) {
-      uids.add(uid);
-      buyersMap[buyer].uids.add(uid);
-      
-      const ts = new Date(row[0]);
-      if (ts.getMonth() === currentMonth && ts.getFullYear() === currentYear) {
-        thisMonth++;
-      }
+    const ts = new Date(po.date);
+    if (ts.getMonth() === currentMonth && ts.getFullYear() === currentYear) {
+      thisMonth++;
     }
-  }
+  });
   
-  // Convert buyer sets to counts
-  const buyersList = Object.values(buyersMap).map(b => ({
-    name: b.name,
-    poCount: b.uids.size,
-    totalQty: b.totalQty,
-    totalValue: b.totalValue
-  })).sort((a, b) => b.totalValue - a.totalValue);
+  const buyersList = Object.values(buyersMap).sort((a, b) => b.totalValue - a.totalValue);
   
   return ContentService.createTextOutput(JSON.stringify({
     status: 'success',
     data: {
-      totalPOs: uids.size,
+      totalPOs: Object.keys(posMap).length,
       totalValue: totalValue, 
       totalQty: totalQty,
       thisMonth: thisMonth,
-      buyersCount: Object.keys(buyersMap).length,
+      buyersCount: buyersList.length,
       buyerWise: buyersList
     }
   })).setMimeType(ContentService.MimeType.JSON);
