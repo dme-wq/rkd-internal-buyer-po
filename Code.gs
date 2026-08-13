@@ -106,18 +106,26 @@ function doPost(e) {
 }
 
 function handleGetPendingInternalPOs() {
+  const cache = CacheService.getScriptCache();
+  const cachedData = cache.get('pendingPOs');
+  if (cachedData) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'success',
+      data: JSON.parse(cachedData)
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
   const ss = SpreadsheetApp.openById(SHEET_ID);
   
-  // Helper to normalize PO strings by removing year suffix like '/26'
   const normalizePO = (po) => po.replace(/\/\d{2}$/, '').trim().toLowerCase();
 
-  // 1. Get all Internal POs from 'PO Entry' sheet (Column N)
   const poEntrySheet = ss.getSheetByName('PO Entry');
   if (!poEntrySheet) throw new Error("PO Entry sheet not found");
-  const poEntryData = poEntrySheet.getDataRange().getValues();
+  
+  const lastRow = poEntrySheet.getLastRow();
+  const poEntryData = lastRow > 0 ? poEntrySheet.getRange(1, 1, lastRow, 25).getValues() : [];
   const allInternalPOs = [];
   
-  // Find column indices
   let colMap = {
     internalPO: 13,
     fileNumber: 3,
@@ -141,14 +149,12 @@ function handleGetPendingInternalPOs() {
       else if (headerText === 'onboard vessel date') colMap.onboardDate = j;
       else if (headerText === 'delivery address') colMap.deliveryAddr = j;
     }
-    // If we found internal po number, we assume this is the header row
     if (poEntryData[i].some(v => (v || '').toString().trim().toLowerCase() === 'internal po number')) {
       dataStartRow = i + 1;
       break;
     }
   }
 
-  // Parse Date object to yyyy-MM-dd
   const formatDate = (dateObj) => {
     if (!dateObj) return '';
     if (dateObj instanceof Date) {
@@ -157,13 +163,11 @@ function handleGetPendingInternalPOs() {
     return dateObj.toString().trim();
   };
 
-  // 1.5 Get Billing Addresses from 'Buyer Name' sheet
-  // Buyer Name is in Col G (index 6), Billing Address is in Col I (index 8)
   const buyerNameSheet = ss.getSheetByName('Buyer Name');
   const billingAddrMap = {};
   if (buyerNameSheet) {
     const buyerData = buyerNameSheet.getDataRange().getValues();
-    for (let i = 1; i < buyerData.length; i++) { // Skip header if present, or just process all
+    for (let i = 1; i < buyerData.length; i++) {
       const bName = (buyerData[i][6] || '').toString().trim();
       const bAddr = (buyerData[i][8] || '').toString().trim();
       if (bName) {
@@ -190,7 +194,6 @@ function handleGetPendingInternalPOs() {
     }
   }
   
-  // 2. Get all used Internal POs from 'DATABASE' sheet (Column E = index 4)
   const dbSheet = ss.getSheetByName('DATABASE');
   if (!dbSheet) throw new Error("DATABASE sheet not found");
   const dbData = dbSheet.getDataRange().getValues();
@@ -202,12 +205,10 @@ function handleGetPendingInternalPOs() {
     }
   }
   
-  // 3. Filter pending POs
   const pendingPOs = allInternalPOs.filter(po => {
     return !usedPOs.has(normalizePO(po.internalPO));
   });
   
-  // Remove duplicates by internalPO
   const uniquePendingPOs = [];
   const seen = new Set();
   for (const po of pendingPOs) {
@@ -216,6 +217,9 @@ function handleGetPendingInternalPOs() {
       uniquePendingPOs.push(po);
     }
   }
+  
+  // Cache the results for 15 minutes (900 seconds)
+  cache.put('pendingPOs', JSON.stringify(uniquePendingPOs), 900);
   
   return ContentService.createTextOutput(JSON.stringify({
     status: 'success',
@@ -314,6 +318,7 @@ function handleCreatePO(data) {
       sheet.getRange(sheet.getLastRow() + 1, 1, rowsToInsert.length, 64).setValues(rowsToInsert);
     }
 
+    CacheService.getScriptCache().remove('pendingPOs');
     return ContentService.createTextOutput(JSON.stringify({ 
       status: 'success', 
       data: { uid: uniqueId, internalPO: internalPO } 
@@ -694,6 +699,7 @@ function handleUpdatePO(data) {
       sheet.getRange(sheet.getLastRow() + 1, 1, rowsToInsert.length, 64).setValues(rowsToInsert);
     }
 
+    CacheService.getScriptCache().remove('pendingPOs');
     return ContentService.createTextOutput(JSON.stringify({ 
       status: 'success', 
       data: { uid: uid, internalPO: internalPO } 
