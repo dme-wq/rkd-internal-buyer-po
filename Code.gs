@@ -762,10 +762,8 @@ function handleGetAllPOs(params) {
       };
     }
     
-    // Check if this row belongs to the latest active batch
-    const isSameBatch = posMap[internalPO].originalUid 
-        ? (row[1] === posMap[internalPO].originalUid) 
-        : (row[0] === posMap[internalPO].timestamp);
+    // Use strictly the timestamp to group active batches, as old edits might share the same UID
+    const isSameBatch = (row[0] === posMap[internalPO].timestamp);
         
     if (isSameBatch) {
       posMap[internalPO].totalAmount += (parseFloat(row[50]) || 0);
@@ -807,9 +805,7 @@ function handleGetPOById(params) {
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
     if (row[4] === targetInternalPO || row[1] === targetUid) {
-      const isSameBatch = latestBatchUid 
-          ? (row[1] === latestBatchUid) 
-          : (row[0] === latestBatchTimestamp);
+      const isSameBatch = (row[0] === latestBatchTimestamp);
           
       if (isSameBatch) {
         if (!header) {
@@ -918,9 +914,7 @@ function handleGetStats() {
       };
     }
     
-    const isSameBatch = posMap[internalPO].originalUid 
-        ? (row[1] === posMap[internalPO].originalUid) 
-        : (row[0] === posMap[internalPO].timestamp);
+    const isSameBatch = (row[0] === posMap[internalPO].timestamp);
         
     if (isSameBatch) {
       posMap[internalPO].totalQty += (parseInt(row[35]) || 0);
