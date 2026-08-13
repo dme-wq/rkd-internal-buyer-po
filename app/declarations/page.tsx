@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Eye, Edit, ChevronDown, ChevronUp, Package, Calendar, X } from 'lucide-react';
 import { getAllPOs, getPOById } from '@/lib/api';
 import { POListItem, PurchaseOrder } from '@/lib/types';
+import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 
 export default function DeclarationsPage() {
@@ -130,7 +131,7 @@ export default function DeclarationsPage() {
                       
                       <div className="flex flex-col">
                         <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-1">Date</span>
-                        <span className="text-sm font-semibold text-zinc-600">{new Date(po.timestamp).toLocaleDateString()}</span>
+                        <span className="text-sm font-semibold text-zinc-600">{formatDate(po.timestamp, 'dd-MMM-yyyy HH:mm')}</span>
                       </div>
 
                       {po.pdfUrl && (
@@ -160,10 +161,18 @@ export default function DeclarationsPage() {
                           
                           {/* Details Header & Actions */}
                           <div className="flex justify-between items-start pt-4">
-                            <div className="flex gap-8">
+                            <div className="flex gap-8 flex-wrap">
+                              <div className="space-y-1">
+                                <div className="text-xs text-zinc-400 font-semibold">PO Date</div>
+                                <div className="text-sm font-medium flex items-center gap-1.5"><Calendar size={14} className="text-zinc-400"/> {formatDate(poDetails[po.uid].header.poDate)}</div>
+                              </div>
                               <div className="space-y-1">
                                 <div className="text-xs text-zinc-400 font-semibold">Ex-Factory</div>
-                                <div className="text-sm font-medium flex items-center gap-1.5"><Calendar size={14} className="text-zinc-400"/> {poDetails[po.uid].header.exFactory || '-'}</div>
+                                <div className="text-sm font-medium flex items-center gap-1.5"><Calendar size={14} className="text-zinc-400"/> {formatDate(poDetails[po.uid].header.exFactory)}</div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="text-xs text-zinc-400 font-semibold">Onboard Vessel</div>
+                                <div className="text-sm font-medium flex items-center gap-1.5"><Calendar size={14} className="text-zinc-400"/> {formatDate(poDetails[po.uid].header.onboardDate)}</div>
                               </div>
                               <div className="space-y-1">
                                 <div className="text-xs text-zinc-400 font-semibold">Delivery Terms</div>

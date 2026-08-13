@@ -49,45 +49,45 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
         
         {/* Card 1: Total POs */}
-        <div className="bg-white border-t-4 border-blue-500 rounded-xl p-6 shadow-sm flex flex-col justify-between min-h-[140px] hover:shadow-md transition-shadow">
-          <div className="flex justify-between items-start">
-            <h3 className="text-zinc-500 font-semibold text-[13px] uppercase tracking-wider">Total Purchase Orders</h3>
-            <ShoppingCart size={18} className="text-blue-500" />
+        <div className="bg-white border-t-4 border-blue-500 rounded-xl p-4 shadow-sm flex flex-col justify-center items-center min-h-[100px] hover:shadow-md transition-shadow text-center">
+          <div className="flex justify-center items-center gap-2 mb-1">
+            <ShoppingCart size={16} className="text-blue-500" />
+            <h3 className="text-zinc-500 font-semibold text-[11px] uppercase tracking-wider">Total Purchase Orders</h3>
           </div>
-          <div className="text-[36px] font-black text-zinc-800 mt-2 tracking-tight">
+          <div className="text-[28px] font-black text-zinc-800 tracking-tight">
             {loading ? '...' : stats?.totalPOs || 0}
           </div>
         </div>
 
         {/* Card 2: Total Quantity */}
-        <div className="bg-white border-t-4 border-emerald-500 rounded-xl p-6 shadow-sm flex flex-col justify-between min-h-[140px] hover:shadow-md transition-shadow">
-          <div className="flex justify-between items-start">
-            <h3 className="text-zinc-500 font-semibold text-[13px] uppercase tracking-wider">Total Qty Ordered</h3>
-            <Package size={18} className="text-emerald-500" />
+        <div className="bg-white border-t-4 border-emerald-500 rounded-xl p-4 shadow-sm flex flex-col justify-center items-center min-h-[100px] hover:shadow-md transition-shadow text-center">
+          <div className="flex justify-center items-center gap-2 mb-1">
+            <Package size={16} className="text-emerald-500" />
+            <h3 className="text-zinc-500 font-semibold text-[11px] uppercase tracking-wider">Total Qty Ordered</h3>
           </div>
-          <div className="text-[36px] font-black text-zinc-800 mt-2 tracking-tight">
+          <div className="text-[28px] font-black text-zinc-800 tracking-tight">
             {loading ? '...' : (stats?.totalQty || 0).toLocaleString()}
           </div>
         </div>
 
         {/* Card 3: Total Value */}
-        <div className="bg-white border-t-4 border-amber-500 rounded-xl p-6 shadow-sm flex flex-col justify-between min-h-[140px] hover:shadow-md transition-shadow">
-          <div className="flex justify-between items-start">
-            <h3 className="text-zinc-500 font-semibold text-[13px] uppercase tracking-wider">Total Value (USD)</h3>
-            <DollarSign size={18} className="text-amber-500" />
+        <div className="bg-white border-t-4 border-amber-500 rounded-xl p-4 shadow-sm flex flex-col justify-center items-center min-h-[100px] hover:shadow-md transition-shadow text-center">
+          <div className="flex justify-center items-center gap-2 mb-1">
+            <DollarSign size={16} className="text-amber-500" />
+            <h3 className="text-zinc-500 font-semibold text-[11px] uppercase tracking-wider">Total Value (USD)</h3>
           </div>
-          <div className="text-[36px] font-black text-zinc-800 mt-2 tracking-tight">
+          <div className="text-[28px] font-black text-zinc-800 tracking-tight">
             {loading ? '...' : `$${(stats?.totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           </div>
         </div>
         
         {/* Card 4: Buyers Count */}
-        <div className="bg-white border-t-4 border-purple-500 rounded-xl p-6 shadow-sm flex flex-col justify-between min-h-[140px] hover:shadow-md transition-shadow">
-          <div className="flex justify-between items-start">
-            <h3 className="text-zinc-500 font-semibold text-[13px] uppercase tracking-wider">Active Buyers</h3>
-            <Users size={18} className="text-purple-500" />
+        <div className="bg-white border-t-4 border-purple-500 rounded-xl p-4 shadow-sm flex flex-col justify-center items-center min-h-[100px] hover:shadow-md transition-shadow text-center">
+          <div className="flex justify-center items-center gap-2 mb-1">
+            <Users size={16} className="text-purple-500" />
+            <h3 className="text-zinc-500 font-semibold text-[11px] uppercase tracking-wider">Active Buyers</h3>
           </div>
-          <div className="text-[36px] font-black text-zinc-800 mt-2 tracking-tight">
+          <div className="text-[28px] font-black text-zinc-800 tracking-tight">
             {loading ? '...' : stats?.buyersCount || 0}
           </div>
         </div>
