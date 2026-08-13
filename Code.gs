@@ -753,7 +753,8 @@ function handleGetAllPOs(params) {
         totalAmount: 0,
         currency: row[39] || 'USD',
         payTerm1: row[10],
-        payTerm2: row[11]
+        payTerm2: row[11],
+        pdfUrl: row[63] || ''
       };
     }
     posMap[uid].totalAmount += (parseFloat(row[50]) || 0);
@@ -864,32 +865,62 @@ function handleGetStats() {
   
   const data = sheet.getDataRange().getValues();
   const uids = new Set();
-  const buyers = new Set();
+  const buyersMap = {}; // store { poCount, totalQty, totalValue } per buyer
+  
   let thisMonth = 0;
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
+  let totalValue = 0;
+  let totalQty = 0;
   
   for (let i = 1; i < data.length; i++) {
-    const uid = data[i][1];
-    if (uid && !uids.has(uid)) {
+    const row = data[i];
+    const uid = row[1];
+    
+    if (!uid) continue;
+    
+    const buyer = row[3] || 'Unknown Buyer';
+    const amount = parseFloat(row[50]) || 0;
+    const qty = parseInt(row[35]) || 0;
+    
+    totalValue += amount;
+    totalQty += qty;
+    
+    if (!buyersMap[buyer]) {
+      buyersMap[buyer] = { name: buyer, poCount: 0, totalQty: 0, totalValue: 0, uids: new Set() };
+    }
+    
+    buyersMap[buyer].totalQty += qty;
+    buyersMap[buyer].totalValue += amount;
+    
+    if (!uids.has(uid)) {
       uids.add(uid);
-      const buyer = data[i][3];
-      if (buyer) buyers.add(buyer);
+      buyersMap[buyer].uids.add(uid);
       
-      const ts = new Date(data[i][0]);
+      const ts = new Date(row[0]);
       if (ts.getMonth() === currentMonth && ts.getFullYear() === currentYear) {
         thisMonth++;
       }
     }
   }
   
+  // Convert buyer sets to counts
+  const buyersList = Object.values(buyersMap).map(b => ({
+    name: b.name,
+    poCount: b.uids.size,
+    totalQty: b.totalQty,
+    totalValue: b.totalValue
+  })).sort((a, b) => b.totalValue - a.totalValue);
+  
   return ContentService.createTextOutput(JSON.stringify({
     status: 'success',
     data: {
       totalPOs: uids.size,
-      totalValue: 0, 
+      totalValue: totalValue, 
+      totalQty: totalQty,
       thisMonth: thisMonth,
-      buyers: buyers.size
+      buyersCount: Object.keys(buyersMap).length,
+      buyerWise: buyersList
     }
   })).setMimeType(ContentService.MimeType.JSON);
 }

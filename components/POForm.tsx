@@ -485,10 +485,38 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
         setMessage(`Success! Internal PO: ${res.data.internalPO} saved.`);
         const fullHeader = { ...header, internalPO: res.data.internalPO, uid: res.data.uid || initialData?.header?.uid } as POHeader;
         const pdfData = await generatePOPDF({ header: fullHeader, skus: finalSkus as SKUItem[] });
-        await savePDFtoDrive(fullHeader.uid!, pdfData.filename, pdfData.base64);
+        const pdfRes = await savePDFtoDrive(fullHeader.uid!, pdfData.filename, pdfData.base64);
+        
+        let pdfUrl = '';
+        if (pdfRes.status === 'success' && pdfRes.data?.fileUrl) {
+           pdfUrl = pdfRes.data.fileUrl;
+        }
+
         setMessage(prev => prev + ' PDF generated and saved to Drive.');
+        
+        MySwal.fire({
+          icon: 'success',
+          title: 'PO Generated Successfully',
+          html: `<p>Internal PO <b>${res.data.internalPO}</b> has been saved.</p>`,
+          showCancelButton: true,
+          confirmButtonText: 'View PDF',
+          cancelButtonText: 'Close',
+          confirmButtonColor: '#00a669'
+        }).then((result) => {
+          if (result.isConfirmed) {
+             if (pdfUrl) {
+                window.open(pdfUrl, '_blank');
+             } else {
+                // fallback to local blob if drive link failed
+                const url = URL.createObjectURL(pdfData.blob);
+                window.open(url, '_blank');
+             }
+          }
+        });
+
       } else {
         setMessage('Error: ' + res.message);
+        MySwal.fire('Error', res.message, 'error');
       }
     } catch (err: unknown) {
       setMessage('Exception: ' + (err as Error).message);

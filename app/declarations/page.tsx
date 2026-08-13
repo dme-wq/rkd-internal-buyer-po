@@ -132,6 +132,15 @@ export default function DeclarationsPage() {
                         <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-1">Date</span>
                         <span className="text-sm font-semibold text-zinc-600">{new Date(po.timestamp).toLocaleDateString()}</span>
                       </div>
+
+                      {po.pdfUrl && (
+                        <div className="flex flex-col border-l border-zinc-200 pl-4 ml-2">
+                          <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-1">Generated PDF</span>
+                          <a href={po.pdfUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-sm font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                            <FileText size={14} /> View PDF
+                          </a>
+                        </div>
+                      )}
                     </div>
                     
                     <div className="flex items-center gap-4 pl-4 border-l border-zinc-200">

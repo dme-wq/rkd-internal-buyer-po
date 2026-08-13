@@ -95,6 +95,7 @@ export interface POListItem {
   totalAmount: number;
   payTerm1: string;
   payTerm2: string;
+  pdfUrl?: string;
 }
 
 export interface DropdownData {
@@ -120,11 +121,20 @@ export interface DropdownData {
   payActivities: string[];
 }
 
+export interface BuyerStat {
+  name: string;
+  poCount: number;
+  totalQty: number;
+  totalValue: number;
+}
+
 export interface DashboardStats {
   totalPOs: number;
   totalValue: number;
+  totalQty: number;
   thisMonth: number;
-  buyers: number;
+  buyersCount: number;
+  buyerWise: BuyerStat[];
 }
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
