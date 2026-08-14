@@ -96,16 +96,16 @@ export function DragDropImage({ value, onChange }: DragDropImageProps) {
         onDrop={handleDrop} 
         onDragOver={handleDragOver}
         onClick={value ? undefined : () => handleClick()}
-        className={`w-24 h-24 border-2 border-dashed border-zinc-300 rounded-lg flex items-center justify-center transition-colors overflow-hidden mx-auto relative group ${!value ? 'cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 bg-white' : 'bg-black/5'}`}
+        className={`w-40 h-40 border-2 border-dashed border-zinc-300 rounded-lg flex items-center justify-center transition-colors overflow-hidden mx-auto relative group ${!value ? 'cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 bg-white' : 'bg-black/5'}`}
       >
         {isCompressing ? (
           <div className="flex flex-col items-center gap-1">
-            <div className="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-            <span className="text-[9px] text-zinc-400 font-bold">Compressing</span>
+            <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+            <span className="text-xs text-zinc-400 font-bold">Compressing</span>
           </div>
         ) : value ? (
           <>
-            <img src={value} alt="Preview" className="w-full h-full object-cover" />
+            <img src={value} alt="Preview" className="w-full h-full object-contain" />
             <div className="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center gap-3">
               <button onClick={(e) => { e.stopPropagation(); setIsFullScreen(true); }} className="p-2 bg-white/20 hover:bg-white/40 rounded-full text-white transition-colors" title="View Full Screen">
                 <Eye size={16} />
