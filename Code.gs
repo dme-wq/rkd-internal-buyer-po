@@ -525,40 +525,19 @@ function handleExtractPOData(data) {
   } catch (e) {
     throw new Error("Could not access the file. Make sure the file exists and is accessible: " + e.message);
   }
-
   const size = file.getSize();
   if (size > 7 * 1024 * 1024) { // 7MB limit to avoid Google Apps Script Out of Memory HTML crash
     throw new Error("File is too large (" + Math.round(size/1024/1024) + "MB). Please use a file smaller than 7MB for AI extraction.");
   }
 
   const blob = file.getBlob();
+  const base64Data = Utilities.base64Encode(blob.getBytes());
   const mimeType = getMimeTypeFromBlob(blob);
-  
-  // Upload to Gemini File API to avoid Apps Script memory crash with large base64 strings
-  const uploadUrl = `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${GEMINI_API_KEY}`;
-  const uploadOptions = {
-    method: 'post',
-    payload: blob,
-    headers: {
-      'X-Goog-Upload-Protocol': 'raw',
-      'X-Goog-Upload-Header-Content-Type': mimeType
-    },
-    muteHttpExceptions: true
-  };
-  
-  const uploadResponse = UrlFetchApp.fetch(uploadUrl, uploadOptions);
-  const uploadJson = JSON.parse(uploadResponse.getContentText());
-  
-  if (uploadJson.error) {
-    throw new Error("Gemini Upload Error: " + uploadJson.error.message);
-  }
-  
-  const fileUri = uploadJson.file.uri;
 
   const documentParts = [{
-    fileData: {
+    inlineData: {
       mimeType: mimeType,
-      fileUri: fileUri
+      data: base64Data
     }
   }];
 
@@ -597,8 +576,7 @@ function handleExtractPOData(data) {
   };
 
   const promptText = `You are an AI data extractor. Extract data from this Purchase Order document.
-CRITICAL INSTRUCTION: For all dropdown fields (Delivery Terms, Ports, Brands, Shapes, Designers, Colors, Sizes, Qualities, Units, Packs, etc.), you MUST ONLY map the extracted values to the EXACT predefined options provided below.
-If you find a value in the document but it does NOT match or closely resemble any option in the list, YOU MUST RETURN AN EMPTY STRING "". Do NOT invent or return custom text for these fields if it's not in the list!
+CRITICAL INSTRUCTION: Map the extracted values to the EXACT predefined options provided below whenever possible.
 
 Predefined Valid Options:
 - Valid Delivery Terms: ${JSON.stringify(dropdowns.deliveryTerms || [])}
@@ -614,8 +592,8 @@ Predefined Valid Options:
 - Valid Pack Options: ${JSON.stringify(dropdowns.packs || [])}
 - Valid Currencies: ["USD", "INR", "EUR", "CAD", "AUD", "CNY"]
 
-If you find a color like 'Blue' but the valid options has 'Navy Blue', map it to 'Navy Blue' ONLY if highly confident it's the same.
-If a field is missing or not in the valid options list, return an empty string "" or 0 for numbers.
+If you find a color like 'Blue' but the valid options has 'Navy Blue', map it to 'Navy Blue' if confident.
+If a field is missing, return an empty string "" or 0 for numbers.
 Extract EVERY single line item and put it in the "items" array. Keep the original item sequence.
 
 Return ONLY valid JSON matching this exact structure:
