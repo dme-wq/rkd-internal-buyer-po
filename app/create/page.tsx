@@ -11,9 +11,15 @@ export default function CreatePOPage() {
   const [dropdowns, setDropdowns] = useState<Partial<DropdownData> | undefined>(undefined);
 
   useEffect(() => {
+    const cachedDropdowns = localStorage.getItem('dropdowns_cache');
+    if (cachedDropdowns) {
+      try { setDropdowns(JSON.parse(cachedDropdowns)); } catch(e) {}
+    }
+
     getDropdowns().then(res => {
       if (res.status === 'success' && res.data) {
         setDropdowns(res.data);
+        localStorage.setItem('dropdowns_cache', JSON.stringify(res.data));
       }
     });
   }, []);

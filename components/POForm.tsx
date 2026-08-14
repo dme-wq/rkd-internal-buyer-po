@@ -316,9 +316,17 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
     updateTime(); // initial call
     const interval = setInterval(updateTime, 1000);
     
-    // Fetch pending Internal POs
+    // Fetch pending Internal POs (Stale-while-revalidate pattern for instant load)
+    const cachedPending = localStorage.getItem('pendingPOs_cache');
+    if (cachedPending) {
+      try { setPendingPOs(JSON.parse(cachedPending)); } catch(e) {}
+    }
+    
     getPendingInternalPOs().then(res => {
-      if (res.status === 'success' && res.data) setPendingPOs(res.data);
+      if (res.status === 'success' && res.data) {
+        setPendingPOs(res.data);
+        localStorage.setItem('pendingPOs_cache', JSON.stringify(res.data));
+      }
     });
     
     return () => clearInterval(interval);
