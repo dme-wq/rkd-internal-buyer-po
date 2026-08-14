@@ -467,7 +467,7 @@ function handleAddDropdown(data) {
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
-const GEMINI_API_KEY = "AQ.Ab8RN" + "6LipHIPWvyG48MktJ8BIt6PVTed25yEbHzjDudtJLFH9Q";
+const GEMINI_API_KEY = "AQ.Ab8RN" + "6K2IedvQRu3dvemWVnZ_aQLrzkStsmm7X8leI8pYpyMsA";
 
 function extractFileId(url) {
   const match = url.match(/[-\w]{25,}/);
