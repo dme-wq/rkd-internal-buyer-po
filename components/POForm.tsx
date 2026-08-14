@@ -912,7 +912,21 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
           </div>
           
           <div className="bg-white border-t border-zinc-200 px-6 py-5 flex justify-end">
-        
+            <div className="flex items-center gap-6">
+              <div className="text-right">
+                <span className="block text-[12px] text-zinc-500 font-bold tracking-wide mb-1">Total Items</span>
+                <span className="text-sm font-bold text-zinc-700">{skus.length} SKU(s)</span>
+              </div>
+              <div className="h-8 w-px bg-zinc-200"></div>
+              <div className="text-right">
+                <span className="block text-[12px] text-zinc-500 font-bold tracking-wide mb-1">Total Net Value</span>
+                <span className="text-2xl font-black text-[#00a669] tracking-tight">
+                  {header.currency === 'USD' ? '$' : header.currency === 'EUR' ? '€' : header.currency === 'INR' ? '₹' : header.currency} {skus.reduce((acc, sku) => acc + ((Number(sku.orderQty) || 0) * (Number(sku.price) || 0)), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
