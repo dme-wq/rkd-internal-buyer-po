@@ -33,7 +33,7 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
       buyerSubSrc: '', buyerSrcPct: 100, buyerSubPct: 0, billingAddr: '', deliveryAddr: '',
       pay1Pct: '-', pay1Days: '-', pay1Activity: '-',
       pay1Amount: 0, pay1DueDate: '', pay2Pct: '-', pay2Days: '-', pay2Activity: '-',
-      pay2Amount: 0, pay2DueDate: ''
+      pay2Amount: 0, pay2DueDate: '', currency: 'USD'
     };
   });
 
@@ -42,7 +42,7 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
     return [{
       id: Date.now().toString(), product: '', shape: '', designer: '', brand: '',
       description: '', sizes: [], size1: '', size2: '', quality: '', color: '', colorRef: '',
-      orderQty: 0, unitQty: 'pieces', price: 0, unitPrice: 'piece', currency: 'USD',
+      orderQty: 0, unitQty: 'pieces', price: 0, unitPrice: 'piece',
       innerPack: '', outerPack: '', addSample: '', addProd: '', skuCode: '', designImage: '',
       totalQtyMfg: 0, lineTotal: 0
     }];
@@ -358,7 +358,7 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
     setSkus([...skus, { 
       id: Date.now().toString(), product: '', shape: '', designer: '', brand: '',
       description: '', sizes: [], size1: '', size2: '', quality: '', color: '', colorRef: '',
-      orderQty: 0, unitQty: 'pieces', price: 0, unitPrice: 'piece', currency: 'USD',
+      orderQty: 0, unitQty: 'pieces', price: 0, unitPrice: 'piece',
       innerPack: '', outerPack: '', addSample: '', addProd: '', skuCode: '', designImage: '',
       totalQtyMfg: 0, lineTotal: 0
     }]);
@@ -441,13 +441,21 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
   // Pure function — no setState side effects so handleSave always gets fresh computed values
   const calculateTotals = () => {
     let grandTotal = 0;
-    const computedSkus = skus.map(sku => {
-      const lineTotal = (Number(sku.orderQty) || 0) * (Number(sku.price) || 0);
-      const addProdPct = parseFloat(String(sku.addProd || '0').replace('%', '')) / 100;
-      const ppTopNum = parseInt(String(sku.addSample || '0').replace(/[^0-9]/g, '')) || 0;
-      const totalQtyMfg = Math.ceil((Number(sku.orderQty) || 0) + ((Number(sku.orderQty) || 0) * addProdPct) + ppTopNum);
+    const computedSkus = skus.map((sku, idx) => {
+      const orderQty = Number(sku.orderQty) || 0;
+      const price = Number(sku.price) || 0;
+      const addProdStr = sku.addProd || '0%';
+      const addProdPct = parseFloat(addProdStr.replace('%', '')) || 0;
+      const addSample = Number(sku.addSample) || 0;
+      
+      const totalQtyMfg = Math.ceil(orderQty + (orderQty * (addProdPct / 100)) + addSample);
+      const lineTotal = orderQty * price;
+      
       grandTotal += lineTotal;
-      return { ...sku, lineTotal, totalQtyMfg };
+      
+      const generatedSkuCode = header.internalPO ? `${header.internalPO}-${idx + 1}` : '';
+      
+      return { ...sku, lineTotal, totalQtyMfg, skuCode: generatedSkuCode };
     });
     const p1Pct = header.pay1Pct === '-' ? 0 : parseFloat(String(header.pay1Pct || '0'));
     const p2Pct = header.pay2Pct === '-' ? 0 : parseFloat(String(header.pay2Pct || '0'));
@@ -491,9 +499,25 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
 
     for (let i = 0; i < skus.length; i++) {
       const s = skus[i];
-      const isComplete = !!(s.product && s.shape && s.designer && s.brand && s.quality && s.color && Number(s.orderQty) > 0 && Number(s.price) > 0);
+      const isComplete = !!(
+        s.product && 
+        s.shape && 
+        s.designer && 
+        s.brand && 
+        s.quality && 
+        s.color && 
+        s.sizes && s.sizes.length > 0 &&
+        Number(s.orderQty) > 0 && 
+        s.unitQty &&
+        Number(s.price) > 0 &&
+        s.unitPrice &&
+        s.innerPack &&
+        s.outerPack &&
+        s.addSample &&
+        s.addProd
+      );
       if (!isComplete) {
-        MySwal.fire('Incomplete Line Item', `Please complete all required fields for Item #${i + 1} (Product, Shape, Designer, Brand, Quality, Color, Qty, Price).`, 'warning');
+        MySwal.fire('Incomplete Line Item', `Please complete all fields (including Size, Pack, etc.) for Item #${i + 1}. Every field is mandatory.`, 'warning');
         return;
       }
     }
@@ -565,7 +589,7 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
         // Send WhatsApp
         let waSuccess = false;
         try {
-          const waRes = await sendWhatsAppNotification(res.data.internalPO, pdfUrl);
+          const waRes = await sendWhatsAppNotification(res.data.internalPO, pdfUrl, fullHeader.buyerName || '', fullHeader.buyerPO || '');
           waSuccess = waRes.status === 'success';
           if (!waSuccess) console.warn('WhatsApp failed:', waRes.message);
         } catch (waErr) {
@@ -677,6 +701,21 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
               <ModernInput label="Onboard Vessel Date" type="text" value={formatDisplayDate(header.onboardDate)} readOnly={true} />
               <ModernSelect label="Delivery Terms" value={header.deliveryTerms || ''} onChange={(e) => updateHeader('deliveryTerms', e.target.value)} options={dropdowns?.deliveryTerms || []} onAddNew={() => handleAddNewDropdown('deliveryTerms')} />
               <ModernSelect label="Port of Discharge" value={header.portName || ''} onChange={(e) => updateHeader('portName', e.target.value)} options={dropdowns?.portNames || []} onAddNew={() => handleAddNewDropdown('portNames')} />
+              <div className="md:col-span-1">
+                <label className="block text-[11px] font-bold text-zinc-600 mb-1.5 uppercase tracking-wider">Currency</label>
+                <select 
+                  value={header.currency || 'USD'} 
+                  onChange={e => updateHeader('currency', e.target.value)} 
+                  className="w-full bg-zinc-50 border border-zinc-200 text-zinc-800 text-sm rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 block p-2 transition-all outline-none h-[38px]"
+                >
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="INR">INR</option>
+                  <option value="CAD">CAD</option>
+                  <option value="AUD">AUD</option>
+                  <option value="CNY">CNY</option>
+                </select>
+              </div>
               
               <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
                 <ModernTextArea label="Billing Address" value={header.billingAddr} readOnly={true} />
@@ -810,9 +849,9 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] border-b border-zinc-200">Color</th>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[100px] border-b border-zinc-200">Buyer PO Qty</th>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Unit of Qty</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[100px] border-b border-zinc-200">Price</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Unit of Price</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[90px] border-b border-zinc-200">Currency</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[90px] border-b border-zinc-200">Price</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[90px] border-b border-zinc-200">Unit of Price</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[100px] border-b border-zinc-200">Total Amt ({header.currency || 'USD'})</th>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Inner Pack</th>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Outer Pack</th>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[130px] border-b border-zinc-200">PP/TOP Samples</th>
@@ -849,7 +888,11 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.unitQty} onChange={(e: any) => updateSku(sku.id!, 'unitQty', e.target.value)} options={dropdowns?.unitsQty} onAddNew={() => handleAddNewDropdown('unitsQty')} /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridInput type="number" value={sku.price} onChange={(e) => updateSku(sku.id!, 'price', e.target.value)} placeholder="0.00" /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.unitPrice} onChange={(e: any) => updateSku(sku.id!, 'unitPrice', e.target.value)} options={dropdowns?.unitsPrice} onAddNew={() => handleAddNewDropdown('unitsPrice')} /></td>
-                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.currency} onChange={(e: any) => updateSku(sku.id!, 'currency', e.target.value)} options={['USD', 'INR', 'EUR', 'CAD', 'AUD', 'CNY']} /></td>
+                    <td className="px-3 py-3 align-top border-b border-zinc-100">
+                      <div className="font-semibold text-zinc-800 bg-zinc-50 px-2 py-1 rounded border border-zinc-200">
+                        {header.currency === 'USD' ? '$' : header.currency === 'EUR' ? '€' : header.currency === 'INR' ? '₹' : header.currency} {(Number(sku.orderQty) * Number(sku.price) || 0).toLocaleString()}
+                      </div>
+                    </td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.innerPack} onChange={(e: any) => updateSku(sku.id!, 'innerPack', e.target.value)} options={dropdowns?.packs} onAddNew={() => handleAddNewDropdown('packs')} /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.outerPack} onChange={(e: any) => updateSku(sku.id!, 'outerPack', e.target.value)} options={dropdowns?.packs} onAddNew={() => handleAddNewDropdown('packs')} /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.addSample} onChange={(e: any) => updateSku(sku.id!, 'addSample', e.target.value)} options={dropdowns?.ppTopSamples} onAddNew={() => handleAddNewDropdown('ppTopSamples')} /></td>
@@ -869,21 +912,6 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
           </div>
           
           <div className="bg-white border-t border-zinc-200 px-6 py-5 flex justify-end">
-            <div className="flex items-center gap-6">
-              <div className="text-right">
-                <span className="block text-[12px] text-zinc-500 font-bold tracking-wide mb-1">Total Items</span>
-                <span className="text-sm font-bold text-zinc-700">{skus.length} SKU(s)</span>
-              </div>
-              <div className="h-8 w-px bg-zinc-200"></div>
-              <div className="text-right">
-                <span className="block text-[12px] text-zinc-500 font-bold tracking-wide mb-1">Total Net Value</span>
-                <span className="text-2xl font-black text-[#00a669] tracking-tight">
-                  ${skus.reduce((acc, sku) => acc + ((Number(sku.orderQty) || 0) * (Number(sku.price) || 0)), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
         
       </div>
     </div>

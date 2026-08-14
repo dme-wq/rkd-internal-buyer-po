@@ -64,9 +64,9 @@ function handleGetDropdowns() {
   const shapes = extractUnique('Drop Downs', 'Shape', 27);
   const designers = extractUnique('Drop Downs', 'Designer Name', 16);
   const brands = extractUnique('Drop Downs', 'Buyer Brand Name', 32);
-  const sizes = extractUnique('Drop Downs', 'Size', 22);
-  const qualities = extractUnique('Drop Downs', 'Quality', 33);
-  const colors = extractUnique('Drop Downs', 'Color', 17);
+  const sizes = extractUnique('Drop Downs', 'Size', 22); // Col W is 22
+  const qualities = extractUnique('Drop Downs', 'Quality', 33); // Col AH is 33
+  const colors = extractUnique('Drop Downs', 'Color', 34); // Col AI is 34
   const ppTopSamples = extractUnique('Drop Downs', 'PP/Top Samples', 35);
   const portNames = extractUnique('Drop Downs', 'Port Name', 36);
   const deliveryTerms = extractUnique('Drop Downs', 'Delivery Terms', 8);
@@ -242,11 +242,31 @@ function handleGetPendingInternalPOs() {
 function handleCreatePO(data) {
     const { header, skus } = data;
     
-    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('DATABASE');
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const sheet = ss.getSheetByName('DATABASE');
+    const buyerSheet = ss.getSheetByName('Buyer Name');
     const timestamp = new Date().toLocaleString();
     const internalPO = header.internalPO || ''; 
     const uniqueId = internalPO;
+    
+    let fetchedPayTerm1 = header.payTerm1 || '';
+    let fetchedPayTerm2 = header.payTerm2 || '';
+    let fetchedBuyerSource = header.buyerSource || '';
+    let fetchedBuyerSubSrc = header.buyerSubSrc || '';
 
+    if (buyerSheet && header.buyerName) {
+      const buyerData = buyerSheet.getDataRange().getValues();
+      // Look up buyer by Buyer Name in Col G (index 6)
+      for (let i = 1; i < Math.min(buyerData.length, 500); i++) {
+        if (buyerData[i][6] && buyerData[i][6].toString().trim() === header.buyerName.toString().trim()) {
+           fetchedBuyerSource = buyerData[i][2] || fetchedBuyerSource; // Col C
+           fetchedBuyerSubSrc = buyerData[i][4] || fetchedBuyerSubSrc; // Col E
+           fetchedPayTerm1 = buyerData[i][9] || fetchedPayTerm1; // Col J
+           fetchedPayTerm2 = buyerData[i][10] || fetchedPayTerm2; // Col K
+           break;
+        }
+      }
+    }
     
     // Create an array of rows to insert
     const rowsToInsert = [];
@@ -266,15 +286,16 @@ function handleCreatePO(data) {
       row[7] = header.exFactory || ''; // ColH Ex-Factory Date
       row[8] = header.deliveryTerms || ''; // ColI Delivery Terms
       row[9] = header.portName || ''; // ColJ Port Name
-      row[10] = header.payTerm1 || ''; // ColK Payment Terms 1
-      row[11] = header.payTerm2 || ''; // ColL Payment Terms 2
-      row[12] = header.buyerSource || ''; // ColM Buyer Source Name
-      row[13] = header.buyerSubSrc || ''; // ColN Buyer Sub Source Name
+      row[10] = fetchedPayTerm1; // ColK Payment Terms 1
+      row[11] = fetchedPayTerm2; // ColL Payment Terms 2
+      row[12] = fetchedBuyerSource; // ColM Buyer Source Name
+      row[13] = fetchedBuyerSubSrc; // ColN Buyer Sub Source Name
       row[14] = header.buyerSrcPct || ''; // ColO Buyer Source Name %
       row[15] = header.buyerSubPct || ''; // ColP Buyer Sub Source Name %
       row[16] = header.billingAddr || ''; // ColQ Billing Address
       row[17] = header.deliveryAddr || ''; // ColR Delivery Address
-      row[18] = header.onboardDate || ''; // ColS Onboard Vessel Date
+      row[18] = ''; // ColS (Blank/Hidden in new format)
+      row[19] = header.onboardDate || ''; // ColT Onboard Vessel Date
       
       // Handle Base64 Image upload to Drive
       let finalImageUrl = item.designImage || '';
@@ -282,46 +303,55 @@ function handleCreatePO(data) {
         finalImageUrl = saveImageToDrive(finalImageUrl, `Image_${internalPO}_${Date.now()}_${i}.png`);
       }
 
+      // Format image URL for IMAGE() formula if available
+      let imageFormula = finalImageUrl;
+      if (finalImageUrl.includes('drive.google.com/file/d/')) {
+         const fileIdMatch = finalImageUrl.match(/[-\w]{25,}/);
+         if (fileIdMatch) {
+            imageFormula = `=IMAGE("https://drive.google.com/uc?export=view&id=${fileIdMatch[0]}")`;
+         }
+      }
+
       // Map Line Items
-      row[22] = item.skuCode || ''; // ColW SKU Code
-      row[23] = item.product || ''; // ColX Product
-      row[24] = item.articleNum || ''; // ColY Item/Product/Article #
-      row[25] = finalImageUrl; // ColZ Design Image
-      row[26] = item.shape || ''; // ColAA Shape
-      row[27] = item.designer || ''; // ColAB Designer Name
-      row[28] = item.brand || ''; // ColAC Brand Name
-      row[29] = item.description || ''; // ColAD Description
-      row[30] = item.size1 || ''; // ColAE Size 1
-      row[31] = item.size2 || ''; // ColAF Size 2
-      row[32] = item.quality || ''; // ColAG Quality
-      row[33] = item.color || ''; // ColAH Color
-      row[34] = item.colorRef || ''; // ColAI Color Ref
-      row[35] = item.orderQty || ''; // ColAJ Order Quantity
-      row[36] = item.unitQty || ''; // ColAK Unit of Quantity
-      row[37] = item.price || ''; // ColAL Price
-      row[38] = item.unitPrice || ''; // ColAM Unit of Price
-      row[39] = item.currency || 'USD'; // ColAN Currency
-      row[40] = item.innerPack || ''; // ColAO Inner Pack
-      row[41] = item.outerPack || ''; // ColAP Outer Pack
-      row[42] = item.addSample || ''; // ColAQ Additional Sample
-      row[43] = item.addProd || ''; // ColAR Additional Production
-      row[44] = item.totalQtyMfg || ''; // ColAS Total Quantity to Manufacture
+      row[20] = item.skuCode || ''; // ColU SKU Code
+      row[21] = item.product || ''; // ColV Product
+      row[22] = item.articleNum || ''; // ColW Item/Product/Article #
+      row[23] = imageFormula; // ColX Design Image (Formula)
+      row[24] = item.shape || ''; // ColY Shape
+      row[25] = item.designer || ''; // ColZ Designer Name
+      row[26] = item.brand || ''; // ColAA Brand Name
+      row[27] = item.description || ''; // ColAB Description
+      row[28] = item.sizes && item.sizes.length > 0 ? item.sizes[0] : ''; // ColAC Size 1
+      row[29] = item.sizes && item.sizes.length > 1 ? item.sizes[1] : ''; // ColAD Size 2
+      row[30] = item.quality || ''; // ColAE Quality
+      row[31] = item.color || ''; // ColAF Color
+      row[32] = item.colorRef || ''; // ColAG Color Ref
+      row[33] = item.orderQty || ''; // ColAH Order Quantity
+      row[34] = item.unitQty || ''; // ColAI Unit of Quantity
+      row[35] = item.price || ''; // ColAJ Price
+      row[36] = item.unitPrice || ''; // ColAK Unit of Price
+      row[37] = header.currency || 'USD'; // ColAL Currency
+      row[38] = item.innerPack || ''; // ColAM Inner Pack
+      row[39] = item.outerPack || ''; // ColAN Outer Pack
+      row[40] = item.addSample || ''; // ColAO Additional Sample
+      row[41] = item.addProd || ''; // ColAP Additional Production
+      row[42] = item.totalQtyMfg || ''; // ColAQ Total Quantity to Manufacture
       
-      row[50] = item.lineTotal || ''; // ColAY Total Amount
+      row[44] = item.lineTotal || ''; // ColAS Total Amount
       
       // Payment Terms 1
-      row[52] = header.pay1Pct || ''; // ColBA Payment Term 1 %
-      row[53] = header.pay1Days || ''; // ColBB Payment Term 1 Days
-      row[54] = header.pay1Activity || ''; // ColBC Payment Term 1 Activity
-      row[55] = header.pay1Amount || ''; // ColBD Payment Term 1 Amount
-      row[56] = header.pay1DueDate || ''; // ColBE Payment Term 1 Due Date
+      row[45] = header.pay1Pct || ''; // ColAT Payment Term 1 %
+      row[46] = header.pay1Days || ''; // ColAU Payment Term 1 Days
+      row[47] = header.pay1Activity || ''; // ColAV Payment Term 1 Activity
+      row[48] = header.pay1Amount || ''; // ColAW Payment Term 1 Amount
+      row[49] = header.pay1DueDate || ''; // ColAX Payment Term 1 Due Date
       
       // Payment Terms 2
-      row[58] = header.pay2Pct || ''; // ColBG Payment Term 2 %
-      row[59] = header.pay2Days || ''; // ColBH Payment Term 2 Days
-      row[60] = header.pay2Activity || ''; // ColBI Payment Term 2 Activity
-      row[61] = header.pay2Amount || ''; // ColBJ Payment Term 2 Amount
-      row[62] = header.pay2DueDate || ''; // ColBK Payment Term 2 Due Date
+      row[50] = header.pay2Pct || ''; // ColAY Payment Term 2 %
+      row[51] = header.pay2Days || ''; // ColAZ Payment Term 2 Days
+      row[52] = header.pay2Activity || ''; // ColBA Payment Term 2 Activity
+      row[53] = header.pay2Amount || ''; // ColBB Payment Term 2 Amount
+      row[54] = header.pay2DueDate || ''; // ColBC Payment Term 2 Due Date
       
       rowsToInsert.push(row);
     }
@@ -1093,7 +1123,7 @@ function getTimeGreeting() {
 }
 
 function handleSendWhatsApp(data) {
-  const { internalPO, pdfUrl } = data;
+  const { internalPO, pdfUrl, buyerName, buyerPO } = data;
   if (!internalPO) {
     return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'internalPO is required' })).setMimeType(ContentService.MimeType.JSON);
   }
@@ -1127,6 +1157,15 @@ function handleSendWhatsApp(data) {
     'Content-Type': 'application/json',
     'x-maytapi-key': MAYTAPI_TOKEN
   };
+  
+  // Convert Drive Viewer URL to Direct Download URL
+  let directPdfUrl = pdfUrl;
+  if (pdfUrl && pdfUrl.includes('drive.google.com/file/d/')) {
+    const fileIdMatch = pdfUrl.match(/[-\w]{25,}/);
+    if (fileIdMatch) {
+      directPdfUrl = `https://drive.google.com/uc?export=download&id=${fileIdMatch[0]}`;
+    }
+  }
 
   for (const recipient of recipients) {
     // Format Indian mobile: ensure country code 91
@@ -1144,11 +1183,12 @@ function handleSendWhatsApp(data) {
       `${emoji} ${greeting}, ${recipient.name} Ji! 🙏\n\n` +
       `📋 *Purchase Order Generated*\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
-      `🔖 *Internal PO No:* ${internalPO}\n` +
+      `👤 *Buyer:* ${buyerName || 'N/A'}\n` +
+      `🔖 *Buyer PO:* ${buyerPO || 'N/A'}\n` +
+      `🏷️ *Internal PO:* ${internalPO}\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
       `Your Purchase Order has been successfully generated and saved. ✅\n\n` +
-      `📎 *PO Document:* ${internalPO}.pdf\n` +
-      (pdfUrl ? `🔗 *PDF Link:* ${pdfUrl}\n` : '') +
+      (directPdfUrl ? `🔗 *Download PO PDF:* ${directPdfUrl}\n` : '') +
       `\n_This is an automated message from RKD Export PO System._\n` +
       `_Please do not reply to this message._`;
 
@@ -1176,12 +1216,12 @@ function handleSendWhatsApp(data) {
       });
 
       // If PDF URL is available, also send as media
-      if (pdfUrl) {
+      if (directPdfUrl) {
         Utilities.sleep(1000); // small delay between messages
         const mediaPayload = {
           to_number: to,
           type: 'media',
-          message: pdfUrl,
+          message: directPdfUrl,
           text: `📄 ${internalPO}.pdf`
         };
 

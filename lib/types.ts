@@ -62,6 +62,7 @@ export interface POHeader {
   billingAddr: string;
   deliveryAddr: string;
   onboardDate: string;
+  currency?: string;
   totalAmount: number;
   pay1Pct: string | number;
   pay1Days: string | number;
