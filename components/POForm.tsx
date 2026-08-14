@@ -210,6 +210,12 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
   };
 
   const [dropdowns, setDropdowns] = useState<Partial<DropdownData>>(initialDropdowns || {});
+
+  useEffect(() => {
+    if (initialDropdowns && Object.keys(initialDropdowns).length > 0) {
+      setDropdowns(initialDropdowns);
+    }
+  }, [initialDropdowns]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const messageDismissRef = useRef<ReturnType<typeof setTimeout> | null>(null);
