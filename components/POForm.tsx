@@ -149,15 +149,8 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
             
             setHeader(prev => ({
               ...prev,
-              buyerName: data.buyerName || prev.buyerName,
-              buyerPO: data.buyerPO || prev.buyerPO,
-              fileNumber: data.fileNumber || prev.fileNumber,
-              poDate: data.poDate || prev.poDate,
-              exFactory: data.exFactory || prev.exFactory,
               deliveryTerms: data.deliveryTerms || prev.deliveryTerms,
-              portName: data.portName || prev.portName,
-              billingAddr: data.billingAddr || prev.billingAddr,
-              deliveryAddr: data.deliveryAddr || prev.deliveryAddr
+              portName: data.portName || prev.portName
             }));
 
             if (data.items && data.items.length > 0) {

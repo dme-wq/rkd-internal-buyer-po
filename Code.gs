@@ -567,7 +567,8 @@ function handleExtractPOData(data) {
   };
 
   const promptText = `You are an AI data extractor. Extract data from this Purchase Order document.
-CRITICAL INSTRUCTION: Map the extracted values to the EXACT predefined options provided below whenever possible.
+CRITICAL INSTRUCTION: For all dropdown fields (Delivery Terms, Ports, Brands, Shapes, Designers, Colors, Sizes, Qualities, Units, Packs, etc.), you MUST ONLY map the extracted values to the EXACT predefined options provided below.
+If you find a value in the document but it does NOT match or closely resemble any option in the list, YOU MUST RETURN AN EMPTY STRING "". Do NOT invent or return custom text for these fields if it's not in the list!
 
 Predefined Valid Options:
 - Valid Delivery Terms: ${JSON.stringify(dropdowns.deliveryTerms || [])}
@@ -583,8 +584,8 @@ Predefined Valid Options:
 - Valid Pack Options: ${JSON.stringify(dropdowns.packs || [])}
 - Valid Currencies: ["USD", "INR", "EUR", "CAD", "AUD", "CNY"]
 
-If you find a color like 'Blue' but the valid options has 'Navy Blue', map it to 'Navy Blue' if confident.
-If a field is missing, return an empty string "" or 0 for numbers.
+If you find a color like 'Blue' but the valid options has 'Navy Blue', map it to 'Navy Blue' ONLY if highly confident it's the same.
+If a field is missing or not in the valid options list, return an empty string "" or 0 for numbers.
 Extract EVERY single line item and put it in the "items" array. Keep the original item sequence.
 
 Return ONLY valid JSON matching this exact structure:
