@@ -26,33 +26,55 @@ function doGet(e) {
 function handleGetDropdowns() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   
-  const extractUnique = (sheetName, colIndex) => {
+  const extractUnique = (sheetName, headerName, fallbackColIndex) => {
     const sheet = ss.getSheetByName(sheetName);
     if (!sheet) return [];
     const data = sheet.getDataRange().getValues();
+    if (data.length === 0) return [];
+
+    let colIndex = -1;
+    // Try to find the header in the first two rows
+    for (let r = 0; r < Math.min(2, data.length); r++) {
+      for (let c = 0; c < data[r].length; c++) {
+        const cell = data[r][c];
+        if (cell && cell.toString().trim().toLowerCase() === headerName.toLowerCase()) {
+          colIndex = c;
+          break;
+        }
+      }
+      if (colIndex !== -1) break;
+    }
+    
+    // Fallback to hardcoded index if header not found
+    if (colIndex === -1) {
+      colIndex = fallbackColIndex;
+    }
+
     const unique = new Set();
     for (let i = 1; i < data.length; i++) {
       const val = data[i][colIndex];
-      if (val !== undefined && val !== null && val.toString().trim() !== '') {
+      // Check that value is not empty and not the header name itself
+      if (val !== undefined && val !== null && val.toString().trim() !== '' && val.toString().trim().toLowerCase() !== headerName.toLowerCase()) {
         unique.add(val.toString().trim());
       }
     }
     return [...unique];
   };
 
-  const shapes = extractUnique('Drop Downs', 27); // AB
-  const designers = extractUnique('Drop Downs', 16); // Q
-  const brands = extractUnique('Drop Downs', 32); // AG
-  const sizes = extractUnique('Drop Downs', 22); // W
-  const qualities = extractUnique('Drop Downs', 33); // AH
-  const colors = extractUnique('Drop Downs', 17); // R
-  const ppTopSamples = extractUnique('Drop Downs', 35); // AJ
-  const portNames = extractUnique('Drop Downs', 36); // AK
-  const deliveryTerms = extractUnique('Drop Downs', 8); // I
+  const shapes = extractUnique('Drop Downs', 'Shape', 27);
+  const designers = extractUnique('Drop Downs', 'Designer Name', 16);
+  const brands = extractUnique('Drop Downs', 'Buyer Brand Name', 32);
+  const sizes = extractUnique('Drop Downs', 'Size', 22);
+  const qualities = extractUnique('Drop Downs', 'Quality', 33);
+  const colors = extractUnique('Drop Downs', 'Color', 17);
+  const ppTopSamples = extractUnique('Drop Downs', 'PP/Top Samples', 35);
+  const portNames = extractUnique('Drop Downs', 'Port Name', 36);
+  const deliveryTerms = extractUnique('Drop Downs', 'Delivery Terms', 8);
 
-  const unitsQty = extractUnique('list', 4); // E
-  const unitsPrice = extractUnique('list', 3); // D
-  const packs = extractUnique('list', 5); // F
+  // 'list' sheet has missing/messy headers, so we rely on fallback indices mostly
+  const unitsQty = extractUnique('list', 'Unit Qty', 4);
+  const unitsPrice = extractUnique('list', 'Unit Price', 3);
+  const packs = extractUnique('list', 'Packs', 5);
 
   return ContentService.createTextOutput(JSON.stringify({
     status: 'success',
