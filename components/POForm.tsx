@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus, Trash2, Save, FileText, CheckCircle, CreditCard, Package, Clock, Copy } from 'lucide-react';
 import { POHeader, SKUItem, DropdownData, PendingPO, PurchaseOrder } from '../lib/types';
-import { createPO, updatePO, savePDFtoDrive, getPendingInternalPOs, getDropdowns, addDropdownOption, extractPOData } from '../lib/api';
+import { createPO, updatePO, savePDFtoDrive, getPendingInternalPOs, getDropdowns, addDropdownOption, extractPOData, sendWhatsAppNotification } from '../lib/api';
 import { generatePOPDF } from '../lib/pdf';
 import Select from 'react-select';
 import { DragDropImage } from './DragDropImage';
@@ -494,10 +494,22 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
 
         setMessage(prev => prev + ' PDF generated and saved to Drive.');
         
+        // ── Send WhatsApp notification ──
+        try {
+          const waRes = await sendWhatsAppNotification(res.data.internalPO, pdfUrl);
+          if (waRes.status === 'success') {
+            setMessage(prev => prev + ' WhatsApp sent ✅');
+          } else {
+            console.warn('WhatsApp notification failed:', waRes.message);
+          }
+        } catch (waErr) {
+          console.warn('WhatsApp exception:', waErr);
+        }
+        
         MySwal.fire({
           icon: 'success',
           title: 'PO Generated Successfully',
-          html: `<p>Internal PO <b>${res.data.internalPO}</b> has been saved.</p>`,
+          html: `<p>Internal PO <b>${res.data.internalPO}</b> has been saved.</p><p style="font-size:0.85em;color:#6b7280;margin-top:6px;">📲 WhatsApp notification sent to recipients.</p>`,
           showCancelButton: true,
           confirmButtonText: 'View PDF',
           cancelButtonText: 'Close',

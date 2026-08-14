@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Download, TrendingUp, Users, ShoppingCart, DollarSign, Package, AlertCircle } from 'lucide-react';
+import { Download, TrendingUp, Users, ShoppingCart, Package, AlertCircle } from 'lucide-react';
 import { getDashboardStats, getAllPOs } from '@/lib/api';
 import type { DashboardStats, POListItem } from '@/lib/types';
 
@@ -41,12 +41,17 @@ export default function DashboardPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-[28px] font-bold tracking-tight text-zinc-900">Dashboard Overview</h1>
-          <p className="text-zinc-500 text-sm mt-1">Real-time metrics and summary of your Purchase Orders.</p>
+          <p className="text-zinc-500 text-sm mt-1">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold text-xs border border-blue-100 mr-2">
+              📅 {new Date().getFullYear()}
+            </span>
+            Real-time metrics and summary of your Purchase Orders.
+          </p>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
         
         {/* Card 1: Total POs */}
         <div className="bg-white border-t-4 border-blue-500 rounded-xl p-4 shadow-sm flex flex-col justify-center items-center min-h-[100px] hover:shadow-md transition-shadow text-center">
@@ -69,19 +74,6 @@ export default function DashboardPage() {
             {loading ? '...' : (stats?.totalQty || 0).toLocaleString()}
           </div>
         </div>
-
-        {/* Dynamic Cards: Total Value by Currency */}
-        {Object.entries(stats?.totalValueByCurrency || { 'USD': 0 }).map(([currency, value]) => (
-          <div key={`total-${currency}`} className="bg-white border-t-4 border-amber-500 rounded-xl p-4 shadow-sm flex flex-col justify-center items-center min-h-[100px] hover:shadow-md transition-shadow text-center">
-            <div className="flex justify-center items-center gap-2 mb-1">
-              <DollarSign size={16} className="text-amber-500" />
-              <h3 className="text-zinc-500 font-semibold text-[11px] uppercase tracking-wider">Total Value ({currency})</h3>
-            </div>
-            <div className="text-[28px] font-black text-zinc-800 tracking-tight">
-              {loading ? '...' : `${currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : ''}${(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            </div>
-          </div>
-        ))}
         
         {/* Card: Buyers Count */}
         <div className="bg-white border-t-4 border-purple-500 rounded-xl p-4 shadow-sm flex flex-col justify-center items-center min-h-[100px] hover:shadow-md transition-shadow text-center">
@@ -186,14 +178,6 @@ export default function DashboardPage() {
                          <div className="flex flex-col">
                            <span className="text-[11px] text-zinc-400 font-semibold uppercase">Total Qty</span>
                            <span className="font-medium text-zinc-700">{buyer.totalQty.toLocaleString()}</span>
-                         </div>
-                         <div className="flex flex-col text-right">
-                           <span className="text-[11px] text-zinc-400 font-semibold uppercase">Total Value</span>
-                           {Object.entries(buyer.totalValueByCurrency || {}).map(([currency, value]) => (
-                             <span key={currency} className="font-bold text-emerald-600 leading-tight">
-                               {currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'INR' ? '₹' : currency + ' '}{value.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                             </span>
-                           ))}
                          </div>
                       </div>
                     </div>

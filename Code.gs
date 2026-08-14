@@ -92,6 +92,8 @@ function doPost(e) {
       return handleAddDropdown(data);
     } else if (action === 'extractPOData') {
       return handleExtractPOData(data);
+    } else if (action === 'sendWhatsApp') {
+      return handleSendWhatsApp(data);
     } else {
        return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Unknown action' }))
         .setMimeType(ContentService.MimeType.JSON);
@@ -633,10 +635,11 @@ function handleUpdatePO(data) {
 
     const ss = SpreadsheetApp.openById(SHEET_ID);
     
+    // DATABASE: delete all existing rows for this UID and re-insert fresh rows
     const sheetDatabase = ss.getSheetByName('DATABASE');
     if (sheetDatabase) {
       const dbData = sheetDatabase.getDataRange().getValues();
-      let rowsToDelete = [];
+      const rowsToDelete = [];
       for (let i = dbData.length - 1; i >= 1; i--) {
           if (dbData[i][4] === uid || dbData[i][1] === uid) {
               rowsToDelete.push(i + 1);
@@ -644,16 +647,6 @@ function handleUpdatePO(data) {
       }
       for (let i = 0; i < rowsToDelete.length; i++) {
           sheetDatabase.deleteRow(rowsToDelete[i]);
-      }
-    }
-    
-    const sheetDatatab = ss.getSheetByName('DATATAB');
-    if (sheetDatatab) {
-      const dtData = sheetDatatab.getDataRange().getValues();
-      for (let i = dtData.length - 1; i >= 1; i--) {
-          if (dtData[i][4] === uid || dtData[i][1] === uid) {
-              sheetDatatab.getRange(i + 1, 65).setValue("NON ACTIVE");
-          }
       }
     }
     
@@ -733,8 +726,8 @@ function handleUpdatePO(data) {
       rowsToInsert.push(row);
     }
     
-    if (rowsToInsert.length > 0) {
-      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToInsert.length, 64).setValues(rowsToInsert);
+    if (rowsToInsert.length > 0 && sheetDatabase) {
+      sheetDatabase.getRange(sheetDatabase.getLastRow() + 1, 1, rowsToInsert.length, 64).setValues(rowsToInsert);
     }
 
     CacheService.getScriptCache().remove('pendingPOs');
@@ -746,47 +739,99 @@ function handleUpdatePO(data) {
 
 function getActiveRows() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
-  let allRows = [];
-  
+  const currentYear = new Date().getFullYear();
+
+  // ── 1. Build PDF map from PO PDF Links sheet (col A = Internal PO, col B = link) ──
   const sheetPdf = ss.getSheetByName('PO PDF Links');
-  let pdfMap = {};
+  const pdfMap = {};
   if (sheetPdf) {
     const pdfData = sheetPdf.getDataRange().getValues();
     for (let i = 1; i < pdfData.length; i++) {
-      const internalPO = pdfData[i][0];
-      const link = pdfData[i][1];
+      const internalPO = (pdfData[i][0] || '').toString().trim();
+      const link = (pdfData[i][1] || '').toString().trim();
       if (internalPO && link) {
         pdfMap[internalPO] = link;
       }
     }
   }
-  
-  const sheetDatatab = ss.getSheetByName('DATATAB');
-  if (sheetDatatab) {
-    const data = sheetDatatab.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][64] === 'ACTIVATE') {
-        const row = data[i];
-        const internalPO = row[4];
-        if (pdfMap[internalPO]) {
-          row[63] = pdfMap[internalPO];
-        }
-        row[65] = true; // mark as old
-        allRows.push(row);
-      }
-    }
-  }
-  
+
+  // ── 2. Read DATABASE sheet ──
   const sheetDatabase = ss.getSheetByName('DATABASE');
-  if (sheetDatabase) {
-    const data = sheetDatabase.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      row[65] = false; // mark as new
-      allRows.push(row);
+  if (!sheetDatabase) return [];
+
+  const data = sheetDatabase.getDataRange().getValues();
+
+  // ── 3. Group rows by Internal PO (col E, index 4) ──
+  //       For entries that came from the old system (multiple rows per Internal PO),
+  //       pick the row with the LATEST timestamp (col A, index 0) as the active row.
+  //       New webapp entries are always single-row per PO (edit replaces the row).
+  const latestRowByPO = {}; // internalPO -> { row, timestamp, rowIndex }
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const internalPO = (row[4] || '').toString().trim();
+    if (!internalPO) continue;
+
+    // Parse timestamp (col A, index 0)
+    const tsRaw = row[0];
+    let ts;
+    if (tsRaw instanceof Date) {
+      ts = tsRaw;
+    } else {
+      ts = new Date(tsRaw);
+    }
+    if (isNaN(ts.getTime())) {
+      ts = new Date(0); // fallback to epoch if unparseable
+    }
+
+    // Year filter: only include rows belonging to current year
+    if (ts.getFullYear() !== currentYear) continue;
+
+    // Keep only the latest row per Internal PO
+    if (!latestRowByPO[internalPO] || ts > latestRowByPO[internalPO].timestamp) {
+      latestRowByPO[internalPO] = { row: row, timestamp: ts, rowIndex: i };
     }
   }
-  
+
+  // ── 4. Build the active rows array from unique latest rows ──
+  //       For each unique Internal PO, collect ALL rows that share the same
+  //       timestamp as the latest (to support multi-SKU rows per PO entry).
+  //       Also attach PDF link from pdfMap if not already set in row[63].
+  const latestTsByPO = {};
+  for (const internalPO in latestRowByPO) {
+    latestTsByPO[internalPO] = latestRowByPO[internalPO].timestamp.getTime();
+  }
+
+  const allRows = [];
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const internalPO = (row[4] || '').toString().trim();
+    if (!internalPO) continue;
+
+    // Must be a PO we decided to keep
+    if (!latestTsByPO.hasOwnProperty(internalPO)) continue;
+
+    const tsRaw = row[0];
+    let ts;
+    if (tsRaw instanceof Date) {
+      ts = tsRaw;
+    } else {
+      ts = new Date(tsRaw);
+    }
+    if (isNaN(ts.getTime())) ts = new Date(0);
+
+    // Only include rows whose timestamp matches the latest for that PO
+    if (ts.getTime() !== latestTsByPO[internalPO]) continue;
+
+    // Attach PDF from pdfMap if not already present in col BL (index 63)
+    const rowCopy = row.slice();
+    if (!rowCopy[63] && pdfMap[internalPO]) {
+      rowCopy[63] = pdfMap[internalPO];
+    }
+    rowCopy[65] = false; // mark as new (all come from DATABASE now)
+    allRows.push(rowCopy);
+  }
+
   return allRows;
 }
 
@@ -996,5 +1041,146 @@ function handleGetStats() {
       buyersCount: buyersList.length,
       buyerWise: buyersList
     }
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ── WhatsApp Automation via Maytapi ────────────────────────────────────────
+const MAYTAPI_PRODUCT_ID = '0d0df307-0553-4dfd-8597-e3c2fd5300eb';
+const MAYTAPI_TOKEN      = '54f10e32-bdf4-49cd-a464-33dc87c7c001';
+const MAYTAPI_PHONE_ID   = '34244';
+
+function getTimeGreeting() {
+  // IST = UTC+5:30
+  const now = new Date();
+  const istHour = (now.getUTCHours() + 5) % 24 + (now.getUTCMinutes() >= 30 ? 0 : 0);
+  // More accurate IST
+  const istMs = now.getTime() + (5.5 * 60 * 60 * 1000);
+  const istDate = new Date(istMs);
+  const hour = istDate.getUTCHours();
+
+  if (hour >= 5 && hour < 12) {
+    return { greeting: 'Good Morning', emoji: '🌅' };
+  } else if (hour >= 12 && hour < 17) {
+    return { greeting: 'Good Afternoon', emoji: '☀️' };
+  } else {
+    return { greeting: 'Good Evening', emoji: '🌙' };
+  }
+}
+
+function handleSendWhatsApp(data) {
+  const { internalPO, pdfUrl } = data;
+  if (!internalPO) {
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'internalPO is required' })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // Read recipients from whatsApp sheet (col A = Name, col B = Mobile Number)
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const waSheet = ss.getSheetByName('whatsApp');
+  if (!waSheet) {
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'whatsApp sheet not found' })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const waData = waSheet.getDataRange().getValues();
+  const recipients = [];
+  for (let i = 1; i < waData.length; i++) {
+    const name   = (waData[i][0] || '').toString().trim();
+    const mobile = (waData[i][1] || '').toString().trim().replace(/\D/g, ''); // digits only
+    if (name && mobile) {
+      recipients.push({ name, mobile });
+    }
+  }
+
+  if (recipients.length === 0) {
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'No recipients found in whatsApp sheet' })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const { greeting, emoji } = getTimeGreeting();
+  const results = [];
+
+  const maytapiUrl = `https://api.maytapi.com/api/${MAYTAPI_PRODUCT_ID}/${MAYTAPI_PHONE_ID}/sendMessage`;
+  const headers = {
+    'Content-Type': 'application/json',
+    'x-maytapi-key': MAYTAPI_TOKEN
+  };
+
+  for (const recipient of recipients) {
+    // Format Indian mobile: ensure country code 91
+    let phoneNumber = recipient.mobile;
+    if (phoneNumber.length === 10) {
+      phoneNumber = '91' + phoneNumber;
+    } else if (phoneNumber.startsWith('0')) {
+      phoneNumber = '91' + phoneNumber.substring(1);
+    }
+    // Maytapi expects number@c.us format
+    const to = phoneNumber + '@c.us';
+
+    // Compose the WhatsApp message
+    const messageText =
+      `${emoji} ${greeting}, ${recipient.name} Ji! 🙏\n\n` +
+      `📋 *Purchase Order Generated*\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n` +
+      `🔖 *Internal PO No:* ${internalPO}\n` +
+      `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `Your Purchase Order has been successfully generated and saved. ✅\n\n` +
+      `📎 *PO Document:* ${internalPO}.pdf\n` +
+      (pdfUrl ? `🔗 *PDF Link:* ${pdfUrl}\n` : '') +
+      `\n_This is an automated message from RKD Export PO System._\n` +
+      `_Please do not reply to this message._`;
+
+    // Send text message
+    try {
+      const textPayload = {
+        to_number: to,
+        type: 'text',
+        message: messageText
+      };
+
+      const textResponse = UrlFetchApp.fetch(maytapiUrl, {
+        method: 'post',
+        headers: headers,
+        payload: JSON.stringify(textPayload),
+        muteHttpExceptions: true
+      });
+
+      const textResult = JSON.parse(textResponse.getContentText());
+      results.push({
+        name: recipient.name,
+        phone: phoneNumber,
+        textStatus: textResult.success ? 'sent' : 'failed',
+        textResponse: textResult
+      });
+
+      // If PDF URL is available, also send as media
+      if (pdfUrl) {
+        Utilities.sleep(1000); // small delay between messages
+        const mediaPayload = {
+          to_number: to,
+          type: 'media',
+          message: pdfUrl,
+          text: `📄 ${internalPO}.pdf`
+        };
+
+        const mediaResponse = UrlFetchApp.fetch(maytapiUrl, {
+          method: 'post',
+          headers: headers,
+          payload: JSON.stringify(mediaPayload),
+          muteHttpExceptions: true
+        });
+
+        const mediaResult = JSON.parse(mediaResponse.getContentText());
+        results[results.length - 1].mediaStatus = mediaResult.success ? 'sent' : 'failed';
+        results[results.length - 1].mediaResponse = mediaResult;
+      }
+
+    } catch (err) {
+      results.push({ name: recipient.name, phone: phoneNumber, textStatus: 'error', error: err.toString() });
+    }
+
+    Utilities.sleep(500); // delay between recipients
+  }
+
+  return ContentService.createTextOutput(JSON.stringify({
+    status: 'success',
+    data: { message: `WhatsApp notifications sent to ${results.length} recipient(s)`, results: results }
   })).setMimeType(ContentService.MimeType.JSON);
 }

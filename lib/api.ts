@@ -13,7 +13,7 @@ import type {
   PendingPO
 } from './types';
 
-const BASE_URL = 'https://script.google.com/macros/s/AKfycbx2pm8LPEw7esni63W_86pKo6JUWexOTqpnajtl5TQ0FAg7QbtkwByy5TfSrJJm4gjp/exec';
+const BASE_URL = 'https://script.google.com/macros/s/AKfycbyBuZIz5UHvIpug4a7I4eqddO91sJEQTszZiKqM4oWmR7W8bAO12n4iik26MRxKOe8r/exec';
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<APIResponse<T>> {
   try {
@@ -118,4 +118,11 @@ export async function addDropdownOption(
   value: string
 ): Promise<APIResponse<{ message: string }>> {
   return post({ action: 'addDropdown', data: { field, value } });
+}
+
+export async function sendWhatsAppNotification(
+  internalPO: string,
+  pdfUrl: string
+): Promise<APIResponse<{ message: string; results: object[] }>> {
+  return post({ action: 'sendWhatsApp', data: { internalPO, pdfUrl } });
 }
