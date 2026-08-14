@@ -6,22 +6,73 @@ interface DragDropImageProps {
   onChange: (base64: string) => void;
 }
 
+// Compress an image File to a max dimension and quality before storing as Base64.
+// This prevents large phone photos from crashing the Google Apps Script endpoint.
+function compressImage(file: File, maxDimension = 800, quality = 0.7): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        let { width, height } = img;
+
+        // Scale down while preserving aspect ratio
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('Canvas context unavailable')); return; }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        // Export as JPEG for better compression (PNG would be too large for photos)
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 export function DragDropImage({ value, onChange }: DragDropImageProps) {
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
+
+  const processFile = useCallback(async (file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    setIsCompressing(true);
+    try {
+      const compressed = await compressImage(file);
+      onChange(compressed);
+    } catch (err) {
+      console.error('Image compression failed, using original:', err);
+      // Fallback: use original FileReader without compression
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) onChange(event.target.result as string);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsCompressing(false);
+    }
+  }, [onChange]);
 
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          onChange(event.target.result as string);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  }, [onChange]);
+    if (file) processFile(file);
+  }, [processFile]);
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -34,15 +85,7 @@ export function DragDropImage({ value, onChange }: DragDropImageProps) {
     input.accept = 'image/*';
     input.onchange = (e: any) => {
       const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          if (event.target?.result) {
-            onChange(event.target.result as string);
-          }
-        };
-        reader.readAsDataURL(file);
-      }
+      if (file) processFile(file);
     };
     input.click();
   };
@@ -55,7 +98,12 @@ export function DragDropImage({ value, onChange }: DragDropImageProps) {
         onClick={value ? undefined : () => handleClick()}
         className={`w-24 h-24 border-2 border-dashed border-zinc-300 rounded-lg flex items-center justify-center transition-colors overflow-hidden mx-auto relative group ${!value ? 'cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 bg-white' : 'bg-black/5'}`}
       >
-        {value ? (
+        {isCompressing ? (
+          <div className="flex flex-col items-center gap-1">
+            <div className="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+            <span className="text-[9px] text-zinc-400 font-bold">Compressing</span>
+          </div>
+        ) : value ? (
           <>
             <img src={value} alt="Preview" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center gap-3">

@@ -321,7 +321,10 @@ function handleCreatePO(data) {
       sheet.getRange(sheet.getLastRow() + 1, 1, rowsToInsert.length, 64).setValues(rowsToInsert);
     }
 
-    CacheService.getScriptCache().remove('pendingPOs');
+    // Invalidate caches
+    const scriptCache = CacheService.getScriptCache();
+    scriptCache.remove('pendingPOs');
+    scriptCache.remove('activeRows_v2');
     return ContentService.createTextOutput(JSON.stringify({ 
       status: 'success', 
       data: { uid: uniqueId, internalPO: internalPO } 
@@ -344,6 +347,11 @@ function handleSavePDF(data) {
                sheet.getRange(i + 1, 64).setValue(file.getUrl());
            }
         }
+        
+        // Invalidate caches
+        const scriptCache = CacheService.getScriptCache();
+        scriptCache.remove('pendingPOs');
+        scriptCache.remove('activeRows_v2');
         
         return ContentService.createTextOutput(JSON.stringify({
             status: 'success',
@@ -730,7 +738,10 @@ function handleUpdatePO(data) {
       sheetDatabase.getRange(sheetDatabase.getLastRow() + 1, 1, rowsToInsert.length, 64).setValues(rowsToInsert);
     }
 
-    CacheService.getScriptCache().remove('pendingPOs');
+    // Invalidate caches after successful update
+    const scriptCache = CacheService.getScriptCache();
+    scriptCache.remove('pendingPOs');
+    scriptCache.remove('activeRows_v2');
     return ContentService.createTextOutput(JSON.stringify({ 
       status: 'success', 
       data: { uid: uid, internalPO: internalPO } 
@@ -738,10 +749,17 @@ function handleUpdatePO(data) {
 }
 
 function getActiveRows() {
+  // ── Cache: serve from cache if available (5 min) ──
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get('activeRows_v2');
+  if (cached) {
+    try { return JSON.parse(cached); } catch(e) { /* cache miss */ }
+  }
+
   const ss = SpreadsheetApp.openById(SHEET_ID);
   const currentYear = new Date().getFullYear();
 
-  // ── 1. Build PDF map from PO PDF Links sheet (col A = Internal PO, col B = link) ──
+  // ── 1. Build PDF map from PO PDF Links sheet ──
   const sheetPdf = ss.getSheetByName('PO PDF Links');
   const pdfMap = {};
   if (sheetPdf) {
@@ -749,88 +767,84 @@ function getActiveRows() {
     for (let i = 1; i < pdfData.length; i++) {
       const internalPO = (pdfData[i][0] || '').toString().trim();
       const link = (pdfData[i][1] || '').toString().trim();
-      if (internalPO && link) {
-        pdfMap[internalPO] = link;
-      }
+      if (internalPO && link) pdfMap[internalPO] = link;
     }
   }
 
   // ── 2. Read DATABASE sheet ──
   const sheetDatabase = ss.getSheetByName('DATABASE');
   if (!sheetDatabase) return [];
-
   const data = sheetDatabase.getDataRange().getValues();
 
-  // ── 3. Group rows by Internal PO (col E, index 4) ──
-  //       For entries that came from the old system (multiple rows per Internal PO),
-  //       pick the row with the LATEST timestamp (col A, index 0) as the active row.
-  //       New webapp entries are always single-row per PO (edit replaces the row).
-  const latestRowByPO = {}; // internalPO -> { row, timestamp, rowIndex }
+  // ── Helper: parse any timestamp string robustly ──
+  function parseTs(raw) {
+    if (!raw) return null;
+    if (raw instanceof Date) return isNaN(raw.getTime()) ? null : raw;
+    // toLocaleString format: "8/14/2026, 9:20:00 AM" or "14/8/2026, 09:20:00"
+    const s = raw.toString().trim();
+    // Try native Date parse first
+    let d = new Date(s);
+    if (!isNaN(d.getTime())) return d;
+    // Fallback: replace '/' with '-' for ISO-like formats
+    d = new Date(s.replace(/\//g, '-'));
+    if (!isNaN(d.getTime())) return d;
+    return null;
+  }
+
+  // ── 3. SINGLE PASS: find latest timestamp per Internal PO ──
+  //    Also track the contiguous block of rows for that PO.
+  //    In handleCreatePO, all SKU rows for one PO are appended consecutively
+  //    with the exact same timestamp string, so exact string match is safe.
+  const latestEntryByPO = {}; // internalPO -> { tsStr, tsTime, startIdx, endIdx }
 
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
     const internalPO = (row[4] || '').toString().trim();
     if (!internalPO) continue;
 
-    // Parse timestamp (col A, index 0)
-    const tsRaw = row[0];
-    let ts;
-    if (tsRaw instanceof Date) {
-      ts = tsRaw;
-    } else {
-      ts = new Date(tsRaw);
-    }
-    if (isNaN(ts.getTime())) {
-      ts = new Date(0); // fallback to epoch if unparseable
-    }
-
-    // Year filter: only include rows belonging to current year
+    const ts = parseTs(row[0]);
+    if (!ts) continue;
     if (ts.getFullYear() !== currentYear) continue;
 
-    // Keep only the latest row per Internal PO
-    if (!latestRowByPO[internalPO] || ts > latestRowByPO[internalPO].timestamp) {
-      latestRowByPO[internalPO] = { row: row, timestamp: ts, rowIndex: i };
+    const tsTime = ts.getTime();
+    const tsStr  = row[0].toString().trim(); // keep original string for exact match below
+
+    if (!latestEntryByPO[internalPO] || tsTime > latestEntryByPO[internalPO].tsTime) {
+      latestEntryByPO[internalPO] = { tsStr, tsTime };
     }
   }
 
-  // ── 4. Build the active rows array from unique latest rows ──
-  //       For each unique Internal PO, collect ALL rows that share the same
-  //       timestamp as the latest (to support multi-SKU rows per PO entry).
-  //       Also attach PDF link from pdfMap if not already set in row[63].
-  const latestTsByPO = {};
-  for (const internalPO in latestRowByPO) {
-    latestTsByPO[internalPO] = latestRowByPO[internalPO].timestamp.getTime();
-  }
-
+  // ── 4. SECOND PASS: collect rows matching latest timestamp string per PO ──
   const allRows = [];
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
     const internalPO = (row[4] || '').toString().trim();
     if (!internalPO) continue;
 
-    // Must be a PO we decided to keep
-    if (!latestTsByPO.hasOwnProperty(internalPO)) continue;
+    const entry = latestEntryByPO[internalPO];
+    if (!entry) continue;
 
-    const tsRaw = row[0];
-    let ts;
-    if (tsRaw instanceof Date) {
-      ts = tsRaw;
-    } else {
-      ts = new Date(tsRaw);
-    }
-    if (isNaN(ts.getTime())) ts = new Date(0);
+    // Match by exact timestamp string (all rows from same createPO/updatePO call share it)
+    const rowTsStr = (row[0] || '').toString().trim();
+    if (rowTsStr !== entry.tsStr) continue;
 
-    // Only include rows whose timestamp matches the latest for that PO
-    if (ts.getTime() !== latestTsByPO[internalPO]) continue;
-
-    // Attach PDF from pdfMap if not already present in col BL (index 63)
     const rowCopy = row.slice();
+    // Attach PDF from pdfMap if col BL (index 63) is empty
     if (!rowCopy[63] && pdfMap[internalPO]) {
       rowCopy[63] = pdfMap[internalPO];
     }
-    rowCopy[65] = false; // mark as new (all come from DATABASE now)
+    rowCopy[65] = false;
     allRows.push(rowCopy);
   }
+
+  // ── Cache result for 5 minutes (300 seconds) ──
+  // CacheService has a 100KB limit per key — store only if small enough
+  try {
+    const serialized = JSON.stringify(allRows);
+    if (serialized.length < 90000) {
+      cache.put('activeRows_v2', serialized, 300);
+    }
+  } catch(e) { /* skip caching if too large */ }
 
   return allRows;
 }
@@ -1176,7 +1190,7 @@ function handleSendWhatsApp(data) {
       results.push({ name: recipient.name, phone: phoneNumber, textStatus: 'error', error: err.toString() });
     }
 
-    Utilities.sleep(500); // delay between recipients
+    Utilities.sleep(300); // delay between recipients
   }
 
   return ContentService.createTextOutput(JSON.stringify({

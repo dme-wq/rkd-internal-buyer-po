@@ -212,6 +212,16 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
   const [dropdowns, setDropdowns] = useState<Partial<DropdownData>>(initialDropdowns || {});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const messageDismissRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-dismiss message banner after 5 seconds
+  const showMessage = (msg: string) => {
+    setMessage(msg);
+    if (messageDismissRef.current) clearTimeout(messageDismissRef.current);
+    if (!msg.includes('Error') && !msg.includes('Exception')) {
+      messageDismissRef.current = setTimeout(() => setMessage(''), 5000);
+    }
+  };
   const [pendingPOs, setPendingPOs] = useState<PendingPO[]>([]);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -314,9 +324,15 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
     return () => clearInterval(interval);
   }, []);
 
+  // Use a ref to access current skus without making skus a dependency
+  // (avoids an infinite loop: setSkus -> skus changes -> effect fires -> setSkus ...)
+  const skusRef = useRef(skus);
+  skusRef.current = skus;
+
   useEffect(() => {
+    const currentSkus = skusRef.current;
     let needsUpdate = false;
-    const newSkus = skus.map((s, idx) => {
+    const newSkus = currentSkus.map((s, idx) => {
       const expectedSkuCode = header.internalPO ? `${header.internalPO}-${idx + 1}` : '';
       if (s.skuCode !== expectedSkuCode) {
         needsUpdate = true;
@@ -328,7 +344,8 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
     if (needsUpdate) {
       setSkus(newSkus);
     }
-  }, [skus, header.internalPO]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [header.internalPO]);
 
   const addSku = () => {
     setSkus([...skus, { 
@@ -414,6 +431,7 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
     setSkus(skus.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
+  // Pure function — no setState side effects so handleSave always gets fresh computed values
   const calculateTotals = () => {
     let grandTotal = 0;
     const computedSkus = skus.map(sku => {
@@ -427,15 +445,19 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
     const p1Pct = header.pay1Pct === '-' ? 0 : parseFloat(String(header.pay1Pct || '0'));
     const p2Pct = header.pay2Pct === '-' ? 0 : parseFloat(String(header.pay2Pct || '0'));
 
-    setHeader(prev => ({ 
-      ...prev, 
+    const updatedHeader = {
+      ...header,
       totalAmount: grandTotal,
       pay1Amount: grandTotal * p1Pct / 100,
       pay2Amount: grandTotal * p2Pct / 100,
-      pay1DueDate: calculateDueDate(prev.pay1Pct, prev.pay1Activity || '', prev.pay1Days, prev.poDate || '', prev.exFactory || '', prev.onboardDate || '', prev.portName || ''),
-      pay2DueDate: calculateDueDate(prev.pay2Pct, prev.pay2Activity || '', prev.pay2Days, prev.poDate || '', prev.exFactory || '', prev.onboardDate || '', prev.portName || '')
-    }));
-    return computedSkus;
+      pay1DueDate: calculateDueDate(header.pay1Pct, header.pay1Activity || '', header.pay1Days, header.poDate || '', header.exFactory || '', header.onboardDate || '', header.portName || ''),
+      pay2DueDate: calculateDueDate(header.pay2Pct, header.pay2Activity || '', header.pay2Days, header.poDate || '', header.exFactory || '', header.onboardDate || '', header.portName || '')
+    };
+
+    // Also update the displayed header state for the UI
+    setHeader(updatedHeader);
+
+    return { computedSkus, updatedHeader };
   };
 
   const handleSave = async () => {
@@ -470,68 +492,119 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
     }
 
     setLoading(true);
+    if (messageDismissRef.current) clearTimeout(messageDismissRef.current);
     setMessage('');
+
+    // Show step-by-step progress dialog
+    MySwal.fire({
+      title: 'Processing...',
+      html: `
+        <div style="text-align:left;font-size:13px;color:#374151">
+          <div id="step1" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6">
+            <span id="step1-icon" style="font-size:16px">⏳</span>
+            <span style="font-weight:600">Saving Purchase Order to Database...</span>
+          </div>
+          <div id="step2" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6;opacity:0.4">
+            <span id="step2-icon" style="font-size:16px">📄</span>
+            <span style="font-weight:600">Generating PDF...</span>
+          </div>
+          <div id="step3" style="display:flex;align-items:center;gap:10px;padding:8px 0;opacity:0.4">
+            <span id="step3-icon" style="font-size:16px">📲</span>
+            <span style="font-weight:600">Sending WhatsApp Notification...</span>
+          </div>
+        </div>
+      `,
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => MySwal.showLoading(),
+    });
+
+    const updateStep = (step: number, done: boolean) => {
+      const el = document.getElementById(`step${step}`);
+      const icon = document.getElementById(`step${step}-icon`);
+      if (el) el.style.opacity = '1';
+      if (icon) icon.textContent = done ? '✅' : '⏳';
+      const next = document.getElementById(`step${step + 1}`);
+      if (next) next.style.opacity = '1';
+    };
+
     try {
-      const finalSkus = calculateTotals();
+      // calculateTotals is now pure — returns both computedSkus AND the fully-computed header
+      // so the API always receives fresh totalAmount / pay amounts (no stale setState race)
+      const { computedSkus: finalSkus, updatedHeader: finalHeader } = calculateTotals();
       
       let res;
       if (initialData?.header?.uid) {
-        res = await updatePO(initialData.header.uid, header as Omit<POHeader, 'uid' | 'internalPO'>, finalSkus as SKUItem[]);
+        res = await updatePO(initialData.header.uid, finalHeader as Omit<POHeader, 'uid' | 'internalPO'>, finalSkus as SKUItem[]);
       } else {
-        res = await createPO(header as Omit<POHeader, 'uid' | 'internalPO'>, finalSkus as SKUItem[]);
+        res = await createPO(finalHeader as Omit<POHeader, 'uid' | 'internalPO'>, finalSkus as SKUItem[]);
       }
       
       if (res.status === 'success' && res.data) {
-        setMessage(`Success! Internal PO: ${res.data.internalPO} saved.`);
+        updateStep(1, true);
+        showMessage(`✅ Internal PO: ${res.data.internalPO} saved.`);
+        
         const fullHeader = { ...header, internalPO: res.data.internalPO, uid: res.data.uid || initialData?.header?.uid } as POHeader;
         const pdfData = await generatePOPDF({ header: fullHeader, skus: finalSkus as SKUItem[] });
         const pdfRes = await savePDFtoDrive(fullHeader.uid!, pdfData.filename, pdfData.base64);
         
         let pdfUrl = '';
         if (pdfRes.status === 'success' && pdfRes.data?.fileUrl) {
-           pdfUrl = pdfRes.data.fileUrl;
+          pdfUrl = pdfRes.data.fileUrl;
         }
+        updateStep(2, true);
+        showMessage(`✅ Internal PO: ${res.data.internalPO} saved. 📄 PDF saved to Drive.`);
 
-        setMessage(prev => prev + ' PDF generated and saved to Drive.');
-        
-        // ── Send WhatsApp notification ──
+        // Send WhatsApp
+        let waSuccess = false;
         try {
           const waRes = await sendWhatsAppNotification(res.data.internalPO, pdfUrl);
-          if (waRes.status === 'success') {
-            setMessage(prev => prev + ' WhatsApp sent ✅');
-          } else {
-            console.warn('WhatsApp notification failed:', waRes.message);
-          }
+          waSuccess = waRes.status === 'success';
+          if (!waSuccess) console.warn('WhatsApp failed:', waRes.message);
         } catch (waErr) {
           console.warn('WhatsApp exception:', waErr);
         }
-        
+        updateStep(3, waSuccess);
+        if (waSuccess) showMessage(`✅ Internal PO: ${res.data.internalPO} saved. 📄 PDF saved to Drive. 📲 WhatsApp sent.`);
+
         MySwal.fire({
           icon: 'success',
-          title: 'PO Generated Successfully',
-          html: `<p>Internal PO <b>${res.data.internalPO}</b> has been saved.</p><p style="font-size:0.85em;color:#6b7280;margin-top:6px;">📲 WhatsApp notification sent to recipients.</p>`,
+          title: '🎉 PO Generated Successfully!',
+          html: `
+            <div style="font-size:14px;color:#374151">
+              <p>Internal PO <b style="color:#00a669">${res.data.internalPO}</b> has been saved.</p>
+              <div style="margin-top:12px;padding:10px;background:#f0fdf4;border-radius:8px;text-align:left;font-size:12px;color:#166534">
+                ✅ Saved to Database<br/>
+                📄 PDF stored in Google Drive<br/>
+                ${waSuccess ? '📲 WhatsApp notification sent' : '⚠️ WhatsApp notification skipped'}
+              </div>
+            </div>
+          `,
           showCancelButton: true,
-          confirmButtonText: 'View PDF',
+          confirmButtonText: '📄 View PDF',
           cancelButtonText: 'Close',
           confirmButtonColor: '#00a669'
         }).then((result) => {
           if (result.isConfirmed) {
-             if (pdfUrl) {
-                window.open(pdfUrl, '_blank');
-             } else {
-                // fallback to local blob if drive link failed
-                const url = URL.createObjectURL(pdfData.blob);
-                window.open(url, '_blank');
-             }
+            if (pdfUrl) {
+              window.open(pdfUrl, '_blank');
+            } else {
+              const url = URL.createObjectURL(pdfData.blob);
+              window.open(url, '_blank');
+            }
           }
         });
 
       } else {
-        setMessage('Error: ' + res.message);
+        MySwal.close();
+        showMessage('❌ Error: ' + res.message);
         MySwal.fire('Error', res.message, 'error');
       }
     } catch (err: unknown) {
-      setMessage('Exception: ' + (err as Error).message);
+      MySwal.close();
+      const msg = (err as Error).message;
+      showMessage('❌ Exception: ' + msg);
+      MySwal.fire('Error', msg, 'error');
     }
     setLoading(false);
   };
@@ -822,6 +895,10 @@ interface ModernInputProps {
 }
 
 function ModernInput({ label, value, onChange, type = "text", readOnly, className }: ModernInputProps) {
+  // Bug fix: readOnly must REPLACE yellow styles, not append over them
+  const defaultClass = readOnly
+    ? 'w-full text-center bg-zinc-100 border border-zinc-200 rounded-lg outline-none px-2.5 py-1.5 text-[12px] font-bold text-zinc-500 cursor-default shadow-sm'
+    : 'w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-2.5 py-1.5 text-[12px] font-bold text-zinc-900 transition-all shadow-sm';
   return (
     <div className="flex flex-col gap-1 w-full items-center">
       <label className="text-[11px] font-bold text-zinc-500 tracking-wide capitalize text-center">{label}</label>
@@ -830,7 +907,7 @@ function ModernInput({ label, value, onChange, type = "text", readOnly, classNam
         value={value || ''} 
         onChange={onChange} 
         readOnly={readOnly}
-        className={className ? className : `w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-2.5 py-1.5 text-[12px] font-bold text-zinc-900 transition-all shadow-sm ${readOnly ? 'bg-zinc-100 border-zinc-200 text-zinc-500' : ''}`}
+        className={className ?? defaultClass}
       />
     </div>
   );
@@ -887,6 +964,10 @@ interface ModernTextAreaProps {
 }
 
 function ModernTextArea({ label, value, onChange, readOnly }: ModernTextAreaProps) {
+  // Bug fix: readOnly must REPLACE yellow styles, not append over them
+  const textareaClass = readOnly
+    ? 'w-full text-center bg-zinc-100 border border-zinc-200 rounded-lg outline-none px-2.5 py-1.5 text-[12px] font-bold text-zinc-500 cursor-default resize-none shadow-sm'
+    : 'w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-2.5 py-1.5 text-[12px] font-bold text-zinc-900 resize-none transition-all shadow-sm';
   return (
     <div className="flex flex-col gap-1 w-full items-center">
       <label className="text-[11px] font-bold text-zinc-500 tracking-wide capitalize text-center">{label}</label>
@@ -895,7 +976,7 @@ function ModernTextArea({ label, value, onChange, readOnly }: ModernTextAreaProp
         onChange={onChange} 
         rows={2}
         readOnly={readOnly}
-        className={`w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-2.5 py-1.5 text-[12px] font-bold text-zinc-900 resize-none transition-all shadow-sm ${readOnly ? 'bg-zinc-100 border-zinc-200 text-zinc-500' : ''}`}
+        className={textareaClass}
       />
     </div>
   );

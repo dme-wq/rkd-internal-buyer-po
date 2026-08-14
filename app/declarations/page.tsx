@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { FileText, Eye, Edit, ChevronDown, ChevronUp, Package, Calendar, X } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { FileText, Eye, Edit, ChevronDown, ChevronUp, Package, Calendar, X, Search } from 'lucide-react';
 import { getAllPOs, getPOById } from '@/lib/api';
 import { POListItem, PurchaseOrder } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
@@ -14,6 +14,7 @@ export default function DeclarationsPage() {
   const [poDetails, setPoDetails] = useState<Record<string, PurchaseOrder>>({});
   const [loadingDetails, setLoadingDetails] = useState<Record<string, boolean>>({});
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     async function fetchPOs() {
@@ -30,6 +31,18 @@ export default function DeclarationsPage() {
     }
     fetchPOs();
   }, []);
+
+  // Client-side filtering — instant, no extra API call
+  const filteredPOs = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return pos;
+    return pos.filter(po =>
+      po.internalPO?.toLowerCase().includes(q) ||
+      po.buyerName?.toLowerCase().includes(q) ||
+      po.buyerPO?.toLowerCase().includes(q) ||
+      po.fileNumber?.toLowerCase().includes(q)
+    );
+  }, [pos, searchQuery]);
 
   const toggleExpand = async (uid: string) => {
     if (expandedId === uid) {
@@ -85,22 +98,64 @@ export default function DeclarationsPage() {
             <h1 className="text-2xl font-medium tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Purchase Order Data</h1>
           </div>
         </div>
+
+        {/* Search Bar */}
+        <div className="relative w-80">
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+            <Search size={16} className="text-zinc-400" />
+          </div>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => { setSearchQuery(e.target.value); setExpandedId(null); }}
+            placeholder="Search by Internal PO, Buyer, File No..."
+            className="w-full pl-9 pr-9 py-2 text-sm bg-white border border-zinc-200 rounded-xl outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 text-zinc-800 placeholder:text-zinc-400 transition-all shadow-sm"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute inset-y-0 right-3 flex items-center text-zinc-400 hover:text-zinc-600 transition-colors"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="p-8 overflow-y-auto flex-1">
         <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
           
-          <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50">
+          <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
             <h2 className="text-[15px] font-bold text-zinc-800">Internal Purchase Orders</h2>
+            {!loading && (
+              <span className="text-xs text-zinc-400 font-semibold">
+                {searchQuery
+                  ? `${filteredPOs.length} of ${pos.length} results`
+                  : `${pos.length} total`}
+              </span>
+            )}
           </div>
 
           {loading ? (
-            <div className="p-12 text-center text-zinc-500">Loading Purchase Orders...</div>
-          ) : pos.length === 0 ? (
-            <div className="p-12 text-center text-zinc-500">No Purchase Orders found.</div>
+            <div className="p-12 text-center">
+              <div className="inline-block w-8 h-8 border-4 border-zinc-200 border-t-blue-500 rounded-full animate-spin" />
+              <p className="text-zinc-400 text-sm mt-3 font-medium">Loading Purchase Orders...</p>
+            </div>
+          ) : filteredPOs.length === 0 ? (
+            <div className="p-12 text-center">
+              {searchQuery ? (
+                <>
+                  <Search size={36} className="mx-auto mb-3 text-zinc-200" />
+                  <p className="text-zinc-500 font-semibold">No results for &ldquo;{searchQuery}&rdquo;</p>
+                  <button onClick={() => setSearchQuery('')} className="text-blue-600 text-sm font-semibold hover:underline mt-2 inline-block">Clear search</button>
+                </>
+              ) : (
+                <p className="text-zinc-500">No Purchase Orders found.</p>
+              )}
+            </div>
           ) : (
             <div className="divide-y divide-zinc-100">
-              {pos.map(po => (
+              {filteredPOs.map(po => (
                 <div key={po.uid} className={`transition-colors ${expandedId === po.uid ? 'bg-blue-50/30' : 'hover:bg-zinc-50'}`}>
                   
                   {/* Row Header */}

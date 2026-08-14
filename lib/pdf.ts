@@ -13,18 +13,24 @@ interface GeneratePDFOptions {
 }
 
 // Convert image URL to base64 to avoid CORS issues in jsPDF
+// Cache in module scope — only fetched once per browser session
+let _cachedLogoBase64: string | null = null;
+
 async function getBase64ImageFromUrl(imageUrl: string): Promise<string> {
   if (imageUrl.startsWith('data:image')) return imageUrl;
+  if (_cachedLogoBase64) return _cachedLogoBase64;
   
   try {
     const res = await fetch(imageUrl);
     const blob = await res.blob();
-    return new Promise((resolve, reject) => {
+    const result = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
+    _cachedLogoBase64 = result;
+    return result;
   } catch (e) {
     console.error("Failed to load image for PDF", e);
     return "";

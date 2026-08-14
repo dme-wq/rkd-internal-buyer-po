@@ -2,191 +2,186 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Download, TrendingUp, Users, ShoppingCart, Package, AlertCircle } from 'lucide-react';
-import { getDashboardStats, getAllPOs } from '@/lib/api';
-import type { DashboardStats, POListItem } from '@/lib/types';
+import { TrendingUp, Users, ShoppingCart, Package, PlusCircle } from 'lucide-react';
+import { getDashboardStats } from '@/lib/api';
+import type { DashboardStats } from '@/lib/types';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentPOs, setRecentPOs] = useState<POListItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const [dashboardStats, poList] = await Promise.all([
-          getDashboardStats(),
-          getAllPOs()
-        ]);
-
-        if (dashboardStats.status === 'success' && dashboardStats.data) {
-          setStats(dashboardStats.data as DashboardStats);
-        }
-        if (poList.status === 'success' && poList.data && poList.data.pos) {
-          setRecentPOs(poList.data.pos.slice(0, 8)); // Top 8 recent POs
-        }
-      } catch (e) {
-        console.error("Failed to load dashboard data");
-      } finally {
-        setLoading(false);
+    getDashboardStats().then(res => {
+      if (res.status === 'success' && res.data) {
+        setStats(res.data as DashboardStats);
       }
-    }
-    loadData();
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
-      
+    <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12 px-8 pt-8">
+
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-[28px] font-bold tracking-tight text-zinc-900">Dashboard Overview</h1>
-          <p className="text-zinc-500 text-sm mt-1">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold text-xs border border-blue-100 mr-2">
+          <p className="text-zinc-500 text-sm mt-1 flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold text-xs border border-blue-100">
               📅 {new Date().getFullYear()}
             </span>
             Real-time metrics and summary of your Purchase Orders.
           </p>
         </div>
+        <Link
+          href="/create"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00a669] hover:bg-[#009059] text-white rounded-xl text-sm font-semibold transition-all shadow-md shadow-emerald-500/20 hover:shadow-lg"
+        >
+          <PlusCircle size={18} />
+          New Purchase Order
+        </Link>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-        
-        {/* Card 1: Total POs */}
-        <div className="bg-white border-t-4 border-blue-500 rounded-xl p-4 shadow-sm flex flex-col justify-center items-center min-h-[100px] hover:shadow-md transition-shadow text-center">
-          <div className="flex justify-center items-center gap-2 mb-1">
-            <ShoppingCart size={16} className="text-blue-500" />
-            <h3 className="text-zinc-500 font-semibold text-[11px] uppercase tracking-wider">Total Purchase Orders</h3>
+      {/* Stats Cards — single API call data */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
+        <div className="bg-white border-t-4 border-blue-500 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+            <ShoppingCart size={22} className="text-blue-500" />
           </div>
-          <div className="text-[28px] font-black text-zinc-800 tracking-tight">
-            {loading ? '...' : stats?.totalPOs || 0}
-          </div>
-        </div>
-
-        {/* Card 2: Total Quantity */}
-        <div className="bg-white border-t-4 border-emerald-500 rounded-xl p-4 shadow-sm flex flex-col justify-center items-center min-h-[100px] hover:shadow-md transition-shadow text-center">
-          <div className="flex justify-center items-center gap-2 mb-1">
-            <Package size={16} className="text-emerald-500" />
-            <h3 className="text-zinc-500 font-semibold text-[11px] uppercase tracking-wider">Total Qty Ordered</h3>
-          </div>
-          <div className="text-[28px] font-black text-zinc-800 tracking-tight">
-            {loading ? '...' : (stats?.totalQty || 0).toLocaleString()}
-          </div>
-        </div>
-        
-        {/* Card: Buyers Count */}
-        <div className="bg-white border-t-4 border-purple-500 rounded-xl p-4 shadow-sm flex flex-col justify-center items-center min-h-[100px] hover:shadow-md transition-shadow text-center">
-          <div className="flex justify-center items-center gap-2 mb-1">
-            <Users size={16} className="text-purple-500" />
-            <h3 className="text-zinc-500 font-semibold text-[11px] uppercase tracking-wider">Active Buyers</h3>
-          </div>
-          <div className="text-[28px] font-black text-zinc-800 tracking-tight">
-            {loading ? '...' : stats?.buyersCount || 0}
+          <div>
+            <p className="text-zinc-400 font-semibold text-[11px] uppercase tracking-widest">Total POs</p>
+            <p className="text-3xl font-black text-zinc-800 tracking-tight leading-none mt-1">
+              {loading ? <span className="text-zinc-300 animate-pulse">—</span> : (stats?.totalPOs || 0)}
+            </p>
           </div>
         </div>
 
+        <div className="bg-white border-t-4 border-emerald-500 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+            <Package size={22} className="text-emerald-500" />
+          </div>
+          <div>
+            <p className="text-zinc-400 font-semibold text-[11px] uppercase tracking-widest">Total Qty Ordered</p>
+            <p className="text-3xl font-black text-zinc-800 tracking-tight leading-none mt-1">
+              {loading ? <span className="text-zinc-300 animate-pulse">—</span> : (stats?.totalQty || 0).toLocaleString()}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white border-t-4 border-purple-500 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
+            <Users size={22} className="text-purple-500" />
+          </div>
+          <div>
+            <p className="text-zinc-400 font-semibold text-[11px] uppercase tracking-widest">Active Buyers</p>
+            <p className="text-3xl font-black text-zinc-800 tracking-tight leading-none mt-1">
+              {loading ? <span className="text-zinc-300 animate-pulse">—</span> : (stats?.buyersCount || 0)}
+            </p>
+          </div>
+        </div>
       </div>
 
+      {/* Buyer Wise Summary — from getDashboardStats (no extra call) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Recent POs Table */}
-        <div className="lg:col-span-2 space-y-6">
-          <h2 className="text-[20px] font-semibold text-zinc-900 flex items-center gap-2">
-            <TrendingUp size={20} className="text-blue-600" /> Recent Purchase Orders
+        <div className="lg:col-span-2 space-y-4">
+          <h2 className="text-[18px] font-bold text-zinc-900 flex items-center gap-2">
+            <TrendingUp size={20} className="text-blue-600" />
+            Buyer Activity
           </h2>
-          
-          <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden">
             {loading ? (
-               <div className="p-12 text-center text-zinc-500">Loading recent POs...</div>
-            ) : recentPOs.length === 0 ? (
-               <div className="p-12 text-center text-zinc-500">
-                 No recent POs found. <Link href="/create" className="text-blue-600 font-semibold hover:underline">Create one now</Link>.
-               </div>
+              <div className="p-12 text-center">
+                <div className="inline-block w-8 h-8 border-4 border-zinc-200 border-t-blue-500 rounded-full animate-spin" />
+                <p className="text-zinc-400 text-sm mt-3 font-medium">Loading data...</p>
+              </div>
+            ) : !stats?.buyerWise?.length ? (
+              <div className="p-12 text-center text-zinc-400">
+                <Package size={36} className="mx-auto mb-3 text-zinc-200" />
+                <p className="font-semibold">No data yet</p>
+                <Link href="/create" className="text-blue-600 font-semibold text-sm hover:underline mt-2 inline-block">
+                  Create your first PO →
+                </Link>
+              </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-[13px] whitespace-nowrap">
-                  <thead className="bg-zinc-50/80 border-b border-zinc-200">
-                    <tr>
-                      <th className="px-6 py-4 font-bold text-zinc-500 uppercase tracking-wider text-xs">Internal PO</th>
-                      <th className="px-6 py-4 font-bold text-zinc-500 uppercase tracking-wider text-xs">Buyer</th>
-                      <th className="px-6 py-4 font-bold text-zinc-500 uppercase tracking-wider text-xs">Date</th>
-                      <th className="px-6 py-4 font-bold text-zinc-500 uppercase tracking-wider text-xs text-right">Amount</th>
-                      <th className="px-6 py-4 font-bold text-zinc-500 uppercase tracking-wider text-xs text-center">PDF</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-100">
-                    {recentPOs.map((po, i) => (
-                      <tr key={i} className="hover:bg-zinc-50/50 transition-colors">
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100">
-                            {po.internalPO || 'Pending'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 font-semibold text-zinc-800">
-                          {po.buyerName || '-'}
-                          <div className="text-[11px] text-zinc-400 font-normal mt-0.5">{po.buyerPO}</div>
-                        </td>
-                        <td className="px-6 py-4 text-zinc-500 font-medium text-xs">
-                          {new Date(po.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                        </td>
-                        <td className="px-6 py-4 text-right font-bold text-emerald-600">
-                          {po.currency === 'USD' ? '$' : po.currency === 'EUR' ? '€' : po.currency === 'INR' ? '₹' : (po.currency || '') + ' '}
-                          {(po.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          {po.pdfUrl ? (
-                            <a href={po.pdfUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center p-2 bg-zinc-100 hover:bg-blue-100 hover:text-blue-700 text-zinc-500 rounded transition-colors" title="View PDF">
-                              <Download size={16} />
-                            </a>
-                          ) : (
-                            <span className="text-zinc-300">-</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="divide-y divide-zinc-50">
+                {stats.buyerWise.map((buyer, idx) => {
+                  const maxQty = stats.buyerWise[0]?.totalQty || 1;
+                  const pct = Math.round((buyer.totalQty / maxQty) * 100);
+                  return (
+                    <div key={idx} className="px-6 py-4 hover:bg-zinc-50/60 transition-colors">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white ${
+                            idx === 0 ? 'bg-amber-400' : idx === 1 ? 'bg-zinc-400' : idx === 2 ? 'bg-orange-400' : 'bg-zinc-200 text-zinc-500'
+                          }`}>{idx + 1}</span>
+                          <span className="font-bold text-zinc-800 text-[14px]">{buyer.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-zinc-400 font-medium">{buyer.totalQty.toLocaleString()} pcs</span>
+                          <span className="bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full text-[11px] font-bold">{buyer.poCount} PO{buyer.poCount > 1 ? 's' : ''}</span>
+                        </div>
+                      </div>
+                      <div className="w-full bg-zinc-100 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className={`h-1.5 rounded-full transition-all duration-700 ${idx === 0 ? 'bg-amber-400' : idx === 1 ? 'bg-zinc-400' : idx === 2 ? 'bg-orange-400' : 'bg-purple-300'}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
-            <div className="p-4 bg-zinc-50 border-t border-zinc-200 text-center">
-               <Link href="/declarations" className="text-sm font-bold text-blue-600 hover:text-blue-800">View All Purchase Orders &rarr;</Link>
+            <div className="p-4 bg-zinc-50 border-t border-zinc-100 text-center">
+              <Link href="/stats" className="text-sm font-bold text-blue-600 hover:text-blue-800">
+                View Full Report →
+              </Link>
             </div>
           </div>
         </div>
 
-        {/* Buyer Wise Summary */}
-        <div className="space-y-6">
-          <h2 className="text-[20px] font-semibold text-zinc-900 flex items-center gap-2">
-            <Users size={20} className="text-purple-600" /> Buyer Wise Summary
+        {/* Quick Actions */}
+        <div className="space-y-4">
+          <h2 className="text-[18px] font-bold text-zinc-900 flex items-center gap-2">
+            <Users size={20} className="text-purple-600" />
+            Quick Actions
           </h2>
-
-          <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
-             {loading ? (
-               <div className="p-12 text-center text-zinc-500">Loading summary...</div>
-             ) : !stats || !stats.buyerWise || stats.buyerWise.length === 0 ? (
-               <div className="p-8 text-center text-zinc-500">No buyer data available.</div>
-             ) : (
-                <div className="divide-y divide-zinc-100">
-                  {stats.buyerWise.map((buyer, idx) => (
-                    <div key={idx} className="p-5 hover:bg-zinc-50 transition-colors flex flex-col gap-3">
-                      <div className="flex justify-between items-center">
-                         <div className="font-bold text-zinc-800 text-[15px]">{buyer.name}</div>
-                         <div className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs font-bold">{buyer.poCount} POs</div>
-                      </div>
-                      <div className="flex justify-between items-center text-sm">
-                         <div className="flex flex-col">
-                           <span className="text-[11px] text-zinc-400 font-semibold uppercase">Total Qty</span>
-                           <span className="font-medium text-zinc-700">{buyer.totalQty.toLocaleString()}</span>
-                         </div>
-                      </div>
-                    </div>
-                  ))}
+          <div className="space-y-3">
+            <Link href="/create" className="block bg-white rounded-2xl p-5 shadow-sm border border-zinc-100 hover:shadow-md hover:border-emerald-200 transition-all group">
+              <div className="flex items-center gap-4">
+                <div className="w-11 h-11 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center transition-colors">
+                  <PlusCircle size={20} className="text-emerald-600" />
                 </div>
-             )}
+                <div>
+                  <p className="font-bold text-zinc-800 text-sm">New Purchase Order</p>
+                  <p className="text-zinc-400 text-xs mt-0.5">Create a new PO entry</p>
+                </div>
+              </div>
+            </Link>
+            <Link href="/declarations" className="block bg-white rounded-2xl p-5 shadow-sm border border-zinc-100 hover:shadow-md hover:border-blue-200 transition-all group">
+              <div className="flex items-center gap-4">
+                <div className="w-11 h-11 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center transition-colors">
+                  <ShoppingCart size={20} className="text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-bold text-zinc-800 text-sm">Purchase Order Data</p>
+                  <p className="text-zinc-400 text-xs mt-0.5">View & manage all POs</p>
+                </div>
+              </div>
+            </Link>
+            <Link href="/stats" className="block bg-white rounded-2xl p-5 shadow-sm border border-zinc-100 hover:shadow-md hover:border-violet-200 transition-all group">
+              <div className="flex items-center gap-4">
+                <div className="w-11 h-11 rounded-xl bg-violet-50 group-hover:bg-violet-100 flex items-center justify-center transition-colors">
+                  <TrendingUp size={20} className="text-violet-600" />
+                </div>
+                <div>
+                  <p className="font-bold text-zinc-800 text-sm">PO Report</p>
+                  <p className="text-zinc-400 text-xs mt-0.5">Analytics & full report</p>
+                </div>
+              </div>
+            </Link>
           </div>
         </div>
-
       </div>
     </div>
   );

@@ -123,7 +123,7 @@ export function MultiSelectDropdown({ options, selected, onChange, maxSelect = 2
       menuPosition="fixed"
       placeholder={placeholder}
       className="w-full"
-      isOptionDisabled={() => selected.length >= maxSelect}
+      isOptionDisabled={(option: any) => option.value !== '__add_new__' && selected.length >= maxSelect}
     />
   );
 }
