@@ -108,15 +108,6 @@ function doPost(e) {
 }
 
 function handleGetPendingInternalPOs() {
-  const cache = CacheService.getScriptCache();
-  const cachedData = cache.get('pendingPOs');
-  if (cachedData) {
-    return ContentService.createTextOutput(JSON.stringify({
-      status: 'success',
-      data: JSON.parse(cachedData)
-    })).setMimeType(ContentService.MimeType.JSON);
-  }
-
   const ss = SpreadsheetApp.openById(SHEET_ID);
   
   const normalizePO = (po) => po.replace(/\/\d{2}$/, '').trim().toLowerCase();
@@ -201,7 +192,7 @@ function handleGetPendingInternalPOs() {
   const dbData = dbSheet.getDataRange().getValues();
   const usedPOs = new Set();
   for (let i = 1; i < dbData.length; i++) {
-    const val = dbData[i][4];
+    const val = dbData[i][4]; // Internal PO number is in col E (index 4)
     if (val && val.toString().trim() !== '') {
       usedPOs.add(normalizePO(val.toString()));
     }
@@ -219,9 +210,6 @@ function handleGetPendingInternalPOs() {
       uniquePendingPOs.push(po);
     }
   }
-  
-  // Cache the results for 15 minutes (900 seconds)
-  cache.put('pendingPOs', JSON.stringify(uniquePendingPOs), 900);
   
   return ContentService.createTextOutput(JSON.stringify({
     status: 'success',
