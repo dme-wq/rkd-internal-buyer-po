@@ -5,10 +5,11 @@ import { notFound } from 'next/navigation';
 export const revalidate = 0; // Dynamic route, do not cache statically
 
 // Next.js 15+: params is a Promise — must be awaited before accessing properties
-export default async function EditPOPage({ params }: { params: Promise<{ uid: string }> }) {
+export default async function EditPOPage({ params }: { params: Promise<{ uid: string[] }> }) {
   const { uid } = await params;
 
-  const decodedUid = decodeURIComponent(uid);
+  // uid is an array because of the catch-all route [...uid]
+  const decodedUid = decodeURIComponent(uid.join('/'));
 
   const dpResponse = await getDropdowns();
   const initialDropdowns = dpResponse.status === 'success' ? dpResponse.data : undefined;
