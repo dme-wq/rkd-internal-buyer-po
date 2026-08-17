@@ -914,31 +914,31 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
             onMouseLeave={handleMouseLeave}
           >
             <table className="w-full text-left whitespace-nowrap min-w-max border-separate border-spacing-0">
-              <thead className="bg-white">
+              <thead className="bg-white sticky top-0 z-20 shadow-sm">
                 <tr>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 text-center sticky left-0 bg-white z-10 border-b border-r border-zinc-200">#</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] sticky left-[41px] bg-white z-10 border-b border-r border-zinc-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">SKU Code</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[180px] border-b border-zinc-200">Product Name<span className="text-rose-500 ml-0.5">*</span></th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] text-center border-b border-zinc-200">Designer Picture</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[130px] border-b border-zinc-200">Shape<span className="text-rose-500 ml-0.5">*</span></th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[140px] border-b border-zinc-200">Designer Name<span className="text-rose-500 ml-0.5">*</span></th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[140px] border-b border-zinc-200">Brand Name<span className="text-rose-500 ml-0.5">*</span></th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[220px] border-b border-zinc-200">Description</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[160px] border-b border-zinc-200">Sizes<span className="text-rose-500 ml-0.5">*</span></th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] border-b border-zinc-200">Quality<span className="text-rose-500 ml-0.5">*</span></th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] border-b border-zinc-200">Color<span className="text-rose-500 ml-0.5">*</span></th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[100px] border-b border-zinc-200">Buyer PO Qty<span className="text-rose-500 ml-0.5">*</span></th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Unit of Qty<span className="text-rose-500 ml-0.5">*</span></th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[90px] border-b border-zinc-200">Price<span className="text-rose-500 ml-0.5">*</span></th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[90px] border-b border-zinc-200">Unit of Price<span className="text-rose-500 ml-0.5">*</span></th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[100px] border-b border-zinc-200">Total Amt ({header.currency || 'USD'})</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Inner Pack<span className="text-rose-500 ml-0.5">*</span></th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Outer Pack<span className="text-rose-500 ml-0.5">*</span></th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[130px] border-b border-zinc-200">PP/TOP Samples<span className="text-rose-500 ml-0.5">*</span></th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Addl Prod Pcs<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 text-center sticky left-0 top-0 bg-white z-30 border-b border-r border-zinc-200">#</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] sticky left-[41px] top-0 bg-white z-30 border-b border-r border-zinc-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">SKU Code</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[180px] bg-white border-b border-zinc-200">Product Name<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] text-center bg-white border-b border-zinc-200">Designer Picture</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[130px] bg-white border-b border-zinc-200">Shape<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[140px] bg-white border-b border-zinc-200">Designer Name<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[140px] bg-white border-b border-zinc-200">Brand Name<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[220px] bg-white border-b border-zinc-200">Description</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[160px] bg-white border-b border-zinc-200">Sizes<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] bg-white border-b border-zinc-200">Quality<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] bg-white border-b border-zinc-200">Color<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[100px] bg-white border-b border-zinc-200">Buyer PO Qty<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] bg-white border-b border-zinc-200">Unit of Qty<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[90px] bg-white border-b border-zinc-200">Price<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[90px] bg-white border-b border-zinc-200">Unit of Price<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[100px] bg-white border-b border-zinc-200">Total Amt ({header.currency || 'USD'})</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] bg-white border-b border-zinc-200">Inner Pack<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] bg-white border-b border-zinc-200">Outer Pack<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[130px] bg-white border-b border-zinc-200">PP/TOP Samples<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] bg-white border-b border-zinc-200">Addl Prod Pcs<span className="text-rose-500 ml-0.5">*</span></th>
                   <th className="px-3 py-3 text-[11px] font-bold text-rose-700 min-w-[100px] text-center bg-rose-50/30 border-b border-zinc-200">Total Qty Mfg</th>
                   <th className="px-3 py-3 text-[11px] font-bold text-rose-700 min-w-[120px] text-center bg-rose-50/30 border-b border-zinc-200">Total Amount</th>
-                  <th className="px-3 py-3 min-w-[48px] border-b border-zinc-200"></th>
+                  <th className="px-3 py-3 min-w-[48px] bg-white border-b border-zinc-200"></th>
                 </tr>
               </thead>
               <tbody className="bg-zinc-50/20">
