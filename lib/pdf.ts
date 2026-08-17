@@ -1,256 +1,359 @@
 // ============================================================
 // RKD Export Buyer PO — PDF Generation (jsPDF)
-// Matches the "Old Format" RKD Buyer PO layout
+// Matches the "RKD Buyer PO" target layout from reference screenshot
+//
+// ROOT-CAUSE FIX (121-page bug):
+//   Base64 image strings were placed directly in table cell data.
+//   jsPDF-AutoTable calculates cell height from raw content BEFORE
+//   willDrawCell clears it → each row became the height of the
+//   decoded base64 string (hundreds of mm). Fix: store images
+//   in a separate array indexed by row; table cells get empty string.
 // ============================================================
 
 import type { POHeader, SKUItem } from './types';
-import { formatDate, formatCurrency, formatNumber } from './utils';
+import { formatDate, formatNumber } from './utils';
 
 interface GeneratePDFOptions {
   header: POHeader;
   skus: SKUItem[];
-  returnBase64?: boolean;
 }
 
-// Convert image URL to base64 to avoid CORS issues in jsPDF
-// Cache in module scope — only fetched once per browser session
+// ─── Logo cache (one fetch per browser session) ──────────────
 let _cachedLogoBase64: string | null = null;
 
 async function getBase64ImageFromUrl(imageUrl: string): Promise<string> {
   if (imageUrl.startsWith('data:image')) return imageUrl;
   if (_cachedLogoBase64) return _cachedLogoBase64;
-  
   try {
-    const res = await fetch(imageUrl);
+    const res  = await fetch(imageUrl);
     const blob = await res.blob();
     const result = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
+      reader.onerror   = reject;
       reader.readAsDataURL(blob);
     });
     _cachedLogoBase64 = result;
     return result;
-  } catch (e) {
-    console.error("Failed to load image for PDF", e);
-    return "";
+  } catch {
+    return '';
   }
 }
+
+// ─── Indian timestamp: dd-MMM-yyyy HH:mm ────────────────────
+function indianTimestamp(): string {
+  const now    = new Date();
+  const months = ['Jan','Feb','Mar','Apr','May','Jun',
+                  'Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dd  = String(now.getDate()).padStart(2, '0');
+  const mon = months[now.getMonth()];
+  const yr  = now.getFullYear();
+  const hh  = String(now.getHours()).padStart(2, '0');
+  const mm  = String(now.getMinutes()).padStart(2, '0');
+  return `${dd}-${mon}-${yr} ${hh}:${mm}`;
+}
+
+// ─── Colour constants ─────────────────────────────────────────
+const ORANGE      = [255, 170, 0]   as [number, number, number];
+const GREY_BG     = [220, 220, 220] as [number, number, number];
+const LIGHT_GREY  = [245, 245, 245] as [number, number, number];
+const WHITE       = [255, 255, 255] as [number, number, number];
+const DARK_TEXT   = [30,  30,  30]  as [number, number, number];
+
+// ─── Layout constants ─────────────────────────────────────────
+const PAGE_W = 297;   // landscape A4
+const PAGE_H = 210;
+const M      = 7;     // margin
+const CW     = PAGE_W - 2 * M;  // 283 mm content width
+
+// ─── Column definitions (widths must sum to CW = 283) ────────
+// 23+18+22+16+18+28+16+16+14+16+18+14+18+20+14+14 = 283
+const COLS = [
+  { key: 'skuCode',     header: 'SKU Code',                                width: 23 },
+  { key: 'product',     header: 'Product',                                  width: 18 },
+  { key: 'img',         header: 'Design\nImage',                            width: 22 },
+  { key: 'shape',       header: 'Shape',                                    width: 16 },
+  { key: 'designer',    header: 'Designer\nName',                           width: 18 },
+  { key: 'brand',       header: 'Brand Name',                               width: 28 },
+  { key: 'size1',       header: 'Size 1',                                   width: 16 },
+  { key: 'size2',       header: 'Size 2',                                   width: 16 },
+  { key: 'quality',     header: 'Quality',                                  width: 14 },
+  { key: 'color',       header: 'Color',                                    width: 16 },
+  { key: 'orderQty',    header: 'Buyer PO\nQuantity',                       width: 18 },
+  { key: 'samples',     header: 'PP/TOP/\nTesting\nSamples',                width: 14 },
+  { key: 'addProd',     header: 'Additional\nProduction\nPieces Required',  width: 18 },
+  { key: 'totalQtyMfg', header: 'Total Qty to\nManufacture',                width: 20 },
+  { key: 'innerPack',   header: 'Inner\nPack',                              width: 14 },
+  { key: 'outerPack',   header: 'Outer\nPack',                              width: 14 },
+];
+
+const IMG_COL = 2;   // index of the image column
+const IMG_DIM = 13;  // mm — thumbnail size that keeps rows compact
 
 export async function generatePOPDF(
   options: GeneratePDFOptions
 ): Promise<{ blob: Blob; base64: string; filename: string }> {
-  const { jsPDF } = await import('jspdf');
-  const autoTable  = (await import('jspdf-autotable')).default;
-
+  const { jsPDF }    = await import('jspdf');
+  const autoTable    = (await import('jspdf-autotable')).default;
   const { header, skus } = options;
+
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-  const PAGE_W = 297;
-  const MARGIN = 10;
-  
-  // Theme Colors from Screenshot
-  const TITLE_BG = [220, 220, 220] as [number, number, number]; // Light Grey
-  const GRID_LINE = [255, 170, 0] as [number, number, number]; // Orange/Yellow
-  
+  const ts         = indianTimestamp();
+  const internalPO = header.internalPO || '';
+
   // Fetch logo
-  const logoUrl = "https://static.wixstatic.com/media/68b92a_d71e34133826499983234774dea1945b~mv2.png/v1/fill/w_186,h_156,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/RKD-Logo.png";
+  const logoUrl    = 'https://static.wixstatic.com/media/68b92a_d71e34133826499983234774dea1945b~mv2.png/v1/fill/w_186,h_156,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/RKD-Logo.png';
   const logoBase64 = await getBase64ImageFromUrl(logoUrl);
 
-  let y = MARGIN;
+  // ─── KEY FIX: Separate image lookup array ─────────────────
+  // Never put base64 strings in table body — AutoTable sizes rows
+  // from raw cell content before willDrawCell can clear them.
+  const skuImages: string[] = skus.map(s => s.designImage || '');
 
-  // ─── Header Info Table ──────────────────────────────────────
-  // We'll draw the header using autoTable for perfect borders
+  // ─── Helper: orange page border ───────────────────────────
+  function drawBorder() {
+    doc.setDrawColor(...ORANGE);
+    doc.setLineWidth(1.0);
+    doc.rect(M - 2, M - 2, CW + 4, PAGE_H - 2 * M + 4);
+  }
+
+  // ─── Helper: footer (page n of total, timestamp, PO) ──────
+  function drawFooter(pg: number, total: number) {
+    doc.setFontSize(6);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(110, 110, 110);
+    const fy = PAGE_H - M + 2;
+    doc.text(`Internal PO: ${internalPO}`, M + 1, fy);
+    doc.text(`Generated: ${ts}`, PAGE_W / 2, fy, { align: 'center' });
+    doc.text(`Page ${pg} of ${total}`, PAGE_W - M - 1, fy, { align: 'right' });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 1. HEADER TABLE
+  //    Row 0 (head): "RKD Buyer PO" — grey, full width
+  //    Row 1: File Number | value | PO Date | value | logo (rowspan 2)
+  //    Row 2: Internal PO | value | Ex-Factory | value
+  //
+  // Column layout widths (must sum to CW = 283):
+  //   35 + 55 + 32 + 42 + 119 = 283
+  // ═══════════════════════════════════════════════════════════
   autoTable(doc, {
-    startY: y,
-    head: [[{ content: 'RKD Buyer PO', colSpan: 6, styles: { halign: 'center', fillColor: TITLE_BG, textColor: 0, fontStyle: 'bold', fontSize: 10 } }]],
+    startY: M,
+    head: [[{
+      content: 'RKD Buyer PO',
+      colSpan: 5,
+      styles: {
+        halign: 'center', fillColor: GREY_BG, textColor: DARK_TEXT,
+        fontStyle: 'bold', fontSize: 11, cellPadding: 3,
+      },
+    }]],
     body: [
       [
-        { content: 'File Number', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-        { content: header.fileNumber || '', styles: { halign: 'center' } },
-        { content: 'PO Date', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-        { content: formatDate(header.poDate), styles: { halign: 'center' } },
-        { content: '', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }, // Space for Logo
-        { content: '', rowSpan: 2 } // Empty space
+        { content: 'File Number',
+          styles: { fontStyle: 'bold', fillColor: LIGHT_GREY, fontSize: 8, cellPadding: 2 } },
+        { content: header.fileNumber || '',
+          styles: { halign: 'center', fontSize: 8, cellPadding: 2 } },
+        { content: 'PO Date',
+          styles: { fontStyle: 'bold', fillColor: LIGHT_GREY, fontSize: 8, cellPadding: 2 } },
+        { content: formatDate(header.poDate),
+          styles: { halign: 'center', fontSize: 8, cellPadding: 2 } },
+        // Logo cell — spans both body rows
+        { content: '', rowSpan: 2,
+          styles: { halign: 'center', valign: 'middle', cellPadding: 2 } },
       ],
       [
-        { content: 'Internal PO Number', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-        { content: header.internalPO || '', styles: { halign: 'center' } },
-        { content: 'Ex-Factory Date', styles: { fontStyle: 'bold', fillColor: [245, 245, 245] } },
-        { content: formatDate(header.exFactory), styles: { halign: 'center' } }
-      ]
+        { content: 'Internal PO Number',
+          styles: { fontStyle: 'bold', fillColor: LIGHT_GREY, fontSize: 8, cellPadding: 2 } },
+        { content: header.internalPO || '',
+          styles: { halign: 'center', fontSize: 8, cellPadding: 2 } },
+        { content: 'Ex-Factory Date',
+          styles: { fontStyle: 'bold', fillColor: LIGHT_GREY, fontSize: 8, cellPadding: 2 } },
+        { content: formatDate(header.exFactory),
+          styles: { halign: 'center', fontSize: 8, cellPadding: 2 } },
+      ],
     ],
     theme: 'grid',
-    styles: {
-      lineColor: GRID_LINE,
-      lineWidth: 0.5,
-      fontSize: 8,
-      textColor: 0,
-      cellPadding: 2,
-    },
+    styles: { lineColor: ORANGE, lineWidth: 0.5, font: 'helvetica', textColor: DARK_TEXT },
     columnStyles: {
-      0: { cellWidth: 35 },
-      1: { cellWidth: 45 },
-      2: { cellWidth: 35 },
-      3: { cellWidth: 35 },
-      4: { cellWidth: 60 },
-      5: { cellWidth: 'auto' }
+      0: { cellWidth: 35  },
+      1: { cellWidth: 55  },
+      2: { cellWidth: 32  },
+      3: { cellWidth: 42  },
+      4: { cellWidth: 119 },
     },
-    margin: { left: MARGIN, right: MARGIN },
+    margin: { left: M, right: M },
     didDrawCell: (data) => {
-      // Draw Logo in the designated cell
-      if (data.row.index === 0 && data.column.index === 4 && data.section === 'body') {
-         if (logoBase64 && typeof logoBase64 === 'string' && logoBase64.length > 20) {
-           doc.addImage(logoBase64, 'PNG', data.cell.x + 10, data.cell.y + 2, 40, 10);
-         }
+      // Draw logo centred in the merged logo cell
+      if (
+        data.section === 'body' &&
+        data.row.index === 0 &&
+        data.column.index === 4 &&
+        logoBase64
+      ) {
+        const lw = 44, lh = 18;
+        doc.addImage(
+          logoBase64, 'PNG',
+          data.cell.x + (data.cell.width  - lw) / 2,
+          data.cell.y + (data.cell.height - lh) / 2,
+          lw, lh
+        );
       }
-    }
+    },
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  y = (doc as any).lastAutoTable.finalY + 5;
+  const headerFinalY = (doc as any).lastAutoTable.finalY;
 
-  // ─── SKU Table ───────────────────────────────────────────
-  const columns = [
-    { header: 'SKU Code',        dataKey: 'skuCode' },
-    { header: 'Product',         dataKey: 'product' },
-    { header: 'Design Image',    dataKey: 'designImage' },
-    { header: 'Shape',           dataKey: 'shape' },
-    { header: 'Designer\nName',  dataKey: 'designer' },
-    { header: 'Brand Name',      dataKey: 'brand' },
-    { header: 'Size 1',          dataKey: 'size1' },
-    { header: 'Size 2',          dataKey: 'size2' },
-    { header: 'Quality',         dataKey: 'quality' },
-    { header: 'Color',           dataKey: 'color' },
-    { header: 'Buyer PO\nQuantity', dataKey: 'orderQty' },
-    { header: 'PP/TOP/\nTesting\nSamples', dataKey: 'samples' },
-    { header: 'Additional\nProduction\nPieces\nRequired', dataKey: 'addProd' },
-    { header: 'Total\nQuantity to\nManufacture', dataKey: 'totalQtyMfg' },
-    { header: 'Inner\nPack',     dataKey: 'innerPack' },
-    { header: 'Outer\nPack',     dataKey: 'outerPack' },
-  ];
+  // ═══════════════════════════════════════════════════════════
+  // 2. SKU TABLE
+  // ═══════════════════════════════════════════════════════════
+  const colStyles: Record<number, { cellWidth: number }> = {};
+  COLS.forEach((c, i) => { colStyles[i] = { cellWidth: c.width }; });
 
-  const rows = skus.map(sku => ({
-    skuCode    : sku.skuCode     || '',
-    product    : sku.product     || '',
-    designImage: sku.designImage || '', // base64 string handled in didDrawCell
-    shape      : sku.shape       || '',
-    designer   : sku.designer    || 'N/A',
-    brand      : sku.brand       || '',
-    size1      : sku.size1       || '',
-    size2      : sku.size2       || '',
-    quality    : sku.quality     || '',
-    color      : sku.color       || '',
-    orderQty   : `${formatNumber(sku.orderQty || 0)}\npieces`,
-    samples    : sku.addSample   || '0',
-    addProd    : sku.addProd     || '1%',
-    totalQtyMfg: `${formatNumber(sku.totalQtyMfg || 0)}\npieces`,
-    innerPack  : sku.innerPack ? String(sku.innerPack) : 'N/A',
-    outerPack  : sku.outerPack ? String(sku.outerPack) : 'N/A',
+  // Body rows — image column is always '' (prevents AutoTable height explosion)
+  const bodyRows = skus.map(s => COLS.map(c => {
+    switch (c.key) {
+      case 'img':         return '';
+      case 'skuCode':     return s.skuCode     || '';
+      case 'product':     return s.product     || '';
+      case 'shape':       return s.shape       || '';
+      case 'designer':    return s.designer    || 'N/A';
+      case 'brand':       return s.brand       || '';
+      case 'size1':       return s.size1       || '';
+      case 'size2':       return s.size2       || '';
+      case 'quality':     return s.quality     || '';
+      case 'color':       return s.color       || '';
+      case 'orderQty':    return `${formatNumber(s.orderQty    || 0)}\npieces`;
+      case 'samples':     return String(s.addSample || 0);
+      case 'addProd':     return s.addProd     || '0%';
+      case 'totalQtyMfg': return `${formatNumber(s.totalQtyMfg || 0)}\npieces`;
+      case 'innerPack':   return s.innerPack   ? String(s.innerPack) : 'N/A';
+      case 'outerPack':   return s.outerPack   ? String(s.outerPack) : 'N/A';
+      default: return '';
+    }
   }));
 
-  let totalOrderQty = 0;
-  let totalMfgQty = 0;
-  let totalSamples = 0;
-  
+  // Totals
+  let totOQ = 0, totMQ = 0, totSmp = 0;
   skus.forEach(s => {
-    totalOrderQty += Number(s.orderQty || 0);
-    totalMfgQty += Number(s.totalQtyMfg || 0);
-    totalSamples += Number(s.addSample || 0);
+    totOQ  += Number(s.orderQty    || 0);
+    totMQ  += Number(s.totalQtyMfg || 0);
+    totSmp += Number(s.addSample   || 0);
+  });
+
+  // Footer row (totals)
+  const footRow = COLS.map((c, i) => {
+    const base = { lineWidth: 0.5 as number, lineColor: ORANGE };
+    if (i < 9)  return { content: '', styles: { ...base, fillColor: WHITE, lineWidth: 0 as number } };
+    if (i === 9) return { content: 'Total\nQuantity', styles: { ...base, fontStyle: 'bold' as const, halign: 'center' as const, fillColor: WHITE, textColor: 0 } };
+    if (c.key === 'orderQty')    return { content: formatNumber(totOQ),  styles: { ...base, fontStyle: 'bold' as const, halign: 'center' as const, fillColor: WHITE, textColor: 0 } };
+    if (c.key === 'samples')     return { content: formatNumber(totSmp), styles: { ...base, fontStyle: 'bold' as const, halign: 'center' as const, fillColor: WHITE, textColor: 0 } };
+    if (c.key === 'addProd')     return { content: '', styles: { ...base, fillColor: WHITE } };
+    if (c.key === 'totalQtyMfg') return { content: formatNumber(totMQ),  styles: { ...base, fontStyle: 'bold' as const, halign: 'center' as const, fillColor: WHITE, textColor: 0 } };
+    return { content: '', styles: { ...base, fillColor: WHITE } };
   });
 
   autoTable(doc, {
-    startY: y,
-    head: [columns.map(c => c.header)],
-    body: rows.map(r => columns.map(c => (r as Record<string, string>)[c.dataKey])),
-    foot: [
-      [
-        { content: '', colSpan: 9, styles: { fillColor: [255, 255, 255], lineWidth: 0 } },
-        { content: 'Total\nQuantity', styles: { fontStyle: 'bold', halign: 'center', fillColor: [255, 255, 255], textColor: 0, lineWidth: 0.5, lineColor: GRID_LINE } },
-        { content: formatNumber(totalOrderQty), styles: { fontStyle: 'bold', halign: 'center', fillColor: [255, 255, 255], textColor: 0, lineWidth: 0.5, lineColor: GRID_LINE } },
-        { content: formatNumber(totalSamples), styles: { fontStyle: 'bold', halign: 'center', fillColor: [255, 255, 255], textColor: 0, lineWidth: 0.5, lineColor: GRID_LINE } },
-        { content: '', styles: { fillColor: [255, 255, 255], lineWidth: 0.5, lineColor: GRID_LINE } },
-        { content: formatNumber(totalMfgQty), styles: { fontStyle: 'bold', halign: 'center', fillColor: [255, 255, 255], textColor: 0, lineWidth: 0.5, lineColor: GRID_LINE } },
-        { content: '', colSpan: 2, styles: { fillColor: [255, 255, 255], lineWidth: 0.5, lineColor: GRID_LINE } }
-      ]
-    ],
+    startY: headerFinalY + 3,
+    head:   [COLS.map(c => c.header)],
+    body:   bodyRows,
+    foot:   [footRow],
+
     styles: {
       fontSize: 6.5,
-      cellPadding: 3,
+      cellPadding: 2,
       overflow: 'linebreak',
       font: 'helvetica',
       textColor: 0,
       valign: 'middle',
       halign: 'center',
-      minCellHeight: 18
+      minCellHeight: 14,
     },
     headStyles: {
-      fillColor: TITLE_BG,
+      fillColor: GREY_BG,
+      textColor: DARK_TEXT,
+      fontStyle: 'bold',
+      lineColor: ORANGE,
+      lineWidth: 0.5,
+      fontSize: 6.5,
+      cellPadding: 2,
+      valign: 'middle',
+      halign: 'center',
+      minCellHeight: 10,
+    },
+    footStyles: {
+      fillColor: WHITE,
       textColor: 0,
       fontStyle: 'bold',
-      lineColor: GRID_LINE,
+      lineColor: ORANGE,
       lineWidth: 0.5,
+      fontSize: 6.5,
     },
     theme: 'grid',
-    tableLineColor: GRID_LINE,
+    tableLineColor: ORANGE,
     tableLineWidth: 0.5,
-    columnStyles: {
-      0: { cellWidth: 20 }, // SKU Code
-      1: { cellWidth: 15 }, // Product
-      2: { cellWidth: 25 }, // Design Image (requires space)
-      3: { cellWidth: 15 }, // Shape
-      4: { cellWidth: 15 }, // Designer
-      5: { cellWidth: 28 }, // Brand
-      6: { cellWidth: 18 }, // Size 1
-      7: { cellWidth: 15 }, // Size 2
-      8: { cellWidth: 12 }, // Quality
-      9: { cellWidth: 15 }, // Color
-      10: { cellWidth: 18 }, // Buyer PO Qty
-      11: { cellWidth: 15 }, // PP/TOP
-      12: { cellWidth: 18 }, // Add Prod
-      13: { cellWidth: 20 }, // Total Mfg
-      14: { cellWidth: 12 }, // Inner
-      15: { cellWidth: 12 }, // Outer
-    },
+    columnStyles: colStyles,
+    margin: { left: M, right: M, bottom: 12 },
+
+    // Draw thumbnail from separate skuImages array (never from cell.raw)
     didDrawCell: (data) => {
-      // Custom draw for Design Image
-      if (data.column.index === 2 && data.section === 'body') {
-        const imgBase64 = data.cell.raw;
-        if (imgBase64 && typeof imgBase64 === 'string' && imgBase64.length > 20) {
+      if (data.section === 'body' && data.column.index === IMG_COL) {
+        const img = skuImages[data.row.index];
+        if (img && img.length > 20) {
           try {
-             const imgDim = 16;
-             const xPos = data.cell.x + (data.cell.width - imgDim) / 2;
-             const yPos = data.cell.y + (data.cell.height - imgDim) / 2;
-             doc.addImage(imgBase64, 'JPEG', xPos, yPos, imgDim, imgDim);
-          } catch(e) {
-             console.error("Failed to draw image", e);
-          }
+            const x = data.cell.x + (data.cell.width  - IMG_DIM) / 2;
+            const y = data.cell.y + (data.cell.height - IMG_DIM) / 2;
+            doc.addImage(img, 'JPEG', x, y, IMG_DIM, IMG_DIM);
+          } catch { /* skip bad images silently */ }
         }
       }
     },
-    willDrawCell: (data) => {
-      // Clear text for image cell
-      if (data.column.index === 2 && data.section === 'body') {
-         data.cell.text = [];
-      }
+
+    // Draw border on every new page as it is created
+    didDrawPage: () => {
+      drawBorder();
     },
-    margin: { left: MARGIN, right: MARGIN },
   });
 
+  // ═══════════════════════════════════════════════════════════
+  // 3. AUTHORIZED SIGNATORY BOX (last page, bottom-right)
+  // ═══════════════════════════════════════════════════════════
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tableEndY = (doc as any).lastAutoTable.finalY;
+  const BOX_W = 62, BOX_H = 26;
+  const BOX_X = PAGE_W - M - BOX_W;
+  const BOX_Y = Math.min(tableEndY + 5, PAGE_H - M - BOX_H - 14);
 
-  // ─── Page Numbers ────────────────────────────────────────
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(7);
-    doc.setTextColor(150, 150, 150);
-    doc.text(
-      `Page ${i} of ${pageCount}`,
-      PAGE_W / 2, 205, { align: 'center' }
-    );
+  doc.setDrawColor(...ORANGE);
+  doc.setLineWidth(0.6);
+  doc.rect(BOX_X, BOX_Y, BOX_W, BOX_H);
+
+  // Top label bar
+  doc.setFillColor(...GREY_BG);
+  doc.rect(BOX_X, BOX_Y, BOX_W, 5.5, 'F');
+  doc.setFontSize(6.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...DARK_TEXT);
+  doc.text('Authorized Signatory', BOX_X + BOX_W / 2, BOX_Y + 4, { align: 'center' });
+
+  // Bottom label
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6);
+  doc.setTextColor(90, 90, 90);
+  doc.text('For RKD Furnishings', BOX_X + BOX_W / 2, BOX_Y + BOX_H - 2, { align: 'center' });
+
+  // ═══════════════════════════════════════════════════════════
+  // 4. PAGE NUMBERS + FOOTERS + BORDERS (post-pass all pages)
+  // ═══════════════════════════════════════════════════════════
+  const totalPages = doc.getNumberOfPages();
+  for (let pg = 1; pg <= totalPages; pg++) {
+    doc.setPage(pg);
+    drawBorder();
+    drawFooter(pg, totalPages);
   }
 
-  const filename = `Internal_Buyer_PO_${header.internalPO || 'export'}.pdf`;
+  const filename = `RKD_Buyer_PO_${internalPO || 'export'}.pdf`;
   const blob     = doc.output('blob');
   const base64   = doc.output('datauristring').split(',')[1];
 
