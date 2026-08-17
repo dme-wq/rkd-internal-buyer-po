@@ -668,7 +668,6 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
             <h1 className="text-2xl font-medium tracking-tight bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">Internal Export Purchase Order Entry</h1>
           </div>
         </div>
-        <div className="flex items-center gap-4">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 shadow-sm shadow-emerald-500/10 hover:bg-emerald-100 transition-colors">
             <Clock size={16} className="text-emerald-500" />
