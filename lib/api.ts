@@ -84,17 +84,19 @@ export async function getPendingInternalPOs(): Promise<APIResponse<PendingPO[]>>
 
 export async function createPO(
   header: Omit<POHeader, 'uid' | 'internalPO'>,
-  skus: Omit<SKUItem, 'id' | 'lineTotal' | 'totalQtyMfg' | 'skuCode'>[]
+  skus: Omit<SKUItem, 'id' | 'lineTotal' | 'totalQtyMfg' | 'skuCode'>[],
+  userEmail?: string
 ): Promise<APIResponse<{ uid: string; internalPO: string }>> {
-  return post({ action: 'createPO', data: { header, skus } });
+  return post({ action: 'createPO', data: { header, skus, userEmail } });
 }
 
 export async function updatePO(
   uid: string,
   header: Omit<POHeader, 'uid' | 'internalPO'>,
-  skus: Omit<SKUItem, 'id' | 'lineTotal' | 'totalQtyMfg' | 'skuCode'>[]
+  skus: Omit<SKUItem, 'id' | 'lineTotal' | 'totalQtyMfg' | 'skuCode'>[],
+  userEmail?: string
 ): Promise<APIResponse<{ uid: string; internalPO: string }>> {
-  return post({ action: 'updatePO', data: { uid, header, skus } });
+  return post({ action: 'updatePO', data: { uid, header, skus, userEmail } });
 }
 
 export async function deletePO(uid: string): Promise<APIResponse<{ message: string }>> {

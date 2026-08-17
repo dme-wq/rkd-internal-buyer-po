@@ -240,7 +240,7 @@ function handleGetPendingInternalPOs() {
 }
 
 function handleCreatePO(data) {
-    const { header, skus } = data;
+    const { header, skus, userEmail } = data;
     
     const ss = SpreadsheetApp.openById(SHEET_ID);
     const sheet = ss.getSheetByName('DATABASE');
@@ -273,7 +273,7 @@ function handleCreatePO(data) {
     
     for (let i = 0; i < skus.length; i++) {
       const item = skus[i];
-      const row = new Array(64).fill(''); // 64 columns
+      const row = new Array(65).fill(''); // 65 columns
       
       // Map Metadata
       row[0] = timestamp; // ColA Timestamp
@@ -353,12 +353,14 @@ function handleCreatePO(data) {
       row[53] = header.pay2Amount || ''; // ColBB Payment Term 2 Amount
       row[54] = header.pay2DueDate || ''; // ColBC Payment Term 2 Due Date
       
+      row[64] = userEmail || ''; // ColBM User Email
+      
       rowsToInsert.push(row);
     }
     
     if (rowsToInsert.length > 0) {
       // Append all rows at once to be efficient
-      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToInsert.length, 64).setValues(rowsToInsert);
+      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToInsert.length, 65).setValues(rowsToInsert);
     }
 
     // Invalidate caches
@@ -650,7 +652,7 @@ function saveImageToDrive(base64Str, filename) {
 }
 
 function handleUpdatePO(data) {
-    const { uid, header, skus } = data;
+    const { uid, header, skus, userEmail } = data;
     const activeRows = getActiveRows();
     let existingPdfUrl = '';
     for (let i = 0; i < activeRows.length; i++) {
@@ -684,7 +686,7 @@ function handleUpdatePO(data) {
     
     for (let i = 0; i < skus.length; i++) {
       const item = skus[i];
-      const row = new Array(64).fill('');
+      const row = new Array(65).fill('');
       
       let finalImageUrl = item.designImage || '';
       if (finalImageUrl.startsWith('data:image')) {
@@ -749,12 +751,13 @@ function handleUpdatePO(data) {
       row[62] = header.pay2DueDate || '';
       
       row[63] = existingPdfUrl;
+      row[64] = userEmail || '';
       
       rowsToInsert.push(row);
     }
     
     if (rowsToInsert.length > 0 && sheetDatabase) {
-      sheetDatabase.getRange(sheetDatabase.getLastRow() + 1, 1, rowsToInsert.length, 64).setValues(rowsToInsert);
+      sheetDatabase.getRange(sheetDatabase.getLastRow() + 1, 1, rowsToInsert.length, 65).setValues(rowsToInsert);
     }
 
     // Invalidate caches after successful update

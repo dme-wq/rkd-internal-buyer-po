@@ -10,6 +10,7 @@ import { DragDropImage } from './DragDropImage';
 import { MultiSelectDropdown } from './MultiSelectDropdown';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import { useSession } from 'next-auth/react';
 
 const formatDisplayDate = (dateString?: string) => {
   if (!dateString) return '';
@@ -25,6 +26,9 @@ const formatDisplayDate = (dateString?: string) => {
 const MySwal = withReactContent(Swal);
 
 export default function POForm({ initialDropdowns, initialData }: { initialDropdowns?: Partial<DropdownData>, initialData?: PurchaseOrder }) {
+  const { data: session } = useSession();
+  const userEmail = session?.user?.email || undefined;
+
   const [header, setHeader] = useState<Partial<POHeader>>(() => {
     if (initialData?.header) return initialData.header;
     return {
@@ -605,9 +609,9 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
       
       let res;
       if (initialData?.header?.uid) {
-        res = await updatePO(initialData.header.uid, finalHeader as Omit<POHeader, 'uid' | 'internalPO'>, finalSkus as SKUItem[]);
+        res = await updatePO(initialData.header.uid, finalHeader as Omit<POHeader, 'uid' | 'internalPO'>, finalSkus as SKUItem[], userEmail);
       } else {
-        res = await createPO(finalHeader as Omit<POHeader, 'uid' | 'internalPO'>, finalSkus as SKUItem[]);
+        res = await createPO(finalHeader as Omit<POHeader, 'uid' | 'internalPO'>, finalSkus as SKUItem[], userEmail);
       }
       
       if (res.status === 'success' && res.data) {
