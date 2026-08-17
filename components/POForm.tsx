@@ -743,26 +743,26 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
             
             <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5 transition-all duration-300">
               <div className="flex gap-2 items-end">
-                <ModernSelect label="Internal PO Number" value={header.internalPO || ''} onChange={handleInternalPOChange as any} options={pendingPOs.map(p => p.internalPO)} />
+                <ModernSelect label="Internal PO Number" value={header.internalPO || ''} onChange={handleInternalPOChange as any} options={pendingPOs.map(p => p.internalPO)} required={true} />
                 {header.internalPO && (
                   <button onClick={() => handleInternalPOChange({ target: { value: header.internalPO || '' } })} className="mb-1 p-2 bg-purple-100 text-purple-600 hover:bg-purple-200 rounded-lg shrink-0" title="Extract AI Data Again">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></svg>
                   </button>
                 )}
               </div>
-              <ModernInput label="Buyer Name" value={header.buyerName} readOnly={true} />
-              <ModernInput label="Buyer PO Number" value={header.buyerPO} readOnly={true} />
-              <ModernInput label="File Number" value={header.fileNumber} readOnly={true} />
+              <ModernInput label="Buyer Name" value={header.buyerName} readOnly={true} required={true} />
+              <ModernInput label="Buyer PO Number" value={header.buyerPO} readOnly={true} required={true} />
+              <ModernInput label="File Number" value={header.fileNumber} readOnly={true} required={true} />
               
-              <ModernInput label="PO Date" type="text" value={formatDisplayDate(header.poDate)} readOnly={true} />
-              <ModernInput label="Ex-Factory" type="text" value={formatDisplayDate(header.exFactory)} readOnly={true} />
-              <ModernInput label="Onboard Vessel Date" type="text" value={formatDisplayDate(header.onboardDate)} readOnly={true} />
-              <ModernSelect label="Delivery Terms" value={header.deliveryTerms || ''} onChange={(e) => updateHeader('deliveryTerms', e.target.value)} options={dropdowns?.deliveryTerms || []} onAddNew={() => handleAddNewDropdown('deliveryTerms')} />
-              <ModernSelect label="Port of Discharge" value={header.portName || ''} onChange={(e) => updateHeader('portName', e.target.value)} options={dropdowns?.portNames || []} onAddNew={() => handleAddNewDropdown('portNames')} />
+              <ModernInput label="PO Date" type="text" value={formatDisplayDate(header.poDate)} readOnly={true} required={true} />
+              <ModernInput label="Ex-Factory" type="text" value={formatDisplayDate(header.exFactory)} readOnly={true} required={true} />
+              <ModernInput label="Onboard Vessel Date" type="text" value={formatDisplayDate(header.onboardDate)} readOnly={true} required={true} />
+              <ModernSelect label="Delivery Terms" value={header.deliveryTerms || ''} onChange={(e) => updateHeader('deliveryTerms', e.target.value)} options={dropdowns?.deliveryTerms || []} onAddNew={() => handleAddNewDropdown('deliveryTerms')} required={true} />
+              <ModernSelect label="Port of Discharge" value={header.portName || ''} onChange={(e) => updateHeader('portName', e.target.value)} options={dropdowns?.portNames || []} onAddNew={() => handleAddNewDropdown('portNames')} required={true} />
 
               <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
-                <ModernTextArea label="Billing Address" value={header.billingAddr} readOnly={true} />
-                <ModernTextArea label="Delivery Address" value={header.deliveryAddr} readOnly={true} />
+                <ModernTextArea label="Billing Address" value={header.billingAddr} readOnly={true} required={true} />
+                <ModernTextArea label="Delivery Address" value={header.deliveryAddr} readOnly={true} required={true} />
               </div>
             </div>
           </div>
@@ -781,19 +781,19 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
                 <div className="bg-blue-100 text-blue-900 text-center font-bold py-1.5 text-[11px] tracking-wide">Payment Term 1</div>
                 <div className="grid grid-cols-5 bg-blue-50/30 divide-x divide-blue-200">
                   <div className="p-1.5 flex flex-col gap-1">
-                    <label className="text-[9px] font-bold text-blue-800 text-center">%</label>
+                    <label className="text-[9px] font-bold text-blue-800 text-center">%<span className="text-rose-500 ml-0.5">*</span></label>
                     <select value={header.pay1Pct || '-'} onChange={(e) => updateHeader('pay1Pct', e.target.value)} className="w-full text-center bg-yellow-50 border border-yellow-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-900 outline-none focus:border-yellow-500 shadow-sm cursor-pointer appearance-none">
                       {percentOptions.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
-                    <label className="text-[9px] font-bold text-blue-800 text-center">Days</label>
+                    <label className="text-[9px] font-bold text-blue-800 text-center">Days<span className="text-rose-500 ml-0.5">*</span></label>
                     <select value={header.pay1Days || '-'} onChange={(e) => updateHeader('pay1Days', e.target.value)} className="w-full text-center bg-yellow-50 border border-yellow-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-900 outline-none focus:border-yellow-500 shadow-sm cursor-pointer appearance-none">
                       {daysOptions.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
-                    <label className="text-[9px] font-bold text-blue-800 text-center">Activity</label>
+                    <label className="text-[9px] font-bold text-blue-800 text-center">Activity<span className="text-rose-500 ml-0.5">*</span></label>
                     <select value={header.pay1Activity || '-'} onChange={(e) => updateHeader('pay1Activity', e.target.value)} className="w-full text-center bg-yellow-50 border border-yellow-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-900 outline-none focus:border-yellow-500 shadow-sm cursor-pointer appearance-none" style={{textOverflow: 'ellipsis'}}>
                       {activityOptions.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
@@ -914,24 +914,24 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
                 <tr>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 text-center sticky left-0 bg-white z-10 border-b border-r border-zinc-200">#</th>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] sticky left-[41px] bg-white z-10 border-b border-r border-zinc-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">SKU Code</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[180px] border-b border-zinc-200">Product Name</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[180px] border-b border-zinc-200">Product Name<span className="text-rose-500 ml-0.5">*</span></th>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] text-center border-b border-zinc-200">Designer Picture</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[130px] border-b border-zinc-200">Shape</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[140px] border-b border-zinc-200">Designer Name</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[140px] border-b border-zinc-200">Brand Name</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[130px] border-b border-zinc-200">Shape<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[140px] border-b border-zinc-200">Designer Name<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[140px] border-b border-zinc-200">Brand Name<span className="text-rose-500 ml-0.5">*</span></th>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[220px] border-b border-zinc-200">Description</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[160px] border-b border-zinc-200">Sizes</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] border-b border-zinc-200">Quality</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] border-b border-zinc-200">Color</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[100px] border-b border-zinc-200">Buyer PO Qty</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Unit of Qty</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[90px] border-b border-zinc-200">Price</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[90px] border-b border-zinc-200">Unit of Price</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[160px] border-b border-zinc-200">Sizes<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] border-b border-zinc-200">Quality<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[120px] border-b border-zinc-200">Color<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[100px] border-b border-zinc-200">Buyer PO Qty<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Unit of Qty<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[90px] border-b border-zinc-200">Price<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[90px] border-b border-zinc-200">Unit of Price<span className="text-rose-500 ml-0.5">*</span></th>
                   <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[100px] border-b border-zinc-200">Total Amt ({header.currency || 'USD'})</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Inner Pack</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Outer Pack</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[130px] border-b border-zinc-200">PP/TOP Samples</th>
-                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Addl Prod Pcs</th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Inner Pack<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Outer Pack<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[130px] border-b border-zinc-200">PP/TOP Samples<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-3 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] border-b border-zinc-200">Addl Prod Pcs<span className="text-rose-500 ml-0.5">*</span></th>
                   <th className="px-3 py-3 text-[11px] font-bold text-rose-700 min-w-[100px] text-center bg-rose-50/30 border-b border-zinc-200">Total Qty Mfg</th>
                   <th className="px-3 py-3 text-[11px] font-bold text-rose-700 min-w-[120px] text-center bg-rose-50/30 border-b border-zinc-200">Total Amount</th>
                   <th className="px-3 py-3 min-w-[48px] border-b border-zinc-200"></th>
@@ -1017,15 +1017,19 @@ interface ModernInputProps {
   type?: string;
   readOnly?: boolean;
   className?: string;
+  required?: boolean;
 }
 
-function ModernInput({ label, value, onChange, type = "text", readOnly, className }: ModernInputProps) {
+function ModernInput({ label, value, onChange, type = "text", readOnly, className, required }: ModernInputProps) {
   const defaultClass = readOnly
     ? 'w-full text-center bg-zinc-100 border border-zinc-200 rounded-lg outline-none px-3 py-2 text-[13px] font-semibold text-zinc-500 cursor-default shadow-sm'
     : 'w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-3 py-2 text-[13px] font-semibold text-zinc-900 transition-all shadow-sm';
   return (
     <div className="flex flex-col gap-1 w-full items-center">
-      <label className="text-[12px] font-bold text-zinc-500 tracking-wide capitalize text-center">{label}</label>
+      <label className="text-[12px] font-bold text-zinc-500 tracking-wide capitalize text-center">
+        {label}
+        {required && <span className="text-rose-500 ml-0.5">*</span>}
+      </label>
       <input 
         type={type}
         value={value || ''} 
@@ -1043,9 +1047,10 @@ interface ModernSelectProps {
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   options: string[];
   onAddNew?: () => Promise<string | null>;
+  required?: boolean;
 }
 
-function ModernSelect({ label, value, onChange, options, onAddNew }: ModernSelectProps) {
+function ModernSelect({ label, value, onChange, options, onAddNew, required }: ModernSelectProps) {
   const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (e.target.value === '__add_new__') {
       if (onAddNew) {
@@ -1063,7 +1068,10 @@ function ModernSelect({ label, value, onChange, options, onAddNew }: ModernSelec
 
   return (
     <div className="flex flex-col gap-1 w-full items-center relative">
-      <label className="text-[12px] font-bold text-zinc-500 tracking-wide capitalize text-center">{label}</label>
+      <label className="text-[12px] font-bold text-zinc-500 tracking-wide capitalize text-center">
+        {label}
+        {required && <span className="text-rose-500 ml-0.5">*</span>}
+      </label>
       <select 
         value={value || ''} 
         onChange={handleChange} 
@@ -1085,15 +1093,19 @@ interface ModernTextAreaProps {
   value: string | undefined;
   onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   readOnly?: boolean;
+  required?: boolean;
 }
 
-function ModernTextArea({ label, value, onChange, readOnly }: ModernTextAreaProps) {
+function ModernTextArea({ label, value, onChange, readOnly, required }: ModernTextAreaProps) {
   const textareaClass = readOnly
     ? 'w-full text-center bg-zinc-100 border border-zinc-200 rounded-lg outline-none px-3 py-2 text-[13px] font-semibold text-zinc-500 cursor-default resize-none shadow-sm'
     : 'w-full text-center bg-yellow-50 border border-yellow-200 rounded-lg outline-none focus:bg-white focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 px-3 py-2 text-[13px] font-semibold text-zinc-900 resize-none transition-all shadow-sm';
   return (
     <div className="flex flex-col gap-1 w-full items-center">
-      <label className="text-[12px] font-bold text-zinc-500 tracking-wide capitalize text-center">{label}</label>
+      <label className="text-[12px] font-bold text-zinc-500 tracking-wide capitalize text-center">
+        {label}
+        {required && <span className="text-rose-500 ml-0.5">*</span>}
+      </label>
       <textarea 
         value={value || ''} 
         onChange={onChange} 
