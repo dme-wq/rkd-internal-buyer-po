@@ -123,20 +123,44 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
 
     if (selectedPO) {
       const result = await MySwal.fire({
-        title: 'Auto-Extract Data?',
-        text: 'Do you want to use AI to automatically extract PO details from the uploaded document?',
-        icon: 'question',
+        html: `
+          <div style="font-family: var(--font-base)">
+            <div style="font-size:48px; margin-bottom:16px; animation: bounce 2s infinite;">🧠✨</div>
+            <h2 style="font-size:20px; font-weight:800; color:#4c1d95; margin-bottom:12px; letter-spacing:-0.5px;">Auto-Extract with RKD Engine?</h2>
+            <p style="font-size:14px; color:#4b5563; line-height:1.6; margin-bottom:16px;">
+              Let the powerful <b>RKD Engine</b> automatically read the document and fill the PO details for you.
+            </p>
+          </div>
+        `,
         showCancelButton: true,
-        confirmButtonText: 'Yes, Extract with AI',
-        confirmButtonColor: '#00a669',
-        cancelButtonText: 'No, enter manually'
+        confirmButtonText: '🚀 Yes, Extract Data',
+        confirmButtonColor: '#8b5cf6',
+        cancelButtonText: 'Manual Entry',
+        cancelButtonColor: '#f3f4f6',
+        customClass: {
+          popup: 'rounded-3xl border-t-4 border-purple-500 shadow-2xl overflow-hidden',
+          cancelButton: '!text-zinc-700 hover:!bg-zinc-200 transition-colors font-bold',
+          confirmButton: 'hover:bg-purple-600 transition-colors font-bold shadow-md shadow-purple-500/20'
+        }
       });
 
       if (result.isConfirmed) {
         MySwal.fire({
-          title: 'Extracting Data...',
-          html: 'AI is analyzing the document. This may take 15-20 seconds.',
+          html: `
+            <div style="font-family: var(--font-base)">
+              <div style="font-size:42px; margin-bottom:16px; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;">⚙️🔍</div>
+              <h2 style="font-size:18px; font-weight:800; color:#4c1d95; margin-bottom:8px;">RKD Engine is working...</h2>
+              <p style="font-size:13px; color:#6b7280;">
+                Analyzing the document and extracting data.<br/>
+                <span style="font-size:11px; color:#9ca3af; margin-top:8px; display:inline-block; font-weight:600;">THIS MAY TAKE 15-20 SECONDS</span>
+              </p>
+            </div>
+          `,
           allowOutsideClick: false,
+          showConfirmButton: false,
+          customClass: {
+            popup: 'rounded-3xl border-t-4 border-purple-500 shadow-2xl'
+          },
           didOpen: () => {
             MySwal.showLoading();
           }
