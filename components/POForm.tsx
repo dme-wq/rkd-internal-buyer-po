@@ -945,7 +945,7 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
                   return (
                   <tr key={sku.id} className="group hover:bg-emerald-50/20 transition-colors">
                     <td className="px-3 py-3 text-center text-zinc-400 text-[11px] font-bold sticky left-0 bg-white group-hover:bg-emerald-50/90 border-b border-r border-zinc-100 z-10">{index + 1}</td>
-                    <td className="px-3 py-3 align-top sticky left-[41px] bg-white group-hover:bg-emerald-50/90 border-b border-r border-zinc-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] z-10"><GridInput value={sku.skuCode} readOnly={true} placeholder="Auto SKU" /></td>
+                    <td className="px-3 py-3 align-top sticky left-[41px] bg-white group-hover:bg-emerald-50/90 border-b border-r border-zinc-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] z-10"><GridInput value={sku.skuCode || (header.internalPO ? `${header.internalPO}-${index + 1}` : '')} readOnly={true} placeholder="Auto SKU" /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridInput value={sku.product} onChange={(e) => updateSku(sku.id!, 'product', e.target.value)} placeholder="Product Name" bold /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><DragDropImage value={sku.designImage || ''} onChange={(val) => updateSku(sku.id!, 'designImage', val)} /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.shape} onChange={(e: any) => updateSku(sku.id!, 'shape', e.target.value)} options={dropdowns?.shapes} onAddNew={() => handleAddNewDropdown('shapes')} /></td>
