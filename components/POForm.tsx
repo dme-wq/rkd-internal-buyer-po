@@ -487,9 +487,21 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
     const payFields = ['pay1Pct', 'pay1Days', 'pay1Activity', 'pay2Pct', 'pay2Days', 'pay2Activity'];
     for (const field of payFields) {
       if (!header[field as keyof POHeader] || header[field as keyof POHeader] === '-') {
-        MySwal.fire('Incomplete Payment Terms', `Please complete Payment Terms.`, 'warning');
+        MySwal.fire('Incomplete Payment Terms', `Please complete all Payment Terms fields.`, 'warning');
         return;
       }
+    }
+
+    const p1 = header.pay1Pct === '-' ? 0 : parseFloat(String(header.pay1Pct || '0'));
+    const p2 = header.pay2Pct === '-' ? 0 : parseFloat(String(header.pay2Pct || '0'));
+    if (Math.round(p1 + p2) !== 100) {
+      MySwal.fire({
+        icon: 'warning',
+        title: 'Payment % Must Total 100%',
+        html: `Payment Term 1 (<b>${p1}%</b>) + Payment Term 2 (<b>${p2}%</b>) = <b>${p1 + p2}%</b>.<br/>Please adjust so both terms together equal <b>100%</b>.`,
+        confirmButtonColor: '#00a669'
+      });
+      return;
     }
 
     if (skus.length === 0) {
@@ -800,14 +812,42 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
               </div>
 
               {/* Total Block */}
-              <div className="flex justify-end pt-2">
-                <div className="flex border border-zinc-300 rounded overflow-hidden shadow-sm">
-                  <div className="bg-zinc-600 text-white font-bold text-[10px] px-3 py-1.5 text-center uppercase tracking-wide flex items-center">Total</div>
-                  <div className="bg-white text-zinc-900 font-black text-[11px] px-3 py-1.5 text-center border-l border-zinc-300 min-w-[80px]">
-                    ${(header.totalAmount || 0).toFixed(2)}
+              {(() => {
+                const _p1 = header.pay1Pct === '-' ? 0 : parseFloat(String(header.pay1Pct || '0'));
+                const _p2 = header.pay2Pct === '-' ? 0 : parseFloat(String(header.pay2Pct || '0'));
+                const _sum = _p1 + _p2;
+                const _valid = Math.round(_sum) === 100;
+                return (
+                  <div className="flex flex-col items-end gap-1.5 pt-2">
+                    {!_valid && (_p1 > 0 || _p2 > 0) && (
+                      <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-rose-50 border border-rose-300 text-rose-700 text-[11px] font-bold animate-pulse">
+                        <span>⚠️</span>
+                        <span>Term 1 ({_p1}%) + Term 2 ({_p2}%) = <b>{_sum}%</b> — must total 100%</span>
+                      </div>
+                    )}
+                    <div className={`flex border rounded overflow-hidden shadow-sm transition-all ${
+                      !_valid && (_p1 > 0 || _p2 > 0)
+                        ? 'border-rose-400 ring-2 ring-rose-300'
+                        : 'border-zinc-300'
+                    }`}>
+                      <div className={`font-bold text-[10px] px-3 py-1.5 text-center uppercase tracking-wide flex items-center text-white ${
+                        !_valid && (_p1 > 0 || _p2 > 0) ? 'bg-rose-500' : 'bg-zinc-600'
+                      }`}>Total %</div>
+                      <div className={`font-black text-[11px] px-3 py-1.5 text-center border-l min-w-[60px] ${
+                        !_valid && (_p1 > 0 || _p2 > 0)
+                          ? 'bg-rose-50 text-rose-700 border-rose-300'
+                          : _valid && _sum === 100
+                          ? 'bg-emerald-50 text-emerald-700 border-zinc-300'
+                          : 'bg-white text-zinc-900 border-zinc-300'
+                      }`}>{_sum}%</div>
+                      <div className="bg-zinc-600 text-white font-bold text-[10px] px-3 py-1.5 text-center uppercase tracking-wide flex items-center border-l border-zinc-500">Total</div>
+                      <div className="bg-white text-zinc-900 font-black text-[11px] px-3 py-1.5 text-center border-l border-zinc-300 min-w-[80px]">
+                        ${(header.totalAmount || 0).toFixed(2)}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                );
+              })()}
 
             </div>
           </div>
