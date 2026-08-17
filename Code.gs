@@ -294,8 +294,8 @@ function handleCreatePO(data) {
       row[15] = header.buyerSubPct || ''; // ColP Buyer Sub Source Name %
       row[16] = header.billingAddr || ''; // ColQ Billing Address
       row[17] = header.deliveryAddr || ''; // ColR Delivery Address
-      row[18] = ''; // ColS (Blank/Hidden in new format)
-      row[19] = header.onboardDate || ''; // ColT Onboard Vessel Date
+      row[18] = header.onboardDate || ''; // ColS Onboard Vessel Date
+      row[19] = ''; // ColT Blank
       
       // Handle Base64 Image upload to Drive
       let finalImageUrl = item.designImage || '';
@@ -348,21 +348,21 @@ function handleCreatePO(data) {
       row[50] = item.lineTotal || ''; // ColAY Total Amount
       
       // Payment Terms 1
-      row[51] = header.pay1Pct || ''; // ColAZ Payment Term 1 %
-      row[52] = header.pay1Days || ''; // ColBA Payment Term 1 Days
-      row[53] = header.pay1Activity || ''; // ColBB Payment Term 1 Activity
-      row[54] = header.pay1Amount || ''; // ColBC Payment Term 1 Amount
-      row[55] = header.pay1DueDate || ''; // ColBD Payment Term 1 Due Date
+      row[51] = ''; // ColAZ Blank
+      row[52] = header.pay1Pct || ''; // ColBA Payment Term 1 %
+      row[53] = header.pay1Days || ''; // ColBB Payment Term 1 Days
+      row[54] = header.pay1Activity || ''; // ColBC Payment Term 1 Activity
+      row[55] = header.pay1Amount || ''; // ColBD Payment Term 1 Amount
+      row[56] = header.pay1DueDate || ''; // ColBE Payment Term 1 Due Date
       
       // Payment Terms 2
-      row[56] = header.pay2Pct || ''; // ColBE Payment Term 2 %
-      row[57] = header.pay2Days || ''; // ColBF Payment Term 2 Days
-      row[58] = header.pay2Activity || ''; // ColBG Payment Term 2 Activity
-      row[59] = header.pay2Amount || ''; // ColBH Payment Term 2 Amount
-      row[60] = header.pay2DueDate || ''; // ColBI Payment Term 2 Due Date
+      row[57] = header.pay2Pct || ''; // ColBF Payment Term 2 %
+      row[58] = header.pay2Days || ''; // ColBG Payment Term 2 Days
+      row[59] = header.pay2Activity || ''; // ColBH Payment Term 2 Activity
+      row[60] = header.pay2Amount || ''; // ColBI Payment Term 2 Amount
+      row[61] = header.pay2DueDate || ''; // ColBJ Payment Term 2 Due Date
       
-      row[61] = ''; // ColBJ Blank
-      row[62] = ''; // ColBK PDF
+      row[62] = ''; // ColBK PDF (Set asynchronously)
       row[63] = ''; // ColBL Blank
       row[64] = userEmail || ''; // ColBM User Email
       
@@ -731,7 +731,7 @@ function handleUpdatePO(data) {
       row[16] = header.billingAddr || '';
       row[17] = header.deliveryAddr || '';
       row[18] = header.onboardDate || '';
-      
+      row[19] = '';
       row[20] = '';
       row[21] = '';
       row[22] = item.skuCode || '';
@@ -764,19 +764,19 @@ function handleUpdatePO(data) {
       row[49] = '';
       row[50] = item.lineTotal || '';
       
-      row[51] = header.pay1Pct || '';
-      row[52] = header.pay1Days || '';
-      row[53] = header.pay1Activity || '';
-      row[54] = header.pay1Amount || '';
-      row[55] = header.pay1DueDate || '';
+      row[51] = '';
+      row[52] = header.pay1Pct || '';
+      row[53] = header.pay1Days || '';
+      row[54] = header.pay1Activity || '';
+      row[55] = header.pay1Amount || '';
+      row[56] = header.pay1DueDate || '';
       
-      row[56] = header.pay2Pct || '';
-      row[57] = header.pay2Days || '';
-      row[58] = header.pay2Activity || '';
-      row[59] = header.pay2Amount || '';
-      row[60] = header.pay2DueDate || '';
+      row[57] = header.pay2Pct || '';
+      row[58] = header.pay2Days || '';
+      row[59] = header.pay2Activity || '';
+      row[60] = header.pay2Amount || '';
+      row[61] = header.pay2DueDate || '';
       
-      row[61] = '';
       row[62] = existingPdfUrl || '';
       row[63] = '';
       row[64] = userEmail || '';
