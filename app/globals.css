@@ -6,8 +6,50 @@
   --color-emerald-600: #059669;
 }
 
-body {
-  color: #171717;
-  background: #ffffff;
-  font-family: Arial, Helvetica, sans-serif;
+/* ─── Global Font: Calibri ─────────────────────────────────── */
+:root {
+  --font-base: 'Calibri', 'Calibri Light', 'Trebuchet MS', 'Gill Sans', 'Arial Nova', Arial, sans-serif;
+  --font-size-body: 13px;
+  --font-size-label: 11px;
+  --font-size-grid: 13px;
+  --font-size-header: 14px;
 }
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-base);
+  font-size: var(--font-size-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  color: #1a1a1a;
+  background: #f8f9fc;
+  font-family: var(--font-base);
+  font-size: var(--font-size-body);
+  line-height: 1.5;
+}
+
+/* ─── Force Calibri on ALL form elements ─────────────────────
+   Browser default (user-agent) overrides font on inputs/selects.
+   This resets them to inherit the document font. */
+input, select, textarea, button {
+  font-family: var(--font-base);
+  font-size: var(--font-size-body);
+}
+
+/* ─── Table cells ─────────────────────────────────────────── */
+td, th {
+  font-family: var(--font-base);
+}
+
+/* ─── Scrollbar polish ────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
