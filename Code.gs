@@ -29,7 +29,7 @@ function handleGetDropdowns() {
   const extractUnique = (sheetName, headerName, fallbackColIndex) => {
     const sheet = ss.getSheetByName(sheetName);
     if (!sheet) return [];
-    const data = sheet.getDataRange().getValues();
+    const data = sheet.getDataRange().getDisplayValues();
     if (data.length === 0) return [];
 
     let colIndex = -1;
