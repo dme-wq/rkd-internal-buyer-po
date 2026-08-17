@@ -769,7 +769,7 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Amount</label>
-                    <input type="text" readOnly value={`$${((header.totalAmount || 0) * (header.pay1Pct === '-' ? 0 : parseFloat(String(header.pay1Pct || '0'))) / 100).toFixed(2)}`} className="w-full text-center bg-zinc-100 border border-zinc-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-600 outline-none shadow-sm cursor-default" />
+                    <input type="text" readOnly value={(() => { const gt = skus.reduce((s, k) => s + (Number(k.orderQty||0) * Number(k.price||0)), 0); const p = header.pay1Pct === '-' ? 0 : parseFloat(String(header.pay1Pct||'0')); return `$${(gt * p / 100).toFixed(2)}`; })()} className="w-full text-center bg-emerald-50 border border-emerald-200 rounded px-1 py-1 text-[10px] font-bold text-emerald-700 outline-none shadow-sm cursor-default" />
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Due Date</label>
@@ -802,7 +802,7 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Amount</label>
-                    <input type="text" readOnly value={`$${((header.totalAmount || 0) * (header.pay2Pct === '-' ? 0 : parseFloat(String(header.pay2Pct || '0'))) / 100).toFixed(2)}`} className="w-full text-center bg-zinc-100 border border-zinc-200 rounded px-1 py-1 text-[10px] font-bold text-zinc-600 outline-none shadow-sm cursor-default" />
+                    <input type="text" readOnly value={(() => { const gt = skus.reduce((s, k) => s + (Number(k.orderQty||0) * Number(k.price||0)), 0); const p = header.pay2Pct === '-' ? 0 : parseFloat(String(header.pay2Pct||'0')); return `$${(gt * p / 100).toFixed(2)}`; })()} className="w-full text-center bg-emerald-50 border border-emerald-200 rounded px-1 py-1 text-[10px] font-bold text-emerald-700 outline-none shadow-sm cursor-default" />
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Due Date</label>
@@ -813,8 +813,9 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
 
               {/* Total Block */}
               {(() => {
-                const _p1 = header.pay1Pct === '-' ? 0 : parseFloat(String(header.pay1Pct || '0'));
-                const _p2 = header.pay2Pct === '-' ? 0 : parseFloat(String(header.pay2Pct || '0'));
+                const _gt  = skus.reduce((s, k) => s + (Number(k.orderQty||0) * Number(k.price||0)), 0);
+                const _p1  = header.pay1Pct === '-' ? 0 : parseFloat(String(header.pay1Pct || '0'));
+                const _p2  = header.pay2Pct === '-' ? 0 : parseFloat(String(header.pay2Pct || '0'));
                 const _sum = _p1 + _p2;
                 const _valid = Math.round(_sum) === 100;
                 return (
@@ -841,8 +842,8 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
                           : 'bg-white text-zinc-900 border-zinc-300'
                       }`}>{_sum}%</div>
                       <div className="bg-zinc-600 text-white font-bold text-[10px] px-3 py-1.5 text-center uppercase tracking-wide flex items-center border-l border-zinc-500">Total</div>
-                      <div className="bg-white text-zinc-900 font-black text-[11px] px-3 py-1.5 text-center border-l border-zinc-300 min-w-[80px]">
-                        ${(header.totalAmount || 0).toFixed(2)}
+                      <div className="bg-emerald-50 text-emerald-800 font-black text-[11px] px-3 py-1.5 text-center border-l border-emerald-200 min-w-[80px]">
+                        ${_gt.toFixed(2)}
                       </div>
                     </div>
                   </div>
