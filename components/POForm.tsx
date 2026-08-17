@@ -484,16 +484,9 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
       }
     }
 
-    const payFields = ['pay1Pct', 'pay1Days', 'pay1Activity', 'pay2Pct', 'pay2Days', 'pay2Activity'];
-    for (const field of payFields) {
-      if (!header[field as keyof POHeader] || header[field as keyof POHeader] === '-') {
-        MySwal.fire('Incomplete Payment Terms', `Please complete all Payment Terms fields.`, 'warning');
-        return;
-      }
-    }
-
     const p1 = header.pay1Pct === '-' ? 0 : parseFloat(String(header.pay1Pct || '0'));
     const p2 = header.pay2Pct === '-' ? 0 : parseFloat(String(header.pay2Pct || '0'));
+
     if (Math.round(p1 + p2) !== 100) {
       MySwal.fire({
         icon: 'warning',
@@ -501,6 +494,16 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
         html: `Payment Term 1 (<b>${p1}%</b>) + Payment Term 2 (<b>${p2}%</b>) = <b>${p1 + p2}%</b>.<br/>Please adjust so both terms together equal <b>100%</b>.`,
         confirmButtonColor: '#00a669'
       });
+      return;
+    }
+
+    if (p1 > 0 && (!header.pay1Days || header.pay1Days === '-' || !header.pay1Activity || header.pay1Activity === '-')) {
+      MySwal.fire('Incomplete Payment Terms', `Please complete Days and Activity for Payment Term 1.`, 'warning');
+      return;
+    }
+
+    if (p2 > 0 && (!header.pay2Days || header.pay2Days === '-' || !header.pay2Activity || header.pay2Activity === '-')) {
+      MySwal.fire('Incomplete Payment Terms', `Please complete Days and Activity for Payment Term 2.`, 'warning');
       return;
     }
 
@@ -835,18 +838,22 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
                         ? 'border-rose-400 ring-2 ring-rose-300'
                         : 'border-zinc-300'
                     }`}>
-                      <div className={`font-bold text-[10px] px-3 py-1.5 text-center uppercase tracking-wide flex items-center text-white ${
-                        !_valid && (_p1 > 0 || _p2 > 0) ? 'bg-rose-500' : 'bg-zinc-600'
+                      <div className={`font-bold text-[10px] px-3 py-1.5 text-center uppercase tracking-wide flex items-center text-white transition-colors duration-300 ${
+                        !_valid && (_p1 > 0 || _p2 > 0) ? 'bg-rose-500' : _valid ? 'bg-emerald-600' : 'bg-zinc-600'
                       }`}>Total %</div>
-                      <div className={`font-black text-[11px] px-3 py-1.5 text-center border-l min-w-[60px] ${
+                      <div className={`font-black text-[11px] px-3 py-1.5 text-center border-l min-w-[60px] transition-colors duration-300 ${
                         !_valid && (_p1 > 0 || _p2 > 0)
                           ? 'bg-rose-50 text-rose-700 border-rose-300'
-                          : _valid && _sum === 100
-                          ? 'bg-emerald-50 text-emerald-700 border-zinc-300'
+                          : _valid
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                           : 'bg-white text-zinc-900 border-zinc-300'
                       }`}>{_sum}%</div>
-                      <div className="bg-zinc-600 text-white font-bold text-[10px] px-3 py-1.5 text-center uppercase tracking-wide flex items-center border-l border-zinc-500">Total</div>
-                      <div className="bg-emerald-50 text-emerald-800 font-black text-[11px] px-3 py-1.5 text-center border-l border-emerald-200 min-w-[80px]">
+                      <div className={`font-bold text-[10px] px-3 py-1.5 text-center uppercase tracking-wide flex items-center border-l text-white transition-colors duration-300 ${
+                        !_valid && (_p1 > 0 || _p2 > 0) ? 'bg-rose-500 border-rose-400' : _valid ? 'bg-emerald-600 border-emerald-500' : 'bg-zinc-600 border-zinc-500'
+                      }`}>Total</div>
+                      <div className={`font-black text-[11px] px-3 py-1.5 text-center border-l min-w-[80px] transition-colors duration-300 ${
+                         !_valid && (_p1 > 0 || _p2 > 0) ? 'bg-rose-50 text-rose-800 border-rose-200' : _valid ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-zinc-50 text-zinc-800 border-zinc-200'
+                      }`}>
                         {currencySymbol}{_gt.toFixed(2)}
                       </div>
                     </div>
