@@ -8,10 +8,12 @@ export const revalidate = 0; // Dynamic route, do not cache statically
 export default async function EditPOPage({ params }: { params: Promise<{ uid: string }> }) {
   const { uid } = await params;
 
+  const decodedUid = decodeURIComponent(uid);
+
   const dpResponse = await getDropdowns();
   const initialDropdowns = dpResponse.status === 'success' ? dpResponse.data : undefined;
   
-  const poResponse = await getPOById(uid);
+  const poResponse = await getPOById(decodedUid);
   if (poResponse.status !== 'success' || !poResponse.data) {
     return notFound();
   }

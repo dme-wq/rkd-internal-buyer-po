@@ -240,7 +240,7 @@ export default function DeclarationsPage() {
                             </div>
                             
                             {!po.isOld && (
-                              <Link href={`/edit/${po.uid}`} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800 rounded-lg text-sm font-bold transition-colors shadow-sm">
+                              <Link href={`/edit/${encodeURIComponent(po.uid)}`} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800 rounded-lg text-sm font-bold transition-colors shadow-sm">
                                 <Edit size={16} /> Recall / Edit PO
                               </Link>
                             )}
