@@ -313,46 +313,57 @@ function handleCreatePO(data) {
       }
 
       // Map Line Items
-      row[20] = item.skuCode || ''; // ColU SKU Code
-      row[21] = item.product || ''; // ColV Product
-      row[22] = item.articleNum || ''; // ColW Item/Product/Article #
-      row[23] = imageFormula; // ColX Design Image (Formula)
-      row[24] = item.shape || ''; // ColY Shape
-      row[25] = item.designer || ''; // ColZ Designer Name
-      row[26] = item.brand || ''; // ColAA Brand Name
-      row[27] = item.description || ''; // ColAB Description
-      row[28] = item.sizes && item.sizes.length > 0 ? item.sizes[0] : ''; // ColAC Size 1
-      row[29] = item.sizes && item.sizes.length > 1 ? item.sizes[1] : ''; // ColAD Size 2
-      row[30] = item.quality || ''; // ColAE Quality
-      row[31] = item.color || ''; // ColAF Color
-      row[32] = item.colorRef || ''; // ColAG Color Ref
-      row[33] = item.orderQty || ''; // ColAH Order Quantity
-      row[34] = item.unitQty || ''; // ColAI Unit of Quantity
-      row[35] = item.price || ''; // ColAJ Price
-      row[36] = item.unitPrice || ''; // ColAK Unit of Price
-      row[37] = header.currency || 'USD'; // ColAL Currency
-      row[38] = item.innerPack || ''; // ColAM Inner Pack
-      row[39] = item.outerPack || ''; // ColAN Outer Pack
-      row[40] = item.addSample || ''; // ColAO Additional Sample
-      row[41] = item.addProd || ''; // ColAP Additional Production
-      row[42] = item.totalQtyMfg || ''; // ColAQ Total Quantity to Manufacture
+      row[20] = ''; // ColU Blank
+      row[21] = ''; // ColV Blank
+      row[22] = item.skuCode || ''; // ColW SKU Code
+      row[23] = item.product || ''; // ColX Product
+      row[24] = item.articleNum || ''; // ColY Item/Product/Article #
+      row[25] = imageFormula; // ColZ Design Image (Formula)
+      row[26] = item.shape || ''; // ColAA Shape
+      row[27] = item.designer || ''; // ColAB Designer Name
+      row[28] = item.brand || ''; // ColAC Brand Name
+      row[29] = item.description || ''; // ColAD Description
+      row[30] = item.sizes && item.sizes.length > 0 ? item.sizes[0] : ''; // ColAE Size 1
+      row[31] = item.sizes && item.sizes.length > 1 ? item.sizes[1] : ''; // ColAF Size 2
+      row[32] = item.quality || ''; // ColAG Quality
+      row[33] = item.color || ''; // ColAH Color
+      row[34] = item.colorRef || ''; // ColAI Color Ref
+      row[35] = item.orderQty || ''; // ColAJ Order Quantity
+      row[36] = item.unitQty || ''; // ColAK Unit of Quantity
+      row[37] = item.price || ''; // ColAL Price
+      row[38] = item.unitPrice || ''; // ColAM Unit of Price
+      row[39] = header.currency || 'USD'; // ColAN Currency
+      row[40] = item.innerPack || ''; // ColAO Inner Pack
+      row[41] = item.outerPack || ''; // ColAP Outer Pack
+      row[42] = item.addSample || ''; // ColAQ Additional Sample
+      row[43] = item.addProd || ''; // ColAR Additional Production
+      row[44] = item.totalQtyMfg || ''; // ColAS Total Quantity to Manufacture
       
-      row[44] = item.lineTotal || ''; // ColAS Total Amount
+      row[45] = ''; // ColAT Blank
+      row[46] = ''; // ColAU Blank
+      row[47] = ''; // ColAV Blank
+      row[48] = ''; // ColAW Blank
+      row[49] = ''; // ColAX Blank
+      
+      row[50] = item.lineTotal || ''; // ColAY Total Amount
       
       // Payment Terms 1
-      row[45] = header.pay1Pct || ''; // ColAT Payment Term 1 %
-      row[46] = header.pay1Days || ''; // ColAU Payment Term 1 Days
-      row[47] = header.pay1Activity || ''; // ColAV Payment Term 1 Activity
-      row[48] = header.pay1Amount || ''; // ColAW Payment Term 1 Amount
-      row[49] = header.pay1DueDate || ''; // ColAX Payment Term 1 Due Date
+      row[51] = header.pay1Pct || ''; // ColAZ Payment Term 1 %
+      row[52] = header.pay1Days || ''; // ColBA Payment Term 1 Days
+      row[53] = header.pay1Activity || ''; // ColBB Payment Term 1 Activity
+      row[54] = header.pay1Amount || ''; // ColBC Payment Term 1 Amount
+      row[55] = header.pay1DueDate || ''; // ColBD Payment Term 1 Due Date
       
       // Payment Terms 2
-      row[50] = header.pay2Pct || ''; // ColAY Payment Term 2 %
-      row[51] = header.pay2Days || ''; // ColAZ Payment Term 2 Days
-      row[52] = header.pay2Activity || ''; // ColBA Payment Term 2 Activity
-      row[53] = header.pay2Amount || ''; // ColBB Payment Term 2 Amount
-      row[54] = header.pay2DueDate || ''; // ColBC Payment Term 2 Due Date
+      row[56] = header.pay2Pct || ''; // ColBE Payment Term 2 %
+      row[57] = header.pay2Days || ''; // ColBF Payment Term 2 Days
+      row[58] = header.pay2Activity || ''; // ColBG Payment Term 2 Activity
+      row[59] = header.pay2Amount || ''; // ColBH Payment Term 2 Amount
+      row[60] = header.pay2DueDate || ''; // ColBI Payment Term 2 Due Date
       
+      row[61] = ''; // ColBJ Blank
+      row[62] = ''; // ColBK PDF
+      row[63] = ''; // ColBL Blank
       row[64] = userEmail || ''; // ColBM User Email
       
       rowsToInsert.push(row);
@@ -381,12 +392,12 @@ function handleSavePDF(data) {
         const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), 'application/pdf', fileName || `${uid}.pdf`);
         const file = folder.createFile(blob);
         
-        // Find row by internalPO or uid and update column 64 with PDF URL
+        // Find row by internalPO or uid and update column BK (63) with PDF URL
         const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('DATABASE');
         const dataRange = sheet.getDataRange().getValues();
         for (let i = 1; i < dataRange.length; i++) {
            if (dataRange[i][4] === uid || dataRange[i][1] === uid) {
-               sheet.getRange(i + 1, 64).setValue(file.getUrl());
+               sheet.getRange(i + 1, 63).setValue(file.getUrl());
            }
         }
         
@@ -657,7 +668,7 @@ function handleUpdatePO(data) {
     let existingPdfUrl = '';
     for (let i = 0; i < activeRows.length; i++) {
       if (activeRows[i][4] === uid || activeRows[i][1] === uid) {
-        existingPdfUrl = activeRows[i][63] || '';
+        existingPdfUrl = activeRows[i][62] || ''; // BK
         if (existingPdfUrl) break;
       }
     }
@@ -713,6 +724,8 @@ function handleUpdatePO(data) {
       row[17] = header.deliveryAddr || '';
       row[18] = header.onboardDate || '';
       
+      row[20] = '';
+      row[21] = '';
       row[22] = item.skuCode || '';
       row[23] = item.product || '';
       row[24] = item.articleNum || '';
@@ -721,8 +734,8 @@ function handleUpdatePO(data) {
       row[27] = item.designer || '';
       row[28] = item.brand || '';
       row[29] = item.description || '';
-      row[30] = item.size1 || '';
-      row[31] = item.size2 || '';
+      row[30] = item.sizes && item.sizes.length > 0 ? item.sizes[0] : (item.size1 || '');
+      row[31] = item.sizes && item.sizes.length > 1 ? item.sizes[1] : (item.size2 || '');
       row[32] = item.quality || '';
       row[33] = item.color || '';
       row[34] = item.colorRef || '';
@@ -736,21 +749,28 @@ function handleUpdatePO(data) {
       row[42] = item.addSample || '';
       row[43] = item.addProd || '';
       row[44] = item.totalQtyMfg || '';
+      row[45] = '';
+      row[46] = '';
+      row[47] = '';
+      row[48] = '';
+      row[49] = '';
       row[50] = item.lineTotal || '';
       
-      row[52] = header.pay1Pct || '';
-      row[53] = header.pay1Days || '';
-      row[54] = header.pay1Activity || '';
-      row[55] = header.pay1Amount || '';
-      row[56] = header.pay1DueDate || '';
+      row[51] = header.pay1Pct || '';
+      row[52] = header.pay1Days || '';
+      row[53] = header.pay1Activity || '';
+      row[54] = header.pay1Amount || '';
+      row[55] = header.pay1DueDate || '';
       
-      row[58] = header.pay2Pct || '';
-      row[59] = header.pay2Days || '';
-      row[60] = header.pay2Activity || '';
-      row[61] = header.pay2Amount || '';
-      row[62] = header.pay2DueDate || '';
+      row[56] = header.pay2Pct || '';
+      row[57] = header.pay2Days || '';
+      row[58] = header.pay2Activity || '';
+      row[59] = header.pay2Amount || '';
+      row[60] = header.pay2DueDate || '';
       
-      row[63] = existingPdfUrl;
+      row[61] = '';
+      row[62] = existingPdfUrl || '';
+      row[63] = '';
       row[64] = userEmail || '';
       
       rowsToInsert.push(row);
