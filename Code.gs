@@ -358,14 +358,14 @@ function handleCreatePO(data) {
       row[56] = header.pay1DueDate || ''; // ColBE Payment Term 1 Due Date
       
       // Payment Terms 2
-      row[57] = header.pay2Pct || ''; // ColBF Payment Term 2 %
-      row[58] = header.pay2Days || ''; // ColBG Payment Term 2 Days
-      row[59] = header.pay2Activity || ''; // ColBH Payment Term 2 Activity
-      row[60] = header.pay2Amount || ''; // ColBI Payment Term 2 Amount
-      row[61] = header.pay2DueDate || ''; // ColBJ Payment Term 2 Due Date
+      row[57] = ''; // ColBF Blank
+      row[58] = header.pay2Pct || ''; // ColBG Payment Term 2 %
+      row[59] = header.pay2Days || ''; // ColBH Payment Term 2 Days
+      row[60] = header.pay2Activity || ''; // ColBI Payment Term 2 Activity
+      row[61] = header.pay2Amount || ''; // ColBJ Payment Term 2 Amount
+      row[62] = header.pay2DueDate || ''; // ColBK Payment Term 2 Due Date
       
-      row[62] = ''; // ColBK PDF (Set asynchronously)
-      row[63] = ''; // ColBL Blank
+      row[63] = ''; // ColBL PDF (Set asynchronously)
       row[64] = userEmail || ''; // ColBM User Email
       
       rowsToInsert.push(row);
@@ -394,12 +394,12 @@ function handleSavePDF(data) {
         const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), 'application/pdf', fileName || `${uid}.pdf`);
         const file = folder.createFile(blob);
         
-        // Find row by internalPO or uid and update column BK (63) with PDF URL
+        // Find row by internalPO or uid and update column BL (64) with PDF URL
         const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('DATABASE');
         const dataRange = sheet.getDataRange().getValues();
         for (let i = 1; i < dataRange.length; i++) {
            if (dataRange[i][4] === uid || dataRange[i][1] === uid) {
-               sheet.getRange(i + 1, 63).setValue(file.getUrl());
+               sheet.getRange(i + 1, 64).setValue(file.getUrl());
            }
         }
         
@@ -670,7 +670,7 @@ function handleUpdatePO(data) {
     let existingPdfUrl = '';
     for (let i = 0; i < activeRows.length; i++) {
       if (activeRows[i][4] === uid || activeRows[i][1] === uid) {
-        existingPdfUrl = activeRows[i][62] || ''; // BK
+        existingPdfUrl = activeRows[i][63] || activeRows[i][62] || ''; // BL or fallback to old BK
         if (existingPdfUrl) break;
       }
     }
@@ -773,15 +773,15 @@ function handleUpdatePO(data) {
       row[55] = header.pay1Amount || '';
       row[56] = header.pay1DueDate || '';
       
-      row[57] = header.pay2Pct || '';
-      row[58] = header.pay2Days || '';
-      row[59] = header.pay2Activity || '';
-      row[60] = header.pay2Amount || '';
-      row[61] = header.pay2DueDate || '';
+      row[57] = ''; // Blank
+      row[58] = header.pay2Pct || '';
+      row[59] = header.pay2Days || '';
+      row[60] = header.pay2Activity || '';
+      row[61] = header.pay2Amount || '';
+      row[62] = header.pay2DueDate || '';
       
-      row[62] = existingPdfUrl || '';
-      row[63] = '';
-      row[64] = userEmail || '';
+      row[63] = existingPdfUrl || ''; // ColBL PDF
+      row[64] = userEmail || ''; // ColBM User Email
       
       rowsToInsert.push(row);
     }
@@ -887,11 +887,16 @@ function getActiveRows() {
     // Extract Design Image URL (Col Z, index 25) from formulas since getValues() returns empty for them
     if (!rowCopy[25] && formulas && formulas[i] && formulas[i][25]) {
        const f = formulas[i][25];
-       const match = f.match(/HYPERLINK\("([^"]+)"/i) || f.match(/IMAGE\("([^"]+)"/i);
-       if (match) {
-          rowCopy[25] = match[1];
-       } else if (typeof f === 'string' && f.startsWith('http')) {
-          rowCopy[25] = f;
+       const imageMatch = f.match(/IMAGE\("([^"]+)"/i);
+       if (imageMatch) {
+          rowCopy[25] = imageMatch[1];
+       } else {
+         const linkMatch = f.match(/HYPERLINK\("([^"]+)"/i);
+         if (linkMatch) {
+            rowCopy[25] = linkMatch[1];
+         } else if (typeof f === 'string' && f.startsWith('http')) {
+            rowCopy[25] = f;
+         }
        }
     }
 
@@ -972,6 +977,28 @@ function handleGetPOById(params) {
     }
   }
   
+  function formatPercent(val) {
+    if (typeof val === 'number') return Math.round(val * 100) + '%';
+    if (typeof val === 'string' && val.trim() !== '') {
+      if (val.includes('%')) return parseInt(val) + '%';
+      let num = parseFloat(val);
+      if (!isNaN(num)) return Math.round(num * 100) + '%';
+    }
+    return val || '-';
+  }
+
+  function formatDays(val) {
+    if (typeof val === 'number') return val + ' Days';
+    if (typeof val === 'string' && val.trim() !== '') {
+      if (val.toLowerCase().includes('days')) {
+        return parseInt(val) + ' Days';
+      }
+      let num = parseInt(val);
+      if (!isNaN(num)) return num + ' Days';
+    }
+    return val || '-';
+  }
+
   const skus = [];
   let header = null;
   
@@ -998,13 +1025,13 @@ function handleGetPOById(params) {
             billingAddr: row[16],
             deliveryAddr: row[17],
             onboardDate: row[18],
-            pay1Pct: row[52],
-            pay1Days: row[53],
+            pay1Pct: formatPercent(row[52]),
+            pay1Days: formatDays(row[53]),
             pay1Activity: row[54],
             pay1Amount: row[55],
             pay1DueDate: row[56],
-            pay2Pct: row[58],
-            pay2Days: row[59],
+            pay2Pct: formatPercent(row[58]),
+            pay2Days: formatDays(row[59]),
             pay2Activity: row[60],
             pay2Amount: row[61],
             pay2DueDate: row[62],
@@ -1043,8 +1070,8 @@ function handleGetPOById(params) {
         currency: row[39],
         innerPack: row[40],
         outerPack: row[41],
-        addSample: row[42],
-        addProd: row[43],
+        addSample: row[42] != null ? row[42].toString() : '',
+        addProd: formatPercent(row[43]),
         totalQtyMfg: row[44],
         lineTotal: itemAmount
       });

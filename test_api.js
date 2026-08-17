@@ -1,4 +1,4 @@
-const url = 'https://script.google.com/macros/s/AKfycby0UMECC5gLKpHRNWCkJJlJGV3oWVUb_Q8fygKEqgfIq8F-CGrURyzF06ceMjjmeZEX/exec';
+const url = 'https://script.google.com/macros/s/AKfycbzfFhsN0VfgMyNySfvGzsDhAdVWwEDt02CgwFmJXlyeiIzGaXfqkXPQ264rnKRIE6hg/exec';
 
 fetch(url, {
   method: 'POST',
