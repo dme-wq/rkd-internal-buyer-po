@@ -652,6 +652,9 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
     setLoading(false);
   };
 
+  const CURRENCIES: Record<string, string> = { USD: '$', EUR: '€', INR: '₹', CAD: 'CA$', AUD: 'A$', CNY: '¥' };
+  const currencySymbol = CURRENCIES[header.currency || 'USD'] || (header.currency || 'USD');
+
   return (
     <div className="w-full h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 bg-zinc-50 font-sans">
       
@@ -666,9 +669,26 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 shadow-sm shadow-emerald-500/10 hover:bg-emerald-100 transition-colors mr-2">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 shadow-sm shadow-emerald-500/10 hover:bg-emerald-100 transition-colors">
             <Clock size={16} className="text-emerald-500" />
             <span className="text-sm font-bold tracking-wide tabular-nums">{time || 'Loading...'}</span>
+          </div>
+          {/* Currency Selector — top-right, always visible */}
+          <div className="flex items-center gap-1.5 px-2 py-1.5 bg-white border border-zinc-200 rounded-xl shadow-sm hover:border-emerald-400 transition-all">
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Currency</span>
+            <select
+              value={header.currency || 'USD'}
+              onChange={e => updateHeader('currency', e.target.value)}
+              className="bg-transparent text-sm font-black text-emerald-700 outline-none cursor-pointer pr-1 appearance-none"
+            >
+              <option value="USD">$ USD</option>
+              <option value="EUR">€ EUR</option>
+              <option value="INR">₹ INR</option>
+              <option value="CAD">CA$ CAD</option>
+              <option value="AUD">A$ AUD</option>
+              <option value="CNY">¥ CNY</option>
+            </select>
           </div>
           <button onClick={handleSave} disabled={loading} className="px-6 py-2.5 bg-[#00a669] hover:bg-[#009059] text-white rounded-lg text-sm font-semibold flex items-center gap-2 transition-all shadow-md shadow-emerald-500/20 disabled:opacity-50 disabled:shadow-none">
             <Save size={18} /> {loading ? 'Saving...' : (initialData?.header?.uid ? 'Update PO' : 'Save & Generate')}
@@ -713,22 +733,7 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
               <ModernInput label="Onboard Vessel Date" type="text" value={formatDisplayDate(header.onboardDate)} readOnly={true} />
               <ModernSelect label="Delivery Terms" value={header.deliveryTerms || ''} onChange={(e) => updateHeader('deliveryTerms', e.target.value)} options={dropdowns?.deliveryTerms || []} onAddNew={() => handleAddNewDropdown('deliveryTerms')} />
               <ModernSelect label="Port of Discharge" value={header.portName || ''} onChange={(e) => updateHeader('portName', e.target.value)} options={dropdowns?.portNames || []} onAddNew={() => handleAddNewDropdown('portNames')} />
-              <div className="md:col-span-1">
-                <label className="block text-[11px] font-bold text-zinc-600 mb-1.5 uppercase tracking-wider">Currency</label>
-                <select 
-                  value={header.currency || 'USD'} 
-                  onChange={e => updateHeader('currency', e.target.value)} 
-                  className="w-full bg-zinc-50 border border-zinc-200 text-zinc-800 text-sm rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 block p-2 transition-all outline-none h-[38px]"
-                >
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="INR">INR</option>
-                  <option value="CAD">CAD</option>
-                  <option value="AUD">AUD</option>
-                  <option value="CNY">CNY</option>
-                </select>
-              </div>
-              
+
               <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
                 <ModernTextArea label="Billing Address" value={header.billingAddr} readOnly={true} />
                 <ModernTextArea label="Delivery Address" value={header.deliveryAddr} readOnly={true} />
@@ -769,7 +774,7 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Amount</label>
-                    <input type="text" readOnly value={(() => { const gt = skus.reduce((s, k) => s + (Number(k.orderQty||0) * Number(k.price||0)), 0); const p = header.pay1Pct === '-' ? 0 : parseFloat(String(header.pay1Pct||'0')); return `$${(gt * p / 100).toFixed(2)}`; })()} className="w-full text-center bg-emerald-50 border border-emerald-200 rounded px-1 py-1 text-[10px] font-bold text-emerald-700 outline-none shadow-sm cursor-default" />
+                    <input type="text" readOnly value={(() => { const gt = skus.reduce((s, k) => s + (Number(k.orderQty||0) * Number(k.price||0)), 0); const p = header.pay1Pct === '-' ? 0 : parseFloat(String(header.pay1Pct||'0')); return `${currencySymbol}${(gt * p / 100).toFixed(2)}`; })()} className="w-full text-center bg-emerald-50 border border-emerald-200 rounded px-1 py-1 text-[10px] font-bold text-emerald-700 outline-none shadow-sm cursor-default" />
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Due Date</label>
@@ -802,7 +807,7 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Amount</label>
-                    <input type="text" readOnly value={(() => { const gt = skus.reduce((s, k) => s + (Number(k.orderQty||0) * Number(k.price||0)), 0); const p = header.pay2Pct === '-' ? 0 : parseFloat(String(header.pay2Pct||'0')); return `$${(gt * p / 100).toFixed(2)}`; })()} className="w-full text-center bg-emerald-50 border border-emerald-200 rounded px-1 py-1 text-[10px] font-bold text-emerald-700 outline-none shadow-sm cursor-default" />
+                    <input type="text" readOnly value={(() => { const gt = skus.reduce((s, k) => s + (Number(k.orderQty||0) * Number(k.price||0)), 0); const p = header.pay2Pct === '-' ? 0 : parseFloat(String(header.pay2Pct||'0')); return `${currencySymbol}${(gt * p / 100).toFixed(2)}`; })()} className="w-full text-center bg-emerald-50 border border-emerald-200 rounded px-1 py-1 text-[10px] font-bold text-emerald-700 outline-none shadow-sm cursor-default" />
                   </div>
                   <div className="p-1.5 flex flex-col gap-1">
                     <label className="text-[9px] font-bold text-blue-800 text-center">Due Date</label>
@@ -843,7 +848,7 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
                       }`}>{_sum}%</div>
                       <div className="bg-zinc-600 text-white font-bold text-[10px] px-3 py-1.5 text-center uppercase tracking-wide flex items-center border-l border-zinc-500">Total</div>
                       <div className="bg-emerald-50 text-emerald-800 font-black text-[11px] px-3 py-1.5 text-center border-l border-emerald-200 min-w-[80px]">
-                        ${_gt.toFixed(2)}
+                        {currencySymbol}{_gt.toFixed(2)}
                       </div>
                     </div>
                   </div>
@@ -931,7 +936,7 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.unitPrice} onChange={(e: any) => updateSku(sku.id!, 'unitPrice', e.target.value)} options={dropdowns?.unitsPrice} onAddNew={() => handleAddNewDropdown('unitsPrice')} /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100">
                       <div className="font-semibold text-zinc-800 bg-zinc-50 px-2 py-1 rounded border border-zinc-200">
-                        {header.currency === 'USD' ? '$' : header.currency === 'EUR' ? '€' : header.currency === 'INR' ? '₹' : header.currency} {(Number(sku.orderQty) * Number(sku.price) || 0).toLocaleString()}
+                        {currencySymbol} {(Number(sku.orderQty) * Number(sku.price) || 0).toLocaleString()}
                       </div>
                     </td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.innerPack} onChange={(e: any) => updateSku(sku.id!, 'innerPack', e.target.value)} options={dropdowns?.packs} onAddNew={() => handleAddNewDropdown('packs')} /></td>
@@ -940,7 +945,7 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.addProd} onChange={(e: any) => updateSku(sku.id!, 'addProd', e.target.value)} options={['0%', '1%', '2%', '3%', '4%', '5%', '6%', '7%', '8%', '9%', '10%']} /></td>
                     
                     <td className="px-3 py-3 align-middle text-center bg-rose-50/20 border-b border-zinc-100"><div className="text-[12px] font-black text-rose-700 bg-white border border-rose-200 rounded py-1 px-2 shadow-sm inline-block">{sku.totalQtyMfg || 0}</div></td>
-                    <td className="px-3 py-3 align-middle text-center bg-rose-50/20 border-b border-zinc-100"><div className="text-[12px] font-black text-rose-700 bg-white border border-rose-200 rounded py-1 px-2 shadow-sm inline-block">${(sku.lineTotal || 0).toFixed(2)}</div></td>
+                    <td className="px-3 py-3 align-middle text-center bg-rose-50/20 border-b border-zinc-100"><div className="text-[12px] font-black text-rose-700 bg-white border border-rose-200 rounded py-1 px-2 shadow-sm inline-block">{currencySymbol}{(sku.lineTotal || 0).toFixed(2)}</div></td>
                     
                     <td className="px-3 py-3 align-middle text-center border-b border-zinc-100 space-x-1 min-w-[70px]">
                       <button onClick={() => duplicateSku(index)} className="text-zinc-400 hover:text-blue-500 bg-white hover:bg-blue-50 border border-zinc-200 hover:border-blue-200 rounded p-1.5 transition-all shadow-sm" title="Duplicate Row"><Copy size={14} /></button>
@@ -962,7 +967,7 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
               <div className="text-right">
                 <span className="block text-[12px] text-zinc-500 font-bold tracking-wide mb-1">Total Net Value</span>
                 <span className="text-2xl font-black text-[#00a669] tracking-tight">
-                  {header.currency === 'USD' ? '$' : header.currency === 'EUR' ? '€' : header.currency === 'INR' ? '₹' : header.currency} {skus.reduce((acc, sku) => acc + ((Number(sku.orderQty) || 0) * (Number(sku.price) || 0)), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {currencySymbol} {skus.reduce((acc, sku) => acc + ((Number(sku.orderQty) || 0) * (Number(sku.price) || 0)), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
