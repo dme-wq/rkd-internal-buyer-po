@@ -305,10 +305,10 @@ function handleCreatePO(data) {
 
       // Format image URL for IMAGE() formula if available
       let imageFormula = finalImageUrl;
-      if (finalImageUrl.includes('drive.google.com/file/d/')) {
+      if (finalImageUrl.includes('drive.google.com')) {
          const fileIdMatch = finalImageUrl.match(/[-\w]{25,}/);
          if (fileIdMatch) {
-            imageFormula = `=IMAGE("https://drive.google.com/uc?export=view&id=${fileIdMatch[0]}")`;
+            imageFormula = `=HYPERLINK("https://drive.google.com/file/d/${fileIdMatch[0]}/view", IMAGE("https://drive.google.com/uc?export=view&id=${fileIdMatch[0]}"))`;
          }
       }
 
@@ -703,6 +703,14 @@ function handleUpdatePO(data) {
       if (finalImageUrl.startsWith('data:image')) {
         finalImageUrl = saveImageToDrive(finalImageUrl, `Image_${internalPO}_${Date.now()}_${i}.png`);
       }
+      
+      let imageFormula = finalImageUrl;
+      if (finalImageUrl.includes('drive.google.com')) {
+         const fileIdMatch = finalImageUrl.match(/[-\w]{25,}/);
+         if (fileIdMatch) {
+            imageFormula = `=HYPERLINK("https://drive.google.com/file/d/${fileIdMatch[0]}/view", IMAGE("https://drive.google.com/uc?export=view&id=${fileIdMatch[0]}"))`;
+         }
+      }
 
       row[0] = timestamp;
       row[1] = uniqueId;
@@ -729,7 +737,7 @@ function handleUpdatePO(data) {
       row[22] = item.skuCode || '';
       row[23] = item.product || '';
       row[24] = item.articleNum || '';
-      row[25] = finalImageUrl;
+      row[25] = imageFormula;
       row[26] = item.shape || '';
       row[27] = item.designer || '';
       row[28] = item.brand || '';
