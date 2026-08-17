@@ -504,11 +504,26 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
   };
 
   const handleSave = async () => {
-    const requiredHeader = ['internalPO', 'buyerName', 'buyerPO', 'fileNumber', 'poDate', 'exFactory', 'onboardDate', 'deliveryTerms', 'portName', 'billingAddr', 'deliveryAddr'];
-    for (const field of requiredHeader) {
-      if (!header[field as keyof POHeader] || header[field as keyof POHeader] === '-') {
-        MySwal.fire('Incomplete Field', `Please fill General Information field: ${field}`, 'warning');
-        return;
+    const missingFields: string[] = [];
+
+    // Check General Information
+    const requiredHeaderMap: Record<string, string> = {
+      internalPO: 'Internal PO Number',
+      buyerName: 'Buyer Name',
+      buyerPO: 'Buyer PO',
+      fileNumber: 'File Number',
+      poDate: 'PO Date',
+      exFactory: 'Ex-Factory Date',
+      onboardDate: 'Onboard Vessel Date',
+      deliveryTerms: 'Delivery Terms',
+      portName: 'Port Name',
+      billingAddr: 'Billing Address',
+      deliveryAddr: 'Delivery Address'
+    };
+
+    for (const [key, label] of Object.entries(requiredHeaderMap)) {
+      if (!header[key as keyof POHeader] || header[key as keyof POHeader] === '-') {
+        missingFields.push(`<b>General Info:</b> ${label}`);
       }
     }
 
@@ -516,53 +531,58 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
     const p2 = header.pay2Pct === '-' ? 0 : parseFloat(String(header.pay2Pct || '0'));
 
     if (Math.round(p1 + p2) !== 100) {
-      MySwal.fire({
-        icon: 'warning',
-        title: 'Payment % Must Total 100%',
-        html: `Payment Term 1 (<b>${p1}%</b>) + Payment Term 2 (<b>${p2}%</b>) = <b>${p1 + p2}%</b>.<br/>Please adjust so both terms together equal <b>100%</b>.`,
-        confirmButtonColor: '#00a669'
-      });
-      return;
-    }
-
-    if (p1 > 0 && (!header.pay1Days || header.pay1Days === '-' || !header.pay1Activity || header.pay1Activity === '-')) {
-      MySwal.fire('Incomplete Payment Terms', `Please complete Days and Activity for Payment Term 1.`, 'warning');
-      return;
-    }
-
-    if (p2 > 0 && (!header.pay2Days || header.pay2Days === '-' || !header.pay2Activity || header.pay2Activity === '-')) {
-      MySwal.fire('Incomplete Payment Terms', `Please complete Days and Activity for Payment Term 2.`, 'warning');
-      return;
+      missingFields.push(`<b>Payment Terms:</b> Total % must equal 100% (currently ${p1 + p2}%)`);
+    } else {
+      if (p1 > 0 && (!header.pay1Days || header.pay1Days === '-' || !header.pay1Activity || header.pay1Activity === '-')) {
+         missingFields.push(`<b>Payment Term 1:</b> Days and Activity`);
+      }
+      if (p2 > 0 && (!header.pay2Days || header.pay2Days === '-' || !header.pay2Activity || header.pay2Activity === '-')) {
+         missingFields.push(`<b>Payment Term 2:</b> Days and Activity`);
+      }
     }
 
     if (skus.length === 0) {
-      MySwal.fire('No Items', 'Please add at least one item.', 'warning');
-      return;
+      missingFields.push(`<b>Items:</b> At least one Line Item is required`);
+    } else {
+      for (let i = 0; i < skus.length; i++) {
+        const s = skus[i];
+        const missingLineFields: string[] = [];
+        if (!s.product) missingLineFields.push('Product Name');
+        if (!s.shape) missingLineFields.push('Shape');
+        if (!s.designer) missingLineFields.push('Designer Name');
+        if (!s.brand) missingLineFields.push('Brand Name');
+        if (!s.quality) missingLineFields.push('Quality');
+        if (!s.color) missingLineFields.push('Color');
+        if (!s.sizes || s.sizes.length === 0) missingLineFields.push('Sizes');
+        if (!(Number(s.orderQty) > 0)) missingLineFields.push('Buyer PO Qty');
+        if (!s.unitQty) missingLineFields.push('Unit of Qty');
+        if (!(Number(s.price) > 0)) missingLineFields.push('Price');
+        if (!s.unitPrice) missingLineFields.push('Unit of Price');
+        if (!s.innerPack) missingLineFields.push('Inner Pack');
+        if (!s.outerPack) missingLineFields.push('Outer Pack');
+        if (!s.addSample) missingLineFields.push('PP/TOP Samples');
+        if (!s.addProd) missingLineFields.push('Addl Prod Pcs');
+
+        if (missingLineFields.length > 0) {
+          missingFields.push(`<b>Item #${i + 1}:</b> ${missingLineFields.join(', ')}`);
+        }
+      }
     }
 
-    for (let i = 0; i < skus.length; i++) {
-      const s = skus[i];
-      const isComplete = !!(
-        s.product && 
-        s.shape && 
-        s.designer && 
-        s.brand && 
-        s.quality && 
-        s.color && 
-        s.sizes && s.sizes.length > 0 &&
-        Number(s.orderQty) > 0 && 
-        s.unitQty &&
-        Number(s.price) > 0 &&
-        s.unitPrice &&
-        s.innerPack &&
-        s.outerPack &&
-        s.addSample &&
-        s.addProd
-      );
-      if (!isComplete) {
-        MySwal.fire('Incomplete Line Item', `Please complete all fields (including Size, Pack, etc.) for Item #${i + 1}. Every field is mandatory.`, 'warning');
-        return;
-      }
+    if (missingFields.length > 0) {
+      MySwal.fire({
+        icon: 'warning',
+        title: 'Missing Required Fields',
+        html: `<div style="text-align: left; font-size: 14px; max-height: 300px; overflow-y: auto;">
+                 <p style="margin-bottom: 10px;">Please complete the following fields before saving:</p>
+                 <ul style="list-style-type: disc; padding-left: 20px; line-height: 1.6; color: #dc2626;">
+                   ${missingFields.map(f => `<li>${f}</li>`).join('')}
+                 </ul>
+               </div>`,
+        confirmButtonColor: '#00a669',
+        confirmButtonText: 'I will fix it'
+      });
+      return;
     }
 
     setLoading(true);
