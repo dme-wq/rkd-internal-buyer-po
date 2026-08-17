@@ -13,7 +13,7 @@ import type {
   PendingPO
 } from './types';
 
-const BASE_URL = 'https://script.google.com/macros/s/AKfycbwpmHbpG8kx6BrdrXenm_U5gIfhGEScR07m2YMztlWEaAtjBDegGJmLyxcWxdLHj_mk/exec';
+const BASE_URL = 'https://script.google.com/macros/s/AKfycby0UMECC5gLKpHRNWCkJJlJGV3oWVUb_Q8fygKEqgfIq8F-CGrURyzF06ceMjjmeZEX/exec';
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<APIResponse<T>> {
   try {

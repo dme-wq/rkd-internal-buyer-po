@@ -26,23 +26,25 @@ function doGet(e) {
 function handleGetDropdowns() {
   const ss = SpreadsheetApp.openById(SHEET_ID);
   
-  const extractUnique = (sheetName, headerName, fallbackColIndex) => {
+  const extractUnique = (sheetName, headerName, fallbackColIndex, forceFallback = false) => {
     const sheet = ss.getSheetByName(sheetName);
     if (!sheet) return [];
     const data = sheet.getDataRange().getDisplayValues();
     if (data.length === 0) return [];
 
     let colIndex = -1;
-    // Try to find the header in the first two rows
-    for (let r = 0; r < Math.min(2, data.length); r++) {
-      for (let c = 0; c < data[r].length; c++) {
-        const cell = data[r][c];
-        if (cell && cell.toString().trim().toLowerCase() === headerName.toLowerCase()) {
-          colIndex = c;
-          break;
+    if (!forceFallback) {
+      // Try to find the header in the first two rows
+      for (let r = 0; r < Math.min(2, data.length); r++) {
+        for (let c = 0; c < data[r].length; c++) {
+          const cell = data[r][c];
+          if (cell && cell.toString().trim().toLowerCase() === headerName.toLowerCase()) {
+            colIndex = c;
+            break;
+          }
         }
+        if (colIndex !== -1) break;
       }
-      if (colIndex !== -1) break;
     }
     
     // Fallback to hardcoded index if header not found
@@ -65,7 +67,7 @@ function handleGetDropdowns() {
   const designers = extractUnique('Drop Downs', 'Designer Name', 16);
   const brands = extractUnique('Drop Downs', 'Buyer Brand Name', 32);
   const sizes = extractUnique('Drop Downs', 'Size', 22); // Col W is 22
-  const qualities = extractUnique('Drop Downs', 'Quality', 33); // Col AH is 33
+  const qualities = extractUnique('Drop Downs', 'Quality', 33, true); // Col AH is 33, force it because there might be multiple Quality columns
   const colors = extractUnique('Drop Downs', 'Color', 34); // Col AI is 34
   const ppTopSamples = extractUnique('Drop Downs', 'PP/Top Samples', 35);
   const portNames = extractUnique('Drop Downs', 'Port Name', 36);
