@@ -1167,14 +1167,23 @@ function handleSendWhatsApp(data) {
     'x-maytapi-key': MAYTAPI_TOKEN
   };
   
-  // Convert Drive Viewer URL to Direct Download URL
-  let directPdfUrl = pdfUrl;
+  // Convert Drive Viewer URL to Base64 to preserve PDF format on Mobile
+  let mediaMessageUrl = pdfUrl;
   const safeFilename = internalPO.replace(/[\/\\]/g, '-');
 
   if (pdfUrl && pdfUrl.includes('drive.google.com/file/d/')) {
     const fileIdMatch = pdfUrl.match(/[-\w]{25,}/);
     if (fileIdMatch) {
-      directPdfUrl = `https://drive.google.com/uc?export=download&id=${fileIdMatch[0]}`;
+      try {
+        const fileId = fileIdMatch[0];
+        const file = DriveApp.getFileById(fileId);
+        const blob = file.getBlob();
+        const b64 = Utilities.base64Encode(blob.getBytes());
+        mediaMessageUrl = "data:application/pdf;base64," + b64;
+      } catch (e) {
+        // Fallback to URL
+        mediaMessageUrl = `https://drive.google.com/uc?export=download&id=${fileIdMatch[0]}`;
+      }
     }
   }
 
@@ -1224,12 +1233,12 @@ function handleSendWhatsApp(data) {
       });
 
       // If PDF URL is available, also send as media
-      if (directPdfUrl) {
+      if (mediaMessageUrl) {
         Utilities.sleep(1000); // small delay between messages
         const mediaPayload = {
           to_number: to,
           type: 'media',
-          message: directPdfUrl,
+          message: mediaMessageUrl,
           text: `📄 ${safeFilename}.pdf`,
           filename: `${safeFilename}.pdf`
         };
