@@ -11,10 +11,11 @@ export default async function EditPOPage({ params }: { params: Promise<{ uid: st
   // uid is an array because of the catch-all route [...uid]
   const decodedUid = decodeURIComponent(uid.join('/'));
 
-  const dpResponse = await getDropdowns();
+  const [dpResponse, poResponse] = await Promise.all([
+    getDropdowns(),
+    getPOById(decodedUid)
+  ]);
   const initialDropdowns = dpResponse.status === 'success' ? dpResponse.data : undefined;
-  
-  const poResponse = await getPOById(decodedUid);
   if (poResponse.status !== 'success' || !poResponse.data) {
     return notFound();
   }
