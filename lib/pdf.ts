@@ -54,7 +54,7 @@ function indianTimestamp(): string {
 }
 
 // ─── Colour constants ─────────────────────────────────────────
-const ORANGE      = [255, 170, 0]   as [number, number, number];
+const DARK_GREY   = [100, 100, 100] as [number, number, number];
 const GREY_BG     = [220, 220, 220] as [number, number, number];
 const LIGHT_GREY  = [245, 245, 245] as [number, number, number];
 const WHITE       = [255, 255, 255] as [number, number, number];
@@ -112,7 +112,7 @@ export async function generatePOPDF(
 
   // ─── Helper: orange page border ───────────────────────────
   function drawBorder() {
-    doc.setDrawColor(...ORANGE);
+    doc.setDrawColor(...DARK_GREY);
     doc.setLineWidth(1.0);
     // Draw exactly on the 0.5 inch margins
     doc.rect(M, M, CW, PAGE_H - 2 * M);
@@ -174,7 +174,7 @@ export async function generatePOPDF(
       ],
     ],
     theme: 'grid',
-    styles: { lineColor: ORANGE, lineWidth: 0.5, font: 'helvetica', textColor: DARK_TEXT },
+    styles: { lineColor: DARK_GREY, lineWidth: 0.5, font: 'helvetica', textColor: DARK_TEXT, minCellHeight: 10 },
     columnStyles: {
       0: { cellWidth: 35  },
       1: { cellWidth: 55  },
@@ -245,7 +245,7 @@ export async function generatePOPDF(
 
   // Footer row (totals)
   const footRow = COLS.map((c, i) => {
-    const base = { lineWidth: 0.5 as number, lineColor: ORANGE };
+    const base = { lineWidth: 0.5 as number, lineColor: DARK_GREY };
     if (i < 9)  return { content: '', styles: { ...base, fillColor: WHITE, lineWidth: 0 as number } };
     if (i === 9) return { content: 'Total\nQuantity', styles: { ...base, fontStyle: 'bold' as const, halign: 'center' as const, fillColor: WHITE, textColor: 0 } };
     if (c.key === 'orderQty')    return { content: formatNumber(totOQ),  styles: { ...base, fontStyle: 'bold' as const, halign: 'center' as const, fillColor: WHITE, textColor: 0 } };
@@ -275,7 +275,7 @@ export async function generatePOPDF(
       fillColor: GREY_BG,
       textColor: DARK_TEXT,
       fontStyle: 'bold',
-      lineColor: ORANGE,
+      lineColor: DARK_GREY,
       lineWidth: 0.5,
       fontSize: 6.5,
       cellPadding: 2,
@@ -287,12 +287,12 @@ export async function generatePOPDF(
       fillColor: WHITE,
       textColor: 0,
       fontStyle: 'bold',
-      lineColor: ORANGE,
+      lineColor: DARK_GREY,
       lineWidth: 0.5,
       fontSize: 6.5,
     },
     theme: 'grid',
-    tableLineColor: ORANGE,
+    tableLineColor: DARK_GREY,
     tableLineWidth: 0.5,
     columnStyles: colStyles,
     margin: { left: M, right: M, bottom: 12 },
@@ -326,7 +326,7 @@ export async function generatePOPDF(
   const BOX_X = PAGE_W - M - BOX_W;
   const BOX_Y = Math.min(tableEndY + 5, PAGE_H - M - BOX_H - 14);
 
-  doc.setDrawColor(...ORANGE);
+  doc.setDrawColor(...DARK_GREY);
   doc.setLineWidth(0.6);
   doc.rect(BOX_X, BOX_Y, BOX_W, BOX_H);
 
