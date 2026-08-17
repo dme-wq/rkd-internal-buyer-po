@@ -824,7 +824,9 @@ function getActiveRows() {
   // ── 2. Read DATABASE sheet ──
   const sheetDatabase = ss.getSheetByName('DATABASE');
   if (!sheetDatabase) return [];
-  const data = sheetDatabase.getDataRange().getValues();
+  const dbDataRange = sheetDatabase.getDataRange();
+  const data = dbDataRange.getValues();
+  const formulas = dbDataRange.getFormulas();
 
   // ── Helper: parse any timestamp string robustly ──
   function parseTs(raw) {
@@ -879,6 +881,18 @@ function getActiveRows() {
     if (rowTsStr !== entry.tsStr) continue;
 
     const rowCopy = row.slice();
+    
+    // Extract Design Image URL (Col Z, index 25) from formulas since getValues() returns empty for them
+    if (!rowCopy[25] && formulas && formulas[i] && formulas[i][25]) {
+       const f = formulas[i][25];
+       const match = f.match(/HYPERLINK\("([^"]+)"/i) || f.match(/IMAGE\("([^"]+)"/i);
+       if (match) {
+          rowCopy[25] = match[1];
+       } else if (typeof f === 'string' && f.startsWith('http')) {
+          rowCopy[25] = f;
+       }
+    }
+
     // Attach PDF from pdfMap if col BL (index 63) is empty
     if (!rowCopy[63] && pdfMap[internalPO]) {
       rowCopy[63] = pdfMap[internalPO];
