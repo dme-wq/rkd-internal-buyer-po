@@ -63,28 +63,27 @@ const DARK_TEXT   = [30,  30,  30]  as [number, number, number];
 // ─── Layout constants ─────────────────────────────────────────
 const PAGE_W = 297;   // landscape A4
 const PAGE_H = 210;
-const M      = 7;     // margin
-const CW     = PAGE_W - 2 * M;  // 283 mm content width
+const M      = 12.7;  // 0.5 inch margin
+const CW     = PAGE_W - 2 * M;  // 271.6 mm content width
 
-// ─── Column definitions (widths must sum to CW = 283) ────────
-// 23+18+22+16+18+28+16+16+14+16+18+14+18+20+14+14 = 283
+// ─── Column definitions (widths must sum to CW = 271.6) ────────
 const COLS = [
-  { key: 'skuCode',     header: 'SKU Code',                                width: 23 },
-  { key: 'product',     header: 'Product',                                  width: 18 },
-  { key: 'img',         header: 'Design\nImage',                            width: 22 },
-  { key: 'shape',       header: 'Shape',                                    width: 16 },
-  { key: 'designer',    header: 'Designer\nName',                           width: 18 },
-  { key: 'brand',       header: 'Brand Name',                               width: 28 },
-  { key: 'size1',       header: 'Size 1',                                   width: 16 },
-  { key: 'size2',       header: 'Size 2',                                   width: 16 },
-  { key: 'quality',     header: 'Quality',                                  width: 14 },
-  { key: 'color',       header: 'Color',                                    width: 16 },
-  { key: 'orderQty',    header: 'Buyer PO\nQuantity',                       width: 18 },
+  { key: 'skuCode',     header: 'SKU Code',                                width: 22 },
+  { key: 'product',     header: 'Product',                                  width: 17 },
+  { key: 'img',         header: 'Design\nImage',                            width: 20 },
+  { key: 'shape',       header: 'Shape',                                    width: 15 },
+  { key: 'designer',    header: 'Designer\nName',                           width: 16 },
+  { key: 'brand',       header: 'Brand Name',                               width: 25 },
+  { key: 'size1',       header: 'Size 1',                                   width: 14 },
+  { key: 'size2',       header: 'Size 2',                                   width: 13.6 },
+  { key: 'quality',     header: 'Quality',                                  width: 13 },
+  { key: 'color',       header: 'Color',                                    width: 15 },
+  { key: 'orderQty',    header: 'Buyer PO\nQuantity',                       width: 17 },
   { key: 'samples',     header: 'PP/TOP/\nTesting\nSamples',                width: 14 },
-  { key: 'addProd',     header: 'Additional\nProduction\nPieces Required',  width: 18 },
-  { key: 'totalQtyMfg', header: 'Total Qty to\nManufacture',                width: 20 },
-  { key: 'innerPack',   header: 'Inner\nPack',                              width: 14 },
-  { key: 'outerPack',   header: 'Outer\nPack',                              width: 14 },
+  { key: 'addProd',     header: 'Additional\nProduction\nPieces Required',  width: 17 },
+  { key: 'totalQtyMfg', header: 'Total Qty to\nManufacture',                width: 19 },
+  { key: 'innerPack',   header: 'Inner\nPack',                              width: 12 },
+  { key: 'outerPack',   header: 'Outer\nPack',                              width: 12 },
 ];
 
 const IMG_COL = 2;   // index of the image column
@@ -115,7 +114,8 @@ export async function generatePOPDF(
   function drawBorder() {
     doc.setDrawColor(...ORANGE);
     doc.setLineWidth(1.0);
-    doc.rect(M - 2, M - 2, CW + 4, PAGE_H - 2 * M + 4);
+    // Draw exactly on the 0.5 inch margins
+    doc.rect(M, M, CW, PAGE_H - 2 * M);
   }
 
   // ─── Helper: footer (page n of total, timestamp, PO) ──────
@@ -180,7 +180,7 @@ export async function generatePOPDF(
       1: { cellWidth: 55  },
       2: { cellWidth: 32  },
       3: { cellWidth: 42  },
-      4: { cellWidth: 119 },
+      4: { cellWidth: 107.6 },
     },
     margin: { left: M, right: M },
     didDrawCell: (data) => {
@@ -191,7 +191,8 @@ export async function generatePOPDF(
         data.column.index === 4 &&
         logoBase64
       ) {
-        const lw = 44, lh = 18;
+        // Image is 186x156 (aspect ratio ~1.192)
+        const lw = 21, lh = 17.6;
         doc.addImage(
           logoBase64, 'PNG',
           data.cell.x + (data.cell.width  - lw) / 2,
@@ -220,8 +221,8 @@ export async function generatePOPDF(
       case 'shape':       return s.shape       || '';
       case 'designer':    return s.designer    || 'N/A';
       case 'brand':       return s.brand       || '';
-      case 'size1':       return s.size1       || '';
-      case 'size2':       return s.size2       || '';
+      case 'size1':       return s.sizes?.[0]  || s.size1 || '';
+      case 'size2':       return s.sizes?.[1]  || s.size2 || '';
       case 'quality':     return s.quality     || '';
       case 'color':       return s.color       || '';
       case 'orderQty':    return `${formatNumber(s.orderQty    || 0)}\npieces`;
@@ -337,11 +338,17 @@ export async function generatePOPDF(
   doc.setTextColor(...DARK_TEXT);
   doc.text('Authorized Signatory', BOX_X + BOX_W / 2, BOX_Y + 4, { align: 'center' });
 
-  // Bottom label
+  // Bottom label (inside)
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6);
-  doc.setTextColor(90, 90, 90);
-  doc.text('For RKD Furnishings', BOX_X + BOX_W / 2, BOX_Y + BOX_H - 2, { align: 'center' });
+  doc.setTextColor(150, 150, 150);
+  doc.text('Signature / Stamp', BOX_X + BOX_W / 2, BOX_Y + BOX_H - 2, { align: 'center' });
+
+  // Company Name below the box
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(...DARK_TEXT);
+  doc.text('RKD Furnishings Pvt Ltd', BOX_X + BOX_W / 2, BOX_Y + BOX_H + 4, { align: 'center' });
 
   // ═══════════════════════════════════════════════════════════
   // 4. PAGE NUMBERS + FOOTERS + BORDERS (post-pass all pages)
