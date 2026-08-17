@@ -1159,12 +1159,22 @@ function handleSendWhatsApp(data) {
     'x-maytapi-key': MAYTAPI_TOKEN
   };
   
-  // Convert Drive Viewer URL to Direct Download URL
+  // Convert Drive Viewer URL to Direct Download URL or Base64 with Filename
   let directPdfUrl = pdfUrl;
+  let base64Pdf = null;
+  const safeFilename = internalPO.replace(/[\/\\]/g, '-');
+
   if (pdfUrl && pdfUrl.includes('drive.google.com/file/d/')) {
     const fileIdMatch = pdfUrl.match(/[-\w]{25,}/);
     if (fileIdMatch) {
       directPdfUrl = `https://drive.google.com/uc?export=download&id=${fileIdMatch[0]}`;
+      try {
+        const driveFile = DriveApp.getFileById(fileIdMatch[0]);
+        const blob = driveFile.getBlob();
+        base64Pdf = "data:application/pdf;name=" + encodeURIComponent(`${safeFilename}.pdf`) + ";base64," + Utilities.base64Encode(blob.getBytes());
+      } catch (e) {
+        // Fallback if unable to read Drive file
+      }
     }
   }
 
@@ -1188,10 +1198,7 @@ function handleSendWhatsApp(data) {
       `🔖 *Buyer PO:* ${buyerPO || 'N/A'}\n` +
       `🏷️ *Internal PO:* ${internalPO}\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `Your Purchase Order has been successfully generated and saved. ✅\n\n` +
-      (directPdfUrl ? `🔗 *Download PO PDF:* ${directPdfUrl}\n` : '') +
-      `\n_This is an automated message from RKD Export PO System._\n` +
-      `_Please do not reply to this message._`;
+      `Your Purchase Order has been successfully generated and saved. ✅`;
 
     // Send text message
     try {
@@ -1217,13 +1224,13 @@ function handleSendWhatsApp(data) {
       });
 
       // If PDF URL is available, also send as media
-      if (directPdfUrl) {
+      if (directPdfUrl || base64Pdf) {
         Utilities.sleep(1000); // small delay between messages
         const mediaPayload = {
           to_number: to,
           type: 'media',
-          message: directPdfUrl,
-          text: `📄 ${internalPO}.pdf`
+          message: base64Pdf || directPdfUrl,
+          text: `📄 ${safeFilename}.pdf`
         };
 
         const mediaResponse = UrlFetchApp.fetch(maytapiUrl, {
