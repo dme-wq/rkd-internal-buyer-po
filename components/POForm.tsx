@@ -890,9 +890,9 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
             <table className="w-full text-left whitespace-nowrap min-w-max border-separate border-spacing-0">
               <thead className="bg-white sticky top-0 z-20 shadow-sm">
                 <tr>
-                  <th className="px-2 py-3 text-[11px] font-bold text-zinc-600 text-center sticky left-0 top-0 bg-white z-30 border-b border-r border-zinc-200">#</th>
-                  <th className="px-2 py-3 text-[11px] font-bold text-zinc-600 min-w-[80px] text-center sticky left-[33px] top-0 bg-white z-30 border-b border-r border-zinc-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">SKU Code</th>
-                  <th className="px-2 py-3 text-[11px] font-bold text-zinc-600 min-w-[110px] text-center bg-white border-b border-zinc-200">Product Name<span className="text-rose-500 ml-0.5">*</span></th>
+                  <th className="px-2 py-3 text-[11px] font-bold text-zinc-600 text-center sticky left-0 top-0 bg-white z-30 border-b border-r border-zinc-200 w-[36px] min-w-[36px] max-w-[36px]">#</th>
+                  <th className="px-2 py-3 text-[11px] font-bold text-zinc-600 text-center sticky left-[36px] top-0 bg-white z-30 border-b border-r border-zinc-200 w-[100px] min-w-[100px] max-w-[100px]">SKU Code</th>
+                  <th className="px-2 py-3 text-[11px] font-bold text-zinc-600 text-center sticky left-[136px] top-0 bg-white z-30 border-b border-r border-zinc-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] min-w-[110px]">Product Name<span className="text-rose-500 ml-0.5">*</span></th>
                   <th className="px-2 py-3 text-[11px] font-bold text-zinc-600 min-w-[90px] text-center bg-white border-b border-zinc-200">Designer Picture</th>
                   <th className="px-2 py-3 text-[11px] font-bold text-zinc-600 min-w-[80px] text-center bg-white border-b border-zinc-200">Shape<span className="text-rose-500 ml-0.5">*</span></th>
                   <th className="px-2 py-3 text-[11px] font-bold text-zinc-600 min-w-[100px] text-center bg-white border-b border-zinc-200">Designer Name<span className="text-rose-500 ml-0.5">*</span></th>
@@ -922,9 +922,9 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
                   };
                   return (
                   <tr key={sku.id} className="group hover:bg-emerald-50/20 transition-colors">
-                    <td className="px-2 py-3 text-center text-zinc-400 text-[11px] font-bold sticky left-0 bg-white group-hover:bg-emerald-50/90 border-b border-r border-zinc-100 z-10">{index + 1}</td>
-                    <td className="px-2 py-3 align-top sticky left-[33px] bg-white group-hover:bg-emerald-50/90 border-b border-r border-zinc-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] z-10"><GridInput value={sku.skuCode || (header.internalPO ? `${header.internalPO}-${index + 1}` : '')} readOnly={true} placeholder="Auto SKU" /></td>
-                    <td className="px-3 py-3 align-top border-b border-zinc-100"><GridInput value={sku.product} onChange={(e) => updateSku(sku.id!, 'product', e.target.value)} placeholder="Product Name" bold /></td>
+                    <td className="px-2 py-3 text-center text-zinc-400 text-[11px] font-bold sticky left-0 bg-white group-hover:bg-emerald-50/90 border-b border-r border-zinc-100 z-10 w-[36px] min-w-[36px] max-w-[36px]">{index + 1}</td>
+                    <td className="px-2 py-3 align-top sticky left-[36px] bg-white group-hover:bg-emerald-50/90 border-b border-r border-zinc-100 z-10 w-[100px] min-w-[100px] max-w-[100px]"><GridInput value={sku.skuCode || (header.internalPO ? `${header.internalPO}-${index + 1}` : '')} readOnly={true} placeholder="Auto SKU" /></td>
+                    <td className="px-2 py-3 align-top sticky left-[136px] bg-white group-hover:bg-emerald-50/90 border-b border-r border-zinc-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] z-10"><GridInput value={sku.product} onChange={(e) => updateSku(sku.id!, 'product', e.target.value)} placeholder="Product Name" bold /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><DragDropImage value={sku.designImage || ''} onChange={(val) => updateSku(sku.id!, 'designImage', val)} /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.shape} onChange={(e: any) => updateSku(sku.id!, 'shape', e.target.value)} options={dropdowns?.shapes} onAddNew={() => handleAddNewDropdown('shapes')} /></td>
                     <td className="px-3 py-3 align-top border-b border-zinc-100"><GridSelect value={sku.designer} onChange={(e: any) => updateSku(sku.id!, 'designer', e.target.value)} options={dropdowns?.designers} onAddNew={() => handleAddNewDropdown('designers')} /></td>
