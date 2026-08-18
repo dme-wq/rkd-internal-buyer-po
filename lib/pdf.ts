@@ -154,7 +154,7 @@ export async function generatePOPDF(
   autoTable(doc, {
     startY: M,
     head: [[{
-      content: 'RKD Buyer PO',
+      content: 'RKD Internal Purchase Order',
       colSpan: 5,
       styles: {
         halign: 'center', fillColor: PRIMARY_BLUE, textColor: WHITE,
@@ -197,7 +197,24 @@ export async function generatePOPDF(
     },
     margin: { left: M, right: M },
     didDrawCell: (data) => {
-      // Draw logo centred in the merged logo cell
+      // Draw small logo on the left side of the main header
+      if (
+        data.section === 'head' &&
+        data.row.index === 0 &&
+        data.column.index === 0 && // It's merged, but triggers on col 0
+        logoBase64
+      ) {
+        const iconW = 9.5;
+        const iconH = 8;
+        doc.addImage(
+          logoBase64, 'PNG',
+          data.cell.x + 4, // 4mm padding from the left edge
+          data.cell.y + (data.cell.height - iconH) / 2,
+          iconW, iconH
+        );
+      }
+
+      // Draw large logo centred in the merged logo cell
       if (
         data.section === 'body' &&
         data.row.index === 0 &&
