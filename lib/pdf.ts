@@ -110,6 +110,18 @@ export async function generatePOPDF(
   // from raw cell content before willDrawCell can clear them.
   const skuImages: string[] = skus.map(s => s.designImage || '');
 
+  // ─── Determine active columns based on Size 2 presence ────────
+  const hasSize2 = skus.some(s => (s.sizes && s.sizes.length > 1 && s.sizes[1]) || s.size2);
+  let finalCols = COLS;
+  if (!hasSize2) {
+    finalCols = COLS.filter(c => c.key !== 'size2').map(c => {
+      if (c.key === 'skuCode') {
+        return { ...c, width: c.width + 13.6 }; // Add Size 2's width to SKU Code
+      }
+      return c;
+    });
+  }
+
   // ─── Helper: orange page border ───────────────────────────
   function drawBorder() {
     doc.setDrawColor(...DARK_GREY);
@@ -210,10 +222,10 @@ export async function generatePOPDF(
   // 2. SKU TABLE
   // ═══════════════════════════════════════════════════════════
   const colStyles: Record<number, { cellWidth: number }> = {};
-  COLS.forEach((c, i) => { colStyles[i] = { cellWidth: c.width }; });
+  finalCols.forEach((c, i) => { colStyles[i] = { cellWidth: c.width }; });
 
   // Body rows — image column is always '' (prevents AutoTable height explosion)
-  const bodyRows = skus.map(s => COLS.map(c => {
+  const bodyRows = skus.map(s => finalCols.map(c => {
     switch (c.key) {
       case 'img':         return '';
       case 'skuCode':     return s.skuCode     || '';
@@ -244,10 +256,11 @@ export async function generatePOPDF(
   });
 
   // Footer row (totals)
-  const footRow = COLS.map((c, i) => {
+  const colorIndex = finalCols.findIndex(c => c.key === 'color');
+  const footRow = finalCols.map((c, i) => {
     const base = { lineWidth: 0.5 as number, lineColor: DARK_GREY };
-    if (i < 9)  return { content: '', styles: { ...base, fillColor: WHITE, lineWidth: 0 as number } };
-    if (i === 9) return { content: 'Total\nQuantity', styles: { ...base, fontStyle: 'bold' as const, halign: 'center' as const, fillColor: WHITE, textColor: 0 } };
+    if (i < colorIndex)  return { content: '', styles: { ...base, fillColor: WHITE, lineWidth: 0 as number } };
+    if (i === colorIndex) return { content: 'Total\nQuantity', styles: { ...base, fontStyle: 'bold' as const, halign: 'center' as const, fillColor: WHITE, textColor: 0 } };
     if (c.key === 'orderQty')    return { content: formatNumber(totOQ),  styles: { ...base, fontStyle: 'bold' as const, halign: 'center' as const, fillColor: WHITE, textColor: 0 } };
     if (c.key === 'samples')     return { content: formatNumber(totSmp), styles: { ...base, fontStyle: 'bold' as const, halign: 'center' as const, fillColor: WHITE, textColor: 0 } };
     if (c.key === 'addProd')     return { content: '', styles: { ...base, fillColor: WHITE } };
@@ -257,7 +270,7 @@ export async function generatePOPDF(
 
   autoTable(doc, {
     startY: headerFinalY + 3,
-    head:   [COLS.map(c => c.header)],
+    head:   [finalCols.map(c => c.header)],
     body:   bodyRows,
     foot:   [footRow],
 
@@ -299,7 +312,8 @@ export async function generatePOPDF(
 
     // Draw thumbnail from separate skuImages array (never from cell.raw)
     didDrawCell: (data) => {
-      if (data.section === 'body' && data.column.index === IMG_COL) {
+      const imgColIndex = finalCols.findIndex(c => c.key === 'img');
+      if (data.section === 'body' && data.column.index === imgColIndex) {
         const img = skuImages[data.row.index];
         if (img && img.length > 20) {
           try {
