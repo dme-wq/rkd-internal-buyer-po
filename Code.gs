@@ -247,7 +247,15 @@ function handleCreatePO(data) {
     const ss = SpreadsheetApp.openById(SHEET_ID);
     const sheet = ss.getSheetByName('DATABASE');
     const buyerSheet = ss.getSheetByName('Buyer Name');
-    const timestamp = new Date().toLocaleString();
+    const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd-MMM-yyyy HH:mm:ss");
+
+    function formatDateStr(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return Utilities.formatDate(d, Session.getScriptTimeZone(), "dd-MMM-yyyy");
+    }
+
     const internalPO = header.internalPO || ''; 
     const uniqueId = internalPO;
     
@@ -284,8 +292,8 @@ function handleCreatePO(data) {
       row[3] = header.buyerName || ''; // ColD Buyer Name
       row[4] = internalPO; // ColE Internal PO Number
       row[5] = header.buyerPO || ''; // ColF Buyer PO Number
-      row[6] = header.poDate || ''; // ColG PO Date
-      row[7] = header.exFactory || ''; // ColH Ex-Factory Date
+      row[6] = formatDateStr(header.poDate); // ColG PO Date
+      row[7] = formatDateStr(header.exFactory); // ColH Ex-Factory Date
       row[8] = header.deliveryTerms || ''; // ColI Delivery Terms
       row[9] = header.portName || ''; // ColJ Port Name
       row[10] = fetchedPayTerm1; // ColK Payment Terms 1
@@ -296,7 +304,7 @@ function handleCreatePO(data) {
       row[15] = header.buyerSubPct || ''; // ColP Buyer Sub Source Name %
       row[16] = header.billingAddr || ''; // ColQ Billing Address
       row[17] = header.deliveryAddr || ''; // ColR Delivery Address
-      row[18] = header.onboardDate || ''; // ColS Onboard Vessel Date
+      row[18] = formatDateStr(header.onboardDate); // ColS Onboard Vessel Date
       row[19] = ''; // ColT Blank
       
       // Handle Base64 Image upload to Drive
@@ -657,7 +665,11 @@ function saveImageToDrive(base64Str, filename) {
     const base64Data = base64Str.split('base64,')[1] || base64Str;
     const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), contentType || 'image/png', filename);
     const file = folder.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch(shareErr) {
+      // Ignore if Workspace admin restricts public sharing
+    }
     return file.getUrl(); 
   } catch(e) {
     return "";
@@ -692,7 +704,15 @@ function handleUpdatePO(data) {
       }
     }
     
-    const timestamp = new Date().toLocaleString();
+    const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd-MMM-yyyy HH:mm:ss");
+
+    function formatDateStr(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return Utilities.formatDate(d, Session.getScriptTimeZone(), "dd-MMM-yyyy");
+    }
+
     const internalPO = header.internalPO || uid; 
     const uniqueId = internalPO;
     const rowsToInsert = [];
@@ -720,8 +740,8 @@ function handleUpdatePO(data) {
       row[3] = header.buyerName || '';
       row[4] = internalPO;
       row[5] = header.buyerPO || '';
-      row[6] = header.poDate || '';
-      row[7] = header.exFactory || '';
+      row[6] = formatDateStr(header.poDate);
+      row[7] = formatDateStr(header.exFactory);
       row[8] = header.deliveryTerms || '';
       row[9] = header.portName || '';
       row[10] = header.payTerm1 || '';
@@ -732,7 +752,7 @@ function handleUpdatePO(data) {
       row[15] = header.buyerSubPct || '';
       row[16] = header.billingAddr || '';
       row[17] = header.deliveryAddr || '';
-      row[18] = header.onboardDate || '';
+      row[18] = formatDateStr(header.onboardDate);
       row[19] = '';
       row[20] = '';
       row[21] = '';
