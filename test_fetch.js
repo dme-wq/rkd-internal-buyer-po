@@ -1,0 +1,1 @@
+const url = 'https://script.google.com/macros/s/AKfycbyDa1PnFpuLSBH_WjP9Vc-VWk8lQaXPaFIvfErM0-IjN9i8UrN-WGshGSgALaCaWdRg/exec'; fetch(url + '?action=getPOById&uid=FN-34/21344_SHF/26').then(r => r.text()).then(console.log);

@@ -639,7 +639,7 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
         showMessage(`✅ Internal PO: ${res.data.internalPO} saved.`);
         
         const fullHeader = { ...header, internalPO: res.data.internalPO, uid: res.data.uid || initialData?.header?.uid } as POHeader;
-        const pdfData = await generatePOPDF({ header: fullHeader, skus: finalSkus as SKUItem[] });
+        const pdfData = await generatePOPDF({ header: fullHeader, skus: finalSkus as SKUItem[], userEmail });
         const pdfRes = await savePDFtoDrive(fullHeader.uid!, pdfData.filename, pdfData.base64);
         
         let pdfUrl = '';

@@ -16,6 +16,7 @@ import { formatDate, formatNumber } from './utils';
 interface GeneratePDFOptions {
   header: POHeader;
   skus: SKUItem[];
+  userEmail?: string;
 }
 
 // ─── Logo cache (one fetch per browser session) ──────────────
@@ -95,7 +96,7 @@ export async function generatePOPDF(
 ): Promise<{ blob: Blob; base64: string; filename: string }> {
   const { jsPDF }    = await import('jspdf');
   const autoTable    = (await import('jspdf-autotable')).default;
-  const { header, skus } = options;
+  const { header, skus, userEmail } = options;
 
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
@@ -154,7 +155,7 @@ export async function generatePOPDF(
   autoTable(doc, {
     startY: M,
     head: [[{
-      content: 'RKD Internal Purchase Order',
+      content: 'RKD Buyer Internal Purchase Order',
       colSpan: 5,
       styles: {
         halign: 'center', fillColor: PRIMARY_BLUE, textColor: WHITE,
@@ -212,6 +213,16 @@ export async function generatePOPDF(
           data.cell.y + (data.cell.height - iconH) / 2,
           iconW, iconH
         );
+        
+        // Draw tiny timestamp and email on the right side
+        doc.setFontSize(5.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(200, 200, 200);
+        const rightEdge = data.cell.x + data.cell.width - 4;
+        doc.text(`Generated: ${ts}`, rightEdge, data.cell.y + 4.5, { align: 'right' });
+        if (userEmail) {
+          doc.text(`Submitted by: ${userEmail}`, rightEdge, data.cell.y + 7.5, { align: 'right' });
+        }
       }
 
       // Draw large logo centred in the merged logo cell
