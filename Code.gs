@@ -1010,19 +1010,140 @@ function handleGetAllPOs(params) {
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
+function getActiveRowsForPO(targetUid) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sheetDatabase = ss.getSheetByName('DATABASE');
+  if (!sheetDatabase) return [];
+  
+  const data = sheetDatabase.getDataRange().getValues();
+  let targetInternalPO = targetUid;
+  
+  // Find internalPO in case targetUid is the originalUid
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (data[i][4] === targetUid || data[i][1] === targetUid) {
+      targetInternalPO = data[i][4] || targetUid;
+      break;
+    }
+  }
+  
+  function parseTs(raw) {
+    if (!raw) return null;
+    if (raw instanceof Date) return isNaN(raw.getTime()) ? null : raw;
+    const s = raw.toString().trim();
+    let d = new Date(s);
+    if (!isNaN(d.getTime())) return d;
+    d = new Date(s.replace(/\//g, '-'));
+    if (!isNaN(d.getTime())) return d;
+    return null;
+  }
+  
+  // Find latest timestamp for targetInternalPO
+  let latestTsTime = 0;
+  let latestTsStr = '';
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (row[4] === targetInternalPO) {
+       const ts = parseTs(row[0]);
+       if (ts) {
+          const tsTime = ts.getTime();
+          if (tsTime > latestTsTime) {
+             latestTsTime = tsTime;
+             latestTsStr = row[0].toString().trim();
+          }
+       }
+    }
+  }
+  
+  if (!latestTsStr) return [];
+  
+  // Find contiguous block bounds
+  let startRow = -1;
+  let numRows = 0;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][4] === targetInternalPO && data[i][0].toString().trim() === latestTsStr) {
+       if (startRow === -1) startRow = i;
+       numRows++;
+    }
+  }
+  
+  if (startRow === -1) return [];
+  
+  // Fetch formulas ONLY for this specific block (super fast)
+  // i is 0-indexed for array, but startRow is from data array index, so data[startRow] corresponds to sheet row startRow + 1
+  const formulas = sheetDatabase.getRange(startRow + 1, 1, numRows, data[0].length).getFormulas();
+  
+  // PDF map
+  let pdfMap = {};
+  const sheetPdf = ss.getSheetByName('PO PDF Links');
+  if (sheetPdf) {
+    const pdfData = sheetPdf.getDataRange().getValues();
+    for (let i = 1; i < pdfData.length; i++) {
+      if ((pdfData[i][0] || '').toString().trim() === targetInternalPO) {
+         pdfMap[targetInternalPO] = (pdfData[i][1] || '').toString().trim();
+         break;
+      }
+    }
+  }
+  
+  const activeRows = [];
+  for (let i = 0; i < numRows; i++) {
+     const rowCopy = data[startRow + i].slice();
+     const rowFormulas = formulas[i];
+     
+     // Extract Design Image URL (Col Z, index 25)
+     let imgUrl = '';
+     if (rowFormulas && rowFormulas[25]) {
+       const f = rowFormulas[25];
+       const imageMatch = f.match(/IMAGE\("([^"]+)"/i);
+       if (imageMatch) {
+          imgUrl = imageMatch[1];
+       } else {
+         const linkMatch = f.match(/HYPERLINK\("([^"]+)"/i);
+         if (linkMatch) imgUrl = linkMatch[1];
+         else if (typeof f === 'string' && f.startsWith('http')) imgUrl = f;
+       }
+     } else if (rowCopy[25] && typeof rowCopy[25] === 'string') {
+       imgUrl = rowCopy[25];
+     }
+     
+     if (imgUrl && typeof imgUrl === 'string' && imgUrl.includes('drive.google.com')) {
+       const idMatch = imgUrl.match(/[-\w]{25,}/);
+       if (idMatch) imgUrl = `https://drive.google.com/thumbnail?id=${idMatch[0]}&sz=w800`;
+     }
+     rowCopy[25] = imgUrl;
+     
+     const ts = parseTs(rowCopy[0]);
+     if (ts && ts >= new Date("2026-08-15T00:00:00")) {
+       let bkValue = rowCopy[62];
+       if (rowFormulas && rowFormulas[62]) {
+         const f = rowFormulas[62];
+         const linkMatch = f.match(/HYPERLINK\("([^"]+)"/i);
+         if (linkMatch) bkValue = linkMatch[1];
+         else if (typeof f === 'string' && f.startsWith('http')) bkValue = f;
+       }
+       if (bkValue && bkValue.toString().trim() !== '') rowCopy[63] = bkValue;
+     } else {
+       if (!rowCopy[63] && pdfMap[targetInternalPO]) rowCopy[63] = pdfMap[targetInternalPO];
+     }
+     rowCopy[65] = false;
+     activeRows.push(rowCopy);
+  }
+  
+  return activeRows;
+}
+
 function handleGetPOById(params) {
   const targetUid = params.uid;
   if (!targetUid) return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'UID missing' })).setMimeType(ContentService.MimeType.JSON);
   
-  const activeRows = getActiveRows();
-  let targetInternalPO = targetUid;
+  const activeRows = getActiveRowsForPO(targetUid);
   
-  for (let i = activeRows.length - 1; i >= 0; i--) {
-    if (activeRows[i][4] === targetInternalPO || activeRows[i][1] === targetInternalPO) {
-      targetInternalPO = activeRows[i][4] || targetUid;
-      break;
-    }
+  if (activeRows.length === 0) {
+     return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'PO not found' })).setMimeType(ContentService.MimeType.JSON);
   }
+  
+  let targetInternalPO = activeRows[0][4] || targetUid;
+
   
   function formatPercent(val) {
     if (typeof val === 'number') return Math.round(val * 100) + '%';
