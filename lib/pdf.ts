@@ -53,12 +53,13 @@ function indianTimestamp(): string {
   return `${dd}-${mon}-${yr} ${hh}:${mm}`;
 }
 
-// ─── Colour constants ─────────────────────────────────────────
-const DARK_GREY   = [100, 100, 100] as [number, number, number];
-const GREY_BG     = [220, 220, 220] as [number, number, number];
-const LIGHT_GREY  = [245, 245, 245] as [number, number, number];
-const WHITE       = [255, 255, 255] as [number, number, number];
-const DARK_TEXT   = [30,  30,  30]  as [number, number, number];
+// ─── Colour constants (Modern Export Theme) ─────────────────────
+const PRIMARY_BLUE = [44,  62,  80]  as [number, number, number]; // Sleek navy for prominent headers
+const DARK_GREY    = [180, 180, 180] as [number, number, number]; // Softer borders
+const GREY_BG      = [236, 240, 241] as [number, number, number]; // Very light slate for col headers
+const LIGHT_GREY   = [248, 249, 250] as [number, number, number]; // Alternate row bg / subtle cells
+const WHITE        = [255, 255, 255] as [number, number, number];
+const DARK_TEXT    = [45,  55,  72]  as [number, number, number]; // Soft dark text for readability
 
 // ─── Layout constants ─────────────────────────────────────────
 const PAGE_W = 297;   // landscape A4
@@ -87,7 +88,7 @@ const COLS = [
 ];
 
 const IMG_COL = 2;   // index of the image column
-const IMG_DIM = 13;  // mm — thumbnail size that keeps rows compact
+const IMG_DIM = 10.5;  // mm — slightly smaller to decrease row height
 
 export async function generatePOPDF(
   options: GeneratePDFOptions
@@ -156,7 +157,7 @@ export async function generatePOPDF(
       content: 'RKD Buyer PO',
       colSpan: 5,
       styles: {
-        halign: 'center', fillColor: GREY_BG, textColor: DARK_TEXT,
+        halign: 'center', fillColor: PRIMARY_BLUE, textColor: WHITE,
         fontStyle: 'bold', fontSize: 11, cellPadding: 3,
       },
     }]],
@@ -186,7 +187,7 @@ export async function generatePOPDF(
       ],
     ],
     theme: 'grid',
-    styles: { lineColor: DARK_GREY, lineWidth: 0.5, font: 'helvetica', textColor: DARK_TEXT, minCellHeight: 10 },
+    styles: { lineColor: DARK_GREY, lineWidth: 0.1, font: 'helvetica', textColor: DARK_TEXT, minCellHeight: 8 },
     columnStyles: {
       0: { cellWidth: 35  },
       1: { cellWidth: 55  },
@@ -276,33 +277,37 @@ export async function generatePOPDF(
 
     styles: {
       fontSize: 6.5,
-      cellPadding: 2,
+      cellPadding: 1.5,
       overflow: 'linebreak',
       font: 'helvetica',
-      textColor: 0,
+      textColor: DARK_TEXT,
       valign: 'middle',
       halign: 'center',
-      minCellHeight: 14,
+      lineColor: DARK_GREY,
+      lineWidth: 0.1,
+      minCellHeight: 10,
     },
     headStyles: {
       fillColor: GREY_BG,
       textColor: DARK_TEXT,
       fontStyle: 'bold',
       lineColor: DARK_GREY,
-      lineWidth: 0.5,
+      lineWidth: 0.1,
       fontSize: 6.5,
-      cellPadding: 2,
+      cellPadding: 1.5,
       valign: 'middle',
       halign: 'center',
-      minCellHeight: 10,
+      minCellHeight: 8,
     },
     footStyles: {
       fillColor: WHITE,
-      textColor: 0,
       fontStyle: 'bold',
+      textColor: DARK_TEXT,
       lineColor: DARK_GREY,
-      lineWidth: 0.5,
-      fontSize: 6.5,
+      lineWidth: 0.1,
+    },
+    alternateRowStyles: {
+      fillColor: LIGHT_GREY
     },
     theme: 'grid',
     tableLineColor: DARK_GREY,
