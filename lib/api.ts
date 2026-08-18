@@ -11,9 +11,7 @@ import type {
   PurchaseOrder,
   SKUItem,
   PendingPO
-} from './types';
-
-const BASE_URL = 'https://script.google.com/macros/s/AKfycbyDa1PnFpuLSBH_WjP9Vc-VWk8lQaXPaFIvfErM0-IjN9i8UrN-WGshGSgALaCaWdRg/exec';
+const BASE_URL = 'https://script.google.com/macros/s/AKfycbzKdPN4LjsSeuIYeQag7UhSaMQ4_1M2vcpqaC8ELWJ4NusmF25mAa7Rd_W9bjDrvCIU/exec';
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<APIResponse<T>> {
   try {
