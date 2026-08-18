@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { FileText, Eye, Edit, ChevronDown, ChevronUp, Package, Calendar, X, Search } from 'lucide-react';
 import { getAllPOs, getPOById } from '@/lib/api';
 import { POListItem, PurchaseOrder } from '@/lib/types';
@@ -16,21 +16,34 @@ export default function DeclarationsPage() {
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    async function fetchPOs() {
-      try {
-        const res = await getAllPOs({ limit: 100 });
-        if (res.status === 'success' && res.data) {
-          setPOs(res.data.pos || []);
-        }
-      } catch (err) {
-        console.error("Failed to load POs", err);
-      } finally {
-        setLoading(false);
+  const fetchPOs = useCallback(async () => {
+    try {
+      const res = await getAllPOs({ limit: 100 });
+      if (res.status === 'success' && res.data) {
+        setPOs(res.data.pos || []);
       }
+    } catch (err) {
+      console.error("Failed to load POs", err);
+    } finally {
+      setLoading(false);
     }
-    fetchPOs();
   }, []);
+
+  // Initial load
+  useEffect(() => {
+    fetchPOs();
+  }, [fetchPOs]);
+
+  // Real-time polling for processing PDFs (updates "Processing..." to "View PDF" automatically)
+  useEffect(() => {
+    const isProcessing = pos.some(po => !po.pdfUrl && !po.isOld);
+    if (isProcessing) {
+      const interval = setInterval(() => {
+        fetchPOs();
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [pos, fetchPOs]);
 
   // Client-side filtering — instant, no extra API call
   const filteredPOs = useMemo(() => {
