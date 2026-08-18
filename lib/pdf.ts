@@ -89,7 +89,7 @@ const COLS = [
 ];
 
 const IMG_COL = 2;   // index of the image column
-const IMG_DIM = 10.5;  // mm — slightly smaller to decrease row height
+const IMG_DIM = 8.5; // mm — further reduced to pack more rows per page
 
 export async function generatePOPDF(
   options: GeneratePDFOptions
@@ -159,36 +159,36 @@ export async function generatePOPDF(
       colSpan: 5,
       styles: {
         halign: 'center', fillColor: PRIMARY_BLUE, textColor: WHITE,
-        fontStyle: 'bold', fontSize: 11, cellPadding: 3,
+        fontStyle: 'bold', fontSize: 11, cellPadding: 2,
       },
     }]],
     body: [
       [
         { content: 'File Number',
-          styles: { fontStyle: 'bold', fillColor: LIGHT_GREY, fontSize: 8, cellPadding: 2 } },
+          styles: { fontStyle: 'bold', fillColor: LIGHT_GREY, fontSize: 8, cellPadding: 1.2 } },
         { content: header.fileNumber || '',
-          styles: { halign: 'center', fontSize: 8, cellPadding: 2 } },
+          styles: { halign: 'center', fontSize: 8, cellPadding: 1.2 } },
         { content: 'PO Date',
-          styles: { fontStyle: 'bold', fillColor: LIGHT_GREY, fontSize: 8, cellPadding: 2 } },
+          styles: { fontStyle: 'bold', fillColor: LIGHT_GREY, fontSize: 8, cellPadding: 1.2 } },
         { content: formatDate(header.poDate),
-          styles: { halign: 'center', fontSize: 8, cellPadding: 2 } },
+          styles: { halign: 'center', fontSize: 8, cellPadding: 1.2 } },
         // Logo cell — spans both body rows
         { content: '', rowSpan: 2,
-          styles: { halign: 'center', valign: 'middle', cellPadding: 2 } },
+          styles: { halign: 'center', valign: 'middle', cellPadding: 1 } },
       ],
       [
         { content: 'Internal PO Number',
-          styles: { fontStyle: 'bold', fillColor: LIGHT_GREY, fontSize: 8, cellPadding: 2 } },
+          styles: { fontStyle: 'bold', fillColor: LIGHT_GREY, fontSize: 8, cellPadding: 1.2 } },
         { content: header.internalPO || '',
-          styles: { halign: 'center', fontSize: 8, cellPadding: 2 } },
+          styles: { halign: 'center', fontSize: 8, cellPadding: 1.2 } },
         { content: 'Ex-Factory Date',
-          styles: { fontStyle: 'bold', fillColor: LIGHT_GREY, fontSize: 8, cellPadding: 2 } },
+          styles: { fontStyle: 'bold', fillColor: LIGHT_GREY, fontSize: 8, cellPadding: 1.2 } },
         { content: formatDate(header.exFactory),
-          styles: { halign: 'center', fontSize: 8, cellPadding: 2 } },
+          styles: { halign: 'center', fontSize: 8, cellPadding: 1.2 } },
       ],
     ],
     theme: 'grid',
-    styles: { lineColor: DARK_GREY, lineWidth: 0.1, font: 'helvetica', textColor: DARK_TEXT, minCellHeight: 8 },
+    styles: { lineColor: DARK_GREY, lineWidth: 0.1, font: 'helvetica', textColor: DARK_TEXT, minCellHeight: 6 },
     columnStyles: {
       0: { cellWidth: 35  },
       1: { cellWidth: 55  },
@@ -305,7 +305,7 @@ export async function generatePOPDF(
 
     styles: {
       fontSize: 6.5,
-      cellPadding: 1.5,
+      cellPadding: 1,
       overflow: 'linebreak',
       font: 'helvetica',
       textColor: DARK_TEXT,
@@ -313,7 +313,7 @@ export async function generatePOPDF(
       halign: 'center',
       lineColor: DARK_GREY,
       lineWidth: 0.1,
-      minCellHeight: 10,
+      minCellHeight: 6,
     },
     headStyles: {
       fillColor: GREY_BG,
@@ -322,10 +322,10 @@ export async function generatePOPDF(
       lineColor: DARK_GREY,
       lineWidth: 0.1,
       fontSize: 6.5,
-      cellPadding: 1.5,
+      cellPadding: 1,
       valign: 'middle',
       halign: 'center',
-      minCellHeight: 8,
+      minCellHeight: 6,
     },
     footStyles: {
       fillColor: WHITE,
@@ -333,6 +333,8 @@ export async function generatePOPDF(
       textColor: DARK_TEXT,
       lineColor: DARK_GREY,
       lineWidth: 0.1,
+      cellPadding: 1,
+      minCellHeight: 6,
     },
     alternateRowStyles: {
       fillColor: LIGHT_GREY
