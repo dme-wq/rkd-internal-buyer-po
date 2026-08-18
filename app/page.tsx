@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { TrendingUp, Users, ShoppingCart, Package, PlusCircle } from 'lucide-react';
-import { getDashboardStats } from '@/lib/api';
-import type { DashboardStats } from '@/lib/types';
+import { TrendingUp, Users, ShoppingCart, Package, PlusCircle, AlertCircle, Clock, CheckCircle } from 'lucide-react';
+import { getDashboardStats, getPendingInternalPOs } from '@/lib/api';
+import type { DashboardStats, PendingPO } from '@/lib/types';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pendingPOs, setPendingPOs] = useState<PendingPO[]>([]);
+  const [loadingPending, setLoadingPending] = useState(true);
 
   useEffect(() => {
     getDashboardStats().then(res => {
@@ -17,6 +19,13 @@ export default function DashboardPage() {
       }
       setLoading(false);
     }).catch(() => setLoading(false));
+
+    getPendingInternalPOs().then(res => {
+      if (res.status === 'success' && res.data) {
+        setPendingPOs(res.data as PendingPO[]);
+      }
+      setLoadingPending(false);
+    }).catch(() => setLoadingPending(false));
   }, []);
 
   return (
@@ -181,6 +190,47 @@ export default function DashboardPage() {
               </div>
             </Link>
           </div>
+
+          {/* Pending Actions */}
+          <h2 className="text-[18px] font-bold text-zinc-900 flex items-center gap-2 mt-8">
+            <AlertCircle size={20} className="text-orange-600" />
+            Action Required
+          </h2>
+          <div className="bg-white rounded-2xl p-2 shadow-sm border border-zinc-100 max-h-[400px] overflow-y-auto custom-scrollbar">
+            {loadingPending ? (
+              <div className="p-8 text-center text-zinc-400">
+                <div className="inline-block w-6 h-6 border-2 border-zinc-200 border-t-orange-500 rounded-full animate-spin" />
+                <p className="text-xs mt-2 font-medium">Checking pending POs...</p>
+              </div>
+            ) : pendingPOs.length === 0 ? (
+              <div className="p-8 text-center text-zinc-400">
+                <CheckCircle size={32} className="mx-auto mb-2 text-emerald-400" />
+                <p className="text-sm font-medium">All caught up!</p>
+                <p className="text-xs mt-1">No pending POs found.</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {pendingPOs.map((po) => (
+                  <Link 
+                    key={po.internalPO} 
+                    href={`/create?internalPO=${encodeURIComponent(po.internalPO)}`}
+                    className="block p-3 rounded-xl hover:bg-orange-50 border border-transparent hover:border-orange-100 transition-colors group"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-bold text-zinc-800 text-sm group-hover:text-orange-700 transition-colors">{po.internalPO}</p>
+                        <p className="text-zinc-500 text-xs mt-0.5 line-clamp-1">{po.buyerName}</p>
+                      </div>
+                      <div className="bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1 shrink-0">
+                        <Clock size={10} /> Pending
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
     </div>
