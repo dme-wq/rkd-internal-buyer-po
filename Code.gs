@@ -920,10 +920,25 @@ function getActiveRows() {
        }
     }
 
-    // Attach PDF from pdfMap if col BL (index 63) is empty
-    if (!rowCopy[63] && pdfMap[internalPO]) {
-      rowCopy[63] = pdfMap[internalPO];
+    const ts = parseTs(row[0]);
+    if (ts && ts >= new Date("2026-08-15T00:00:00")) {
+      let bkValue = rowCopy[62];
+      if (formulas && formulas[i] && formulas[i][62]) {
+         const f = formulas[i][62];
+         const linkMatch = f.match(/HYPERLINK\("([^"]+)"/i);
+         if (linkMatch) bkValue = linkMatch[1];
+         else if (typeof f === 'string' && f.startsWith('http')) bkValue = f;
+      }
+      if (bkValue && bkValue.toString().trim() !== '') {
+        rowCopy[63] = bkValue;
+      }
+    } else {
+      // Attach PDF from pdfMap if col BL (index 63) is empty
+      if (!rowCopy[63] && pdfMap[internalPO]) {
+        rowCopy[63] = pdfMap[internalPO];
+      }
     }
+    
     rowCopy[65] = false;
     allRows.push(rowCopy);
   }
