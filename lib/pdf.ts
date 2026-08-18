@@ -233,7 +233,9 @@ export async function generatePOPDF(
         logoBase64
       ) {
         // Image is 186x156 (aspect ratio ~1.192)
-        const lw = 21, lh = 17.6;
+        // Ensure logo fits inside the cell with 2mm padding on top/bottom
+        const lh = Math.min(17.6, data.cell.height - 4); 
+        const lw = lh * 1.192;
         doc.addImage(
           logoBase64, 'PNG',
           data.cell.x + (data.cell.width  - lw) / 2,
