@@ -904,10 +904,10 @@ function getActiveRows() {
 
     const rowCopy = row.slice();
     
-    // Extract Design Image URL (Col Z, index 25) from formulas since getValues() returns empty for them
-    if (!rowCopy[25] && formulas && formulas[i] && formulas[i][25]) {
+    // Extract Design Image URL (Col Z, index 25)
+    let imgUrl = '';
+    if (formulas && formulas[i] && formulas[i][25]) {
        const f = formulas[i][25];
-       let imgUrl = '';
        const imageMatch = f.match(/IMAGE\("([^"]+)"/i);
        if (imageMatch) {
           imgUrl = imageMatch[1];
@@ -919,21 +919,18 @@ function getActiveRows() {
             imgUrl = f;
          }
        }
-       
-       if (imgUrl.includes('drive.google.com')) {
-          const idMatch = imgUrl.match(/[-\w]{25,}/);
-          if (idMatch) {
-             imgUrl = `https://drive.google.com/thumbnail?id=${idMatch[0]}&sz=w800`;
-          }
-       }
-       
-       rowCopy[25] = imgUrl;
-    } else if (rowCopy[25] && typeof rowCopy[25] === 'string' && rowCopy[25].includes('drive.google.com')) {
-       const idMatch = rowCopy[25].match(/[-\w]{25,}/);
+    } else if (rowCopy[25] && typeof rowCopy[25] === 'string') {
+       imgUrl = rowCopy[25];
+    }
+    
+    if (imgUrl && typeof imgUrl === 'string' && imgUrl.includes('drive.google.com')) {
+       const idMatch = imgUrl.match(/[-\w]{25,}/);
        if (idMatch) {
-          rowCopy[25] = `https://drive.google.com/thumbnail?id=${idMatch[0]}&sz=w800`;
+          imgUrl = `https://drive.google.com/thumbnail?id=${idMatch[0]}&sz=w800`;
        }
     }
+    
+    rowCopy[25] = imgUrl;
 
     const ts = parseTs(row[0]);
     if (ts && ts >= new Date("2026-08-15T00:00:00")) {
