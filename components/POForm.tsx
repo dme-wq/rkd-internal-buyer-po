@@ -11,6 +11,7 @@ import { MultiSelectDropdown } from './MultiSelectDropdown';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 const formatDisplayDate = (dateString?: string) => {
   if (!dateString) return '';
@@ -27,6 +28,7 @@ const MySwal = withReactContent(Swal);
 
 export default function POForm({ initialDropdowns, initialData }: { initialDropdowns?: Partial<DropdownData>, initialData?: PurchaseOrder }) {
   const { data: session } = useSession();
+  const router = useRouter();
   const userEmail = session?.user?.email || undefined;
 
   const [header, setHeader] = useState<Partial<POHeader>>(() => {
@@ -589,38 +591,14 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
     if (messageDismissRef.current) clearTimeout(messageDismissRef.current);
     setMessage('');
 
-    // Show step-by-step progress dialog
+    // Show simple loading dialog for database save
     MySwal.fire({
-      title: 'Processing...',
-      html: `
-        <div style="text-align:left;font-size:13px;color:#374151">
-          <div id="step1" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6">
-            <span id="step1-icon" style="font-size:16px">⏳</span>
-            <span style="font-weight:600">Saving Purchase Order to Database...</span>
-          </div>
-          <div id="step2" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6;opacity:0.4">
-            <span id="step2-icon" style="font-size:16px">📄</span>
-            <span style="font-weight:600">Generating PDF...</span>
-          </div>
-          <div id="step3" style="display:flex;align-items:center;gap:10px;padding:8px 0;opacity:0.4">
-            <span id="step3-icon" style="font-size:16px">📲</span>
-            <span style="font-weight:600">Sending WhatsApp Notification...</span>
-          </div>
-        </div>
-      `,
+      title: 'Saving Database...',
+      text: 'Please wait while we save the purchase order.',
       allowOutsideClick: false,
       showConfirmButton: false,
       didOpen: () => MySwal.showLoading(),
     });
-
-    const updateStep = (step: number, done: boolean) => {
-      const el = document.getElementById(`step${step}`);
-      const icon = document.getElementById(`step${step}-icon`);
-      if (el) el.style.opacity = '1';
-      if (icon) icon.textContent = done ? '✅' : '⏳';
-      const next = document.getElementById(`step${step + 1}`);
-      if (next) next.style.opacity = '1';
-    };
 
     try {
       // calculateTotals is now pure — returns both computedSkus AND the fully-computed header
@@ -635,59 +613,35 @@ export default function POForm({ initialDropdowns, initialData }: { initialDropd
       }
       
       if (res.status === 'success' && res.data) {
-        updateStep(1, true);
-        showMessage(`✅ Internal PO: ${res.data.internalPO} saved.`);
+        MySwal.close();
+        MySwal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Saved! Processing PDF in background...', showConfirmButton: false, timer: 3000 });
         
-        const fullHeader = { ...header, internalPO: res.data.internalPO, uid: res.data.uid || initialData?.header?.uid } as POHeader;
-        const pdfData = await generatePOPDF({ header: fullHeader, skus: finalSkus as SKUItem[], userEmail });
-        const pdfRes = await savePDFtoDrive(fullHeader.uid!, pdfData.filename, pdfData.base64);
+        const internalPO = res.data.internalPO;
+        const fullHeader = { ...header, internalPO: internalPO, uid: res.data.uid || initialData?.header?.uid } as POHeader;
         
-        let pdfUrl = '';
-        if (pdfRes.status === 'success' && pdfRes.data?.fileUrl) {
-          pdfUrl = pdfRes.data.fileUrl;
-        }
-        updateStep(2, true);
-        showMessage(`✅ Internal PO: ${res.data.internalPO} saved. 📄 PDF saved to Drive.`);
-
-        // Send WhatsApp
-        let waSuccess = false;
-        try {
-          const waRes = await sendWhatsAppNotification(res.data.internalPO, pdfUrl, fullHeader.buyerName || '', fullHeader.buyerPO || '');
-          waSuccess = waRes.status === 'success';
-          if (!waSuccess) console.warn('WhatsApp failed:', waRes.message);
-        } catch (waErr) {
-          console.warn('WhatsApp exception:', waErr);
-        }
-        updateStep(3, waSuccess);
-        if (waSuccess) showMessage(`✅ Internal PO: ${res.data.internalPO} saved. 📄 PDF saved to Drive. 📲 WhatsApp sent.`);
-
-        MySwal.fire({
-          icon: 'success',
-          title: '🎉 PO Generated Successfully!',
-          html: `
-            <div style="font-size:14px;color:#374151">
-              <p>Internal PO <b style="color:#00a669">${res.data.internalPO}</b> has been saved.</p>
-              <div style="margin-top:12px;padding:10px;background:#f0fdf4;border-radius:8px;text-align:left;font-size:12px;color:#166534">
-                ✅ Saved to Database<br/>
-                📄 PDF stored in Google Drive<br/>
-                ${waSuccess ? '📲 WhatsApp notification sent' : '⚠️ WhatsApp notification skipped'}
-              </div>
-            </div>
-          `,
-          showCancelButton: true,
-          confirmButtonText: '📄 View PDF',
-          cancelButtonText: 'Close',
-          confirmButtonColor: '#00a669'
-        }).then((result) => {
-          if (result.isConfirmed) {
-            if (pdfUrl) {
-              window.open(pdfUrl, '_blank');
-            } else {
-              const url = URL.createObjectURL(pdfData.blob);
-              window.open(url, '_blank');
+        // Start background tasks without awaiting them
+        (async () => {
+          try {
+            const pdfData = await generatePOPDF({ header: fullHeader, skus: finalSkus as SKUItem[], userEmail });
+            const pdfRes = await savePDFtoDrive(fullHeader.uid!, pdfData.filename, pdfData.base64);
+            
+            let pdfUrl = '';
+            if (pdfRes.status === 'success' && pdfRes.data?.fileUrl) {
+              pdfUrl = pdfRes.data.fileUrl;
             }
+            
+            try {
+              await sendWhatsAppNotification(internalPO, pdfUrl, fullHeader.buyerName || '', fullHeader.buyerPO || '');
+            } catch (waErr) {
+              console.warn('WhatsApp exception:', waErr);
+            }
+          } catch (e) {
+            console.error("Background PDF/WhatsApp failed", e);
           }
-        });
+        })();
+
+        // Instantly redirect the user
+        router.push('/declarations');
 
       } else {
         MySwal.close();

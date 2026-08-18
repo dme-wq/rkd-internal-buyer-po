@@ -189,14 +189,21 @@ export default function DeclarationsPage() {
                         <span className="text-sm font-semibold text-zinc-600">{formatDate(po.timestamp, 'dd-MMM-yyyy HH:mm')}</span>
                       </div>
 
-                      {po.pdfUrl && (
+                      {po.pdfUrl ? (
                         <div className="flex flex-col border-l border-zinc-200 pl-4 ml-2">
                           <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-1">Generated PDF</span>
                           <a href={po.pdfUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-sm font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
                             <FileText size={14} /> View PDF
                           </a>
                         </div>
-                      )}
+                      ) : !po.isOld ? (
+                        <div className="flex flex-col border-l border-zinc-200 pl-4 ml-2">
+                          <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mb-1">Generated PDF</span>
+                          <span className="text-sm font-semibold text-amber-500 flex items-center gap-1" title="Generating PDF in background...">
+                            <div className="w-3.5 h-3.5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" /> Processing...
+                          </span>
+                        </div>
+                      ) : null}
                     </div>
                     
                     <div className="flex items-center gap-4 pl-4 border-l border-zinc-200">
