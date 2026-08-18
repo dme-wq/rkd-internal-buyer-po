@@ -907,16 +907,31 @@ function getActiveRows() {
     // Extract Design Image URL (Col Z, index 25) from formulas since getValues() returns empty for them
     if (!rowCopy[25] && formulas && formulas[i] && formulas[i][25]) {
        const f = formulas[i][25];
+       let imgUrl = '';
        const imageMatch = f.match(/IMAGE\("([^"]+)"/i);
        if (imageMatch) {
-          rowCopy[25] = imageMatch[1];
+          imgUrl = imageMatch[1];
        } else {
          const linkMatch = f.match(/HYPERLINK\("([^"]+)"/i);
          if (linkMatch) {
-            rowCopy[25] = linkMatch[1];
+            imgUrl = linkMatch[1];
          } else if (typeof f === 'string' && f.startsWith('http')) {
-            rowCopy[25] = f;
+            imgUrl = f;
          }
+       }
+       
+       if (imgUrl.includes('drive.google.com')) {
+          const idMatch = imgUrl.match(/[-\w]{25,}/);
+          if (idMatch) {
+             imgUrl = `https://drive.google.com/thumbnail?id=${idMatch[0]}&sz=w800`;
+          }
+       }
+       
+       rowCopy[25] = imgUrl;
+    } else if (rowCopy[25] && typeof rowCopy[25] === 'string' && rowCopy[25].includes('drive.google.com')) {
+       const idMatch = rowCopy[25].match(/[-\w]{25,}/);
+       if (idMatch) {
+          rowCopy[25] = `https://drive.google.com/thumbnail?id=${idMatch[0]}&sz=w800`;
        }
     }
 
