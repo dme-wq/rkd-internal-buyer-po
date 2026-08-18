@@ -12,7 +12,8 @@ import type {
   SKUItem,
   PendingPO
 } from './types';
-const BASE_URL = 'https://script.google.com/macros/s/AKfycbyMLQFr5MQ8F651yDB-7pIr6wNh1H-tOppJUJaHz1icVVmVzhxOk5ENf3TkGn5AbTqP/exec';
+
+const BASE_URL = 'https://script.google.com/macros/s/AKfycbyDa1PnFpuLSBH_WjP9Vc-VWk8lQaXPaFIvfErM0-IjN9i8UrN-WGshGSgALaCaWdRg/exec';
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<APIResponse<T>> {
   try {
